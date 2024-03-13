@@ -3,7 +3,6 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
-import java.nio.file.Files;
 
 public class Main {
     public static void main(String[] args) throws Exception {
@@ -21,7 +20,7 @@ public class Main {
         String extension = "";
         int i = args[0].lastIndexOf('.');
         if (i >= 0) { extension = args[0].substring(i+1); }
-            System.out.println(extension);
+            //System.out.println(extension);
         if (new String("xml").equals(extension)) {
             File inputFile = new File(args[0]);
             File tempFile = new File("temp.xml");
@@ -30,11 +29,13 @@ public class Main {
             BufferedWriter writer = new BufferedWriter(new FileWriter(tempFile));
 
             String currentLine;
-            int j = 0;
+            String lineToRemove = "<!DOCTYPE"; // xpath doesn't like this
             while((currentLine = reader.readLine()) != null) {
-                if(j == 1) continue;
+                if (currentLine.trim().length() > 8) {
+                    String trimmedLine = currentLine.trim().substring(0, lineToRemove.length());
+                    if(trimmedLine.equals(lineToRemove)) continue;
+                }
                 writer.write(currentLine + System.getProperty("line.separator"));
-                i++;
             }
             writer.close(); 
             reader.close(); 

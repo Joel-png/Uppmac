@@ -1,14 +1,16 @@
-import java.util.ArrayList;
+
 
 public class Nta {
     Declaration globalDeclaration;
-    ArrayList<Template> templates = new ArrayList<Template>();
+    Template[] templates;
+    SSystem system;
 
-    public Nta() {
+    public Nta(int templateLength) {
 
     }
 
-    public void addTemplate(Template template) {
-        templates.add(template);
+    public void addTemplate(Template template, int index) {
+        templates[index] = template;
     }
+
 }
