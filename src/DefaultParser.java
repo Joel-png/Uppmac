@@ -29,8 +29,26 @@ public class DefaultParser {
         Document xmlDocument = builder.parse(fileIS);
 
         XPath xPath = XPathFactory.newInstance().newXPath();
-        String expression = "/Tutorials/Tutorial";
+        String expression = "/nta";
         NodeList nodeList = (NodeList) xPath.compile(expression).evaluate(xmlDocument, XPathConstants.NODESET);
+
+        for (int i = 0; i < nodeList.getLength(); i++) {
+            System.out.println(nodeList.item(i));
+        }
+
+        expression = "/nta/template";
+        nodeList = (NodeList) xPath.compile(expression).evaluate(xmlDocument, XPathConstants.NODESET);
+
+        for (int i = 0; i < nodeList.getLength(); i++) {
+            System.out.println(nodeList.item(i));
+        }
+
+        expression = "/nta/template/location/@id";
+        nodeList = (NodeList) xPath.compile(expression).evaluate(xmlDocument, XPathConstants.NODESET);
+
+        for (int i = 0; i < nodeList.getLength(); i++) {
+            System.out.println(nodeList.item(i));
+        }
     }
 
     public File getFile() {
