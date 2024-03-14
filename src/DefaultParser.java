@@ -64,11 +64,6 @@ public class DefaultParser {
                 tempTemplate.updateTemplateWithTransitions(tempTransition);
             }
 
-            tempTemplate.printData();
-            for (int z = 0; z < tempTemplate.locations.length; z++) {
-                tempTemplate.locations[z].printData();
-            }
-
             nta.addTemplate(tempTemplate, i-1);
         }
         return nta;
