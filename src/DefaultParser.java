@@ -17,7 +17,7 @@ public class DefaultParser {
         this.file = file;
     }
 
-    public void parse() throws Exception {
+    public Nta parse() throws Exception {
         FileInputStream fileIS = new FileInputStream(this.getFile());
         DocumentBuilderFactory builderFactory = DocumentBuilderFactory.newInstance();
         builderFactory.setNamespaceAware(true);
@@ -57,8 +57,8 @@ public class DefaultParser {
             for (int j = 1; j <= tempTransitionList.getLength(); j++) {
                 NodeList tempTransitionSourceList = (NodeList) xPath.compile("/nta/template[" + String.valueOf(i) + "]/transition[" + String.valueOf(j) + "]/source/@ref").evaluate(xmlDocument, XPathConstants.NODESET);
                 NodeList tempTransitionTargetList = (NodeList) xPath.compile("/nta/template[" + String.valueOf(i) + "]/transition[" + String.valueOf(j) + "]/target/@ref").evaluate(xmlDocument, XPathConstants.NODESET);
-                printNodeList(tempTransitionSourceList);
-                printNodeList(tempTransitionTargetList);
+                //printNodeList(tempTransitionSourceList);
+                //printNodeList(tempTransitionTargetList);
                 Transition tempTransition = new Transition(cleanID(tempTransitionSourceList.item(0).toString(), 5), cleanID(tempTransitionTargetList.item(0).toString(), 5));
                 tempTemplate.addTransition(tempTransition, j-1);
                 tempTemplate.updateTemplateWithTransitions(tempTransition);
@@ -71,6 +71,7 @@ public class DefaultParser {
 
             nta.addTemplate(tempTemplate, i-1);
         }
+        return nta;
     }
 
     public File getFile() {

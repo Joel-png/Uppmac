@@ -13,7 +13,7 @@ public class Location {
     }
 
     public void printData() {
-        System.out.println("Template: " + name + ", ID: " + id + ", Source:" + String.valueOf(sourceTransitions.size()) + ", Target:" + String.valueOf(targetTransitions.size()));
+        System.out.println("Location: " + name + ", ID: " + id + ", Source:" + String.valueOf(sourceTransitions.size()) + ", Target:" + String.valueOf(targetTransitions.size()));
     }
 
     public void addSource(Transition transition) {
@@ -22,5 +22,19 @@ public class Location {
 
     public void addTarget(Transition transition) {
         targetTransitions.add(transition);
+    }
+
+    public void printTransitions() {
+        System.out.println("Source transitions, length: " + sourceTransitions.size());
+        for (int i = 0; i < sourceTransitions.size(); i++) {
+            System.out.print("[" + i + "] ");
+            sourceTransitions.get(i).printData();
+        }
+
+        System.out.println("Target transitions, length: " + targetTransitions.size());
+        for (int i = 0; i < targetTransitions.size(); i++) {
+            System.out.print("[" + i + "] ");
+            targetTransitions.get(i).printData();
+        }
     }
 }

@@ -7,4 +7,8 @@ public class Transition {
         this.source = source;
         this.target = target;
     }
+
+    public void printData() {
+        System.out.println("Location, Source:" + source + ", Target:" + target);
+    }
 }

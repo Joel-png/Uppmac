@@ -36,4 +36,11 @@ public class Template {
         fetchLocationFromID(transition.source).addSource(transition);
         fetchLocationFromID(transition.target).addTarget(transition);
     }
+
+    public void printLocations() {
+        for (int i = 0; i < locations.length; i++) {
+            System.out.print("[" + i + "] ");
+            locations[i].printData();
+        }
+    }
 }
