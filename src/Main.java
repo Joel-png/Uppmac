@@ -37,14 +37,17 @@ public class Main {
                 }
                 writer.write(currentLine + System.getProperty("line.separator"));
             }
-            writer.close(); 
-            reader.close(); 
+            writer.close();
+            reader.close();
             
             DefaultParser parser = new DefaultParser(tempFile);
-            parser.parse();
+            Navigator navigator = new Navigator(parser.parse(), args[0]);
+            navigator.navigate();
+            
         } else {
             System.out.println("Specified file is of type '" + extension + "', please use a file with type 'xml'");
             System.exit(1);
         }
+        System.exit(1);
     }
 }

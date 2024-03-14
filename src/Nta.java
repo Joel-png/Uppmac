@@ -13,4 +13,10 @@ public class Nta {
         templates[index] = template;
     }
 
+    public void printTemplates() {
+        for (int i = 0; i < templates.length; i++) {
+            System.out.print("[" + i + "] ");
+            templates[i].printData();
+        }
+    }
 }
