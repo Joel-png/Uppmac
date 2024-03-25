@@ -18,10 +18,13 @@ public class Navigator {
     int templateIndex = -1;
     int locationIndex = -1;
 
+    Identifier identifier;
+
     public Navigator(Nta nta, String fileName) {
         this.nta = nta;
         this.state = State.NTA;
         this.fileName = fileName;
+        this.identifier = new Identifier(nta);
     }
 
     public String sub(String string, int start, int end) {
@@ -81,6 +84,20 @@ public class Navigator {
                     case LOCATION:
                         nta.templates[templateIndex].locations[locationIndex].printData();
                         nta.templates[templateIndex].locations[locationIndex].printTransitions();
+                        break;
+                }
+
+
+            } else if (input.equals("identify")) {
+                switch (state) {
+                    case NTA:
+                        
+                        break;
+                    case TEMPLATE:
+                        
+                        break;
+                    case LOCATION:
+                        identifier.printLocationProperties(nta.templates[templateIndex].locations[locationIndex], nta.templates[templateIndex].transitions);
                         break;
                 }
 
