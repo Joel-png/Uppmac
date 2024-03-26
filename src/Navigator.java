@@ -94,7 +94,7 @@ public class Navigator {
                         
                         break;
                     case TEMPLATE:
-                        
+                        identifier.printTemplateProperties(nta.templates[templateIndex].locations, nta.templates[templateIndex].transitions);
                         break;
                     case LOCATION:
                         identifier.printLocationProperties(nta.templates[templateIndex].locations[locationIndex], nta.templates[templateIndex].transitions);
