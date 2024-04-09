@@ -8,14 +8,17 @@ public class Identifier {
         this.nta = nta;
     }
 
-    public void printLocationProperties(Location location, Transition[] transitions) {
+    public void printLocationProperties(Location location, Transition[] transitions, int indent) {
+        Navigator.indent(indent);
         System.out.println("Location has edge involvement % of: " + checkEdgeInvolvement(location, transitions) * 100 + "%");
     }
 
-    public void printTemplateProperties(Location[] locations, Transition[] transitions) {
+    public void printTemplateProperties(Location[] locations, Transition[] transitions, int indent) {
         if (checkIsLinear(locations)) {
+            Navigator.indent(indent);
             System.out.println("Template is linear");
         } else {
+            Navigator.indent(indent);
             System.out.println("Template is not linear");
         }
     }
@@ -33,8 +36,8 @@ public class Identifier {
                 counter++;
             }
         }
-        System.out.println(counter);
-        System.out.println(transitions.length);
+        //System.out.println(counter);
+        //System.out.println(transitions.length);
         float percent = counter/(float)transitions.length;
         return percent;
     }

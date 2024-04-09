@@ -13,10 +13,11 @@ public class Nta {
         templates[index] = template;
     }
 
-    public void printTemplates() {
+    public void printTemplates(int indent) {
         for (int i = 0; i < templates.length; i++) {
+            Navigator.indent(indent);
             System.out.print("[" + i + "] ");
-            templates[i].printData();
+            templates[i].printData(indent);
         }
     }
 }

@@ -18,7 +18,8 @@ public class Template {
         transitions[index] = transition;
     }
 
-    public void printData() {
+    public void printData(int indent) {
+        Navigator.indent(indent);
         System.out.println("Template: " + name + ", " + String.valueOf(locations.length) + " locations, " + String.valueOf(transitions.length) + " transitions");
     }
 
@@ -37,10 +38,11 @@ public class Template {
         fetchLocationFromID(transition.target).addTarget(transition);
     }
 
-    public void printLocations() {
+    public void printLocations(int indent) {
         for (int i = 0; i < locations.length; i++) {
+            Navigator.indent(indent);
             System.out.print("[" + i + "] ");
-            locations[i].printData();
+            locations[i].printData(indent);
         }
     }
 }

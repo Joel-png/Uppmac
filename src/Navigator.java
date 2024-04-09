@@ -45,6 +45,49 @@ public class Navigator {
         }
     }
 
+    public void getProperties() {
+        // NTA
+        System.out.print("<");
+        System.out.println("NTA has Templates:");
+        nta.printTemplates(1);
+        System.out.println();
+        for (int i = 0; i < nta.templates.length; i++) {
+            // TEMPLATES
+            templateIndex = i;
+            indent(1);
+            System.out.print("<");
+            System.out.print("[" + templateIndex + "] ");
+            nta.templates[templateIndex].printData(0);
+            nta.templates[templateIndex].printLocations(2);
+            System.out.println();
+            indent(2);
+            System.out.println("[" + templateIndex + "] Template  properties:");
+            identifier.printTemplateProperties(nta.templates[templateIndex].locations, nta.templates[templateIndex].transitions, 3);
+            for (int j = 0; j < nta.templates[templateIndex].locations.length; j++) {
+                // LOCATION
+                locationIndex = j;
+                System.out.println();
+                indent(2);
+                System.out.print("<");
+                nta.templates[templateIndex].locations[locationIndex].printData(0);
+                nta.templates[templateIndex].locations[locationIndex].printTransitions(3);
+                System.out.println();
+                indent(3);
+                System.out.println("[" + locationIndex + "] Location properties:");
+                identifier.printLocationProperties(nta.templates[templateIndex].locations[locationIndex], nta.templates[templateIndex].transitions, 4);
+                indent(2);
+                System.out.println("[" + locationIndex + "] Location: " + nta.templates[templateIndex].locations[locationIndex].name + "/>");
+            }
+            indent(1);
+            System.out.print("[" + templateIndex + "] Template: " + nta.templates[templateIndex].name + "/>");
+            System.out.println();
+        }
+        System.out.print("NTA/>");
+        System.out.println();
+        System.out.println();
+        System.out.println();
+    }
+
     public void navigate() {
         boolean exit = false;
         System.out.println();
@@ -75,15 +118,15 @@ public class Navigator {
             } else if (input.equals("info")) {
                 switch (state) {
                     case NTA:
-                        nta.printTemplates();
+                        nta.printTemplates(0);
                         break;
                     case TEMPLATE:
-                        nta.templates[templateIndex].printData();
-                        nta.templates[templateIndex].printLocations();
+                        nta.templates[templateIndex].printData(0);
+                        nta.templates[templateIndex].printLocations(0);
                         break;
                     case LOCATION:
-                        nta.templates[templateIndex].locations[locationIndex].printData();
-                        nta.templates[templateIndex].locations[locationIndex].printTransitions();
+                        nta.templates[templateIndex].locations[locationIndex].printData(0);
+                        nta.templates[templateIndex].locations[locationIndex].printTransitions(0);
                         break;
                 }
 
@@ -94,10 +137,10 @@ public class Navigator {
                         
                         break;
                     case TEMPLATE:
-                        identifier.printTemplateProperties(nta.templates[templateIndex].locations, nta.templates[templateIndex].transitions);
+                        identifier.printTemplateProperties(nta.templates[templateIndex].locations, nta.templates[templateIndex].transitions, 0);
                         break;
                     case LOCATION:
-                        identifier.printLocationProperties(nta.templates[templateIndex].locations[locationIndex], nta.templates[templateIndex].transitions);
+                        identifier.printLocationProperties(nta.templates[templateIndex].locations[locationIndex], nta.templates[templateIndex].transitions, 0);
                         break;
                 }
 
@@ -182,4 +225,12 @@ public class Navigator {
             }
         }
     }
+
+    public static void indent(int amount) {
+        for (int i = 0; i < amount; i++) {
+            System.out.print("    ");
+        }
+    }
 }
+
+

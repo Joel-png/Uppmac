@@ -12,7 +12,8 @@ public class Location {
         this.name = name;
     }
 
-    public void printData() {
+    public void printData(int indent) {
+        Navigator.indent(indent);
         System.out.println("Location: " + name + ", ID: " + id + ", Source:" + String.valueOf(sourceTransitions.size()) + ", Target:" + String.valueOf(targetTransitions.size()));
     }
 
@@ -24,15 +25,19 @@ public class Location {
         targetTransitions.add(transition);
     }
 
-    public void printTransitions() {
+    public void printTransitions(int indent) {
+        Navigator.indent(indent);
         System.out.println("Source transitions, length: " + sourceTransitions.size());
         for (int i = 0; i < sourceTransitions.size(); i++) {
+            Navigator.indent(indent);
             System.out.print("[" + i + "] ");
             sourceTransitions.get(i).printData();
         }
 
+        Navigator.indent(indent);
         System.out.println("Target transitions, length: " + targetTransitions.size());
         for (int i = 0; i < targetTransitions.size(); i++) {
+            Navigator.indent(indent);
             System.out.print("[" + i + "] ");
             targetTransitions.get(i).printData();
         }
