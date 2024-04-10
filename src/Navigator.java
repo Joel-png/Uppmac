@@ -46,6 +46,7 @@ public class Navigator {
     }
 
     public void getProperties() {
+        
         // NTA
         System.out.print("<");
         System.out.println("NTA has Templates:");
