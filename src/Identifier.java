@@ -8,9 +8,11 @@ public class Identifier {
         this.nta = nta;
     }
 
-    public void printLocationProperties(Location location, Transition[] transitions, int indent) {
+    public void printLocationProperties(Location location, Location[] locations, Transition[] transitions, int indent) {
         Navigator.indent(indent);
-        System.out.println("Location has edge involvement % of: " + checkEdgeInvolvement(location, transitions) * 100 + "%");
+        System.out.println("Location has degree involvement % of: " + checkDegreeInvolvement(location, transitions) * 100 + "%");
+        Navigator.indent(indent);
+        System.out.println("Location has: " + checkAdjustedUniqueLoops(location, locations) + " adjusted unique loops");
     }
 
     public void printTemplateProperties(Location[] locations, Transition[] transitions, int indent) {
@@ -24,7 +26,7 @@ public class Identifier {
     }
 
     // returns the % of edges involved with a given location
-    public float checkEdgeInvolvement(Location location, Transition[] transitions) {
+    public float checkDegreeInvolvement(Location location, Transition[] transitions) {
         if (transitions.length == 0) {
             return 0;
         }
@@ -42,6 +44,45 @@ public class Identifier {
         return percent;
     }
 
+    public int checkAdjustedUniqueLoops(Location startingLocation, Location[] locations) {
+        ArrayList<String> visitedTransitions = new ArrayList<String>();
+        return getUniqueLoop(startingLocation, startingLocation, locations, cloneTransitionList(visitedTransitions));
+    }
+
+    public int getUniqueLoop(Location targetLocation, Location currentLocation, Location[] locations, ArrayList<String> visitedTransitions) {
+        int loopCounter = 0;
+        for (int i = 0; i < currentLocation.sourceTransitions.size(); i++) {
+            if (!transitionVisited(currentLocation.sourceTransitions.get(i), visitedTransitions)) {
+                // if transition leads to target, complete a loop count
+                if (currentLocation.sourceTransitions.get(i).target.equals(targetLocation.id)) {
+                    loopCounter++;
+                } else if (!currentLocation.sourceTransitions.get(i).target.equals(currentLocation.id)) {
+                    loopCounter += getUniqueLoop(targetLocation, fetchLocationFromID(currentLocation.sourceTransitions.get(i).target, locations), locations, cloneTransitionList(visitedTransitions));
+                }
+            }
+        }
+        return loopCounter;
+    }
+
+    public ArrayList<String> cloneTransitionList(ArrayList<String> transitions) {
+        ArrayList<String> clonedList = new ArrayList<String>(transitions.size());
+        for (String transition : transitions) {
+            clonedList.add(transition);
+        }
+        return clonedList;
+    }
+
+    public boolean transitionVisited(Transition transition, ArrayList<String> visitedTransitions) {
+        for (int i = 0; i < visitedTransitions.size(); i++) {
+            //System.out.println(visitedTransitions.size());
+            //System.out.println(visitedTransitions.get(i));
+            if (visitedTransitions.get(i).equals(transition.id)) {
+                return true;
+            }
+        }
+        visitedTransitions.add(transition.id);
+        return false;
+    }
 
     public boolean checkIsLinear(Location[] locations) {
         int startingLocationIndex = getStartingNode(locations);
@@ -87,7 +128,7 @@ public class Identifier {
     // returns node that has no target transitions, returns -1 if no such node exists
     public int getStartingNode(Location[] locations) {
         for (int i = 0; i < locations.length; i++) {
-            if (locations[i].sourceTransitions.size() == 0) {
+            if (locations[i].targetTransitions.size() == 0) {
                 return i;
             }
         }

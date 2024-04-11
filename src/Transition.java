@@ -2,13 +2,15 @@ public class Transition {
     String source;
     String target;
     String label;
+    String id;
 
-    public Transition(String source, String target) {
+    public Transition(String source, String target, String id) {
         this.source = source;
         this.target = target;
+        this.id = id;
     }
 
     public void printData() {
-        System.out.println("Location, Source:" + source + ", Target:" + target);
+        System.out.println("Transition, id: " + id + ", Source:" + source + ", Target:" + target);
     }
 }

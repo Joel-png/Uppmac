@@ -75,7 +75,7 @@ public class Navigator {
                 System.out.println();
                 indent(3);
                 System.out.println("[" + locationIndex + "] Location properties:");
-                identifier.printLocationProperties(nta.templates[templateIndex].locations[locationIndex], nta.templates[templateIndex].transitions, 4);
+                identifier.printLocationProperties(nta.templates[templateIndex].locations[locationIndex], nta.templates[templateIndex].locations, nta.templates[templateIndex].transitions, 4);
                 indent(2);
                 System.out.println("[" + locationIndex + "] Location: " + nta.templates[templateIndex].locations[locationIndex].name + "/>");
             }
@@ -141,7 +141,7 @@ public class Navigator {
                         identifier.printTemplateProperties(nta.templates[templateIndex].locations, nta.templates[templateIndex].transitions, 0);
                         break;
                     case LOCATION:
-                        identifier.printLocationProperties(nta.templates[templateIndex].locations[locationIndex], nta.templates[templateIndex].transitions, 0);
+                        identifier.printLocationProperties(nta.templates[templateIndex].locations[locationIndex], nta.templates[templateIndex].locations, nta.templates[templateIndex].transitions, 0);
                         break;
                 }
 

@@ -59,7 +59,7 @@ public class DefaultParser {
                 NodeList tempTransitionTargetList = (NodeList) xPath.compile("/nta/template[" + String.valueOf(i) + "]/transition[" + String.valueOf(j) + "]/target/@ref").evaluate(xmlDocument, XPathConstants.NODESET);
                 //printNodeList(tempTransitionSourceList);
                 //printNodeList(tempTransitionTargetList);
-                Transition tempTransition = new Transition(cleanID(tempTransitionSourceList.item(0).toString(), 5), cleanID(tempTransitionTargetList.item(0).toString(), 5));
+                Transition tempTransition = new Transition(cleanID(tempTransitionSourceList.item(0).toString(), 5), cleanID(tempTransitionTargetList.item(0).toString(), 5), "tid" + j);
                 tempTemplate.addTransition(tempTransition, j-1);
                 tempTemplate.updateTemplateWithTransitions(tempTransition);
             }

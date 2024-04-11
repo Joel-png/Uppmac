@@ -1,789 +1,785 @@
 <?xml version="1.0" encoding="utf-8"?>
 <nta>
-	<declaration>// Place global declarations here.
-// Place global declarations here.
+	<declaration>/*
+*  --------- BEGIN CONFIGURATION SECTION
+*/
 
-const int N = 5;
-const int BUFFERSIZE = 6;
-typedef int[0,N-1] id_t;
-broadcast chan SendOGM[N];
-//int counter[N] = {0,0,0,0};
-const int SEQNO_MAX = 16;//bounded to 8 since 65535 will have many states
-const int MAX_PKT_COUNT = 4;
-const int WINDOW = 4;
-const int MAXTTL = 3;
-const int MINTTL = 0;   
-typedef int[-1,N-1] IP; 
-typedef int[-1,SEQNO_MAX] SQN;
-typedef int[MINTTL,MAXTTL] TTL;
-bool adjMatrix[N][N] = {{0,1,1,0,0},{1,0,0,1,1},{1,0,0,1,0},{0,1,1,0,0},{0,1,0,0,0}};
-bool biMatrix[N][N] = {{0,0,0,0,0},{0,0,0,0,0},{0,0,0,0,0},{0,0,0,0,0},{0,0,0,0,0}};
+const int MaxTime = 485;
+typedef int[0,MaxTime] time_t;
 
-bool routingMatrix [N][N][N];
+// Number of tasks
+const int Tasks = 11;                 
+typedef int[0,Tasks-1] t_id;
+
+// Number of resources
+const int Procs = 5;                 
+typedef int[0,Procs-1] r_id;
+
+typedef struct { 
+  bool periodic;
+  time_t initial_offset;
+  time_t min_period;
+  time_t max_period;
+  time_t offset;
+  time_t deadline;
+  time_t bcet;
+  time_t wcet;
+  r_id resource;
+  int pri;  
+} task_t;
+
+
+//init_offset, min_period, max_period, offset, deadline, bcet, wcet, resource, priority
+//time units in minutes
+const task_t task[Tasks] = {
+
+{true,0,120,120,0,120,5,5,0,1}, //Elevator
+{true,0,120,120,0,120,5,5,1,1}, //Engine
+
+{true,0,120,120,0,120,10,10,1,1}, //Aircraft dynamics
+
+{true,0,240,240,0,240,5,5,0,1}, //H_filter 
+{true,0,240,240,0,240,5,5,1,1}, //Az_filter
+{true,0,240,240,0,240,5,5,2,1}, //Vz_filter
+{true,0,240,240,0,240,5,5,3,1}, //Q_filter
+{true,0,240,240,0,240,5,5,4,1}, //Va_filter
+
+{true,0,480,480,0,480,5,5,0,1}, //Altitude_hold
+
+{true,0,480,480,0,480,5,5,1,1}, //Vz_control
+{true,0,480,480,0,480,5,5,4,1} //Va_control
+};
+
+
 typedef struct {
-   	int [0,MAX_PKT_COUNT] pkt_count; //packet count
-	bool window[WINDOW];
+  int[0,Tasks] length;
+  t_id element[Tasks];
+} buffer_t; 
+
+buffer_t buffer[Procs];
+
+const int Policies      = 3;
+const int EDF  		= 0;
+const int FIFO 		= 1;
+const int FPS  		= 2;
+
+broadcast chan inserted, insert_task[Policies];
+typedef int[0,Policies-1] policy_t;
 
 
-} NEIGH_LIST;
+/*
+* Task graph definition of dependencies
+*
+* Meaning of Depend[i][j]:
+*    - 0/false : task i does not depend on task j
+*    - 1/true  : task i depends on task j
+*/
+const bool Depend[Tasks][Tasks] = {  // Task graph
+{0,0,0,0,0,0,0,0,0,0,0},
+{0,0,0,0,0,0,0,0,0,0,0},
+
+{1,1,0,0,0,0,0,0,0,0,0},
+
+{0,0,1,0,0,0,0,0,0,0,0},
+{0,0,1,0,0,0,0,0,0,0,0},
+{0,0,1,0,0,0,0,0,0,0,0},
+{0,0,1,0,0,0,0,0,0,0,0},
+{0,0,1,0,0,0,0,0,0,0,0},
+
+{0,0,0,1,0,0,0,0,0,0,0},
+
+{0,0,0,0,1,1,1,0,1,0,0},
+{0,0,0,0,0,1,0,1,0,0,0}
+
+};
 
 
-typedef struct {
-//	IP oid; //originator ID
-	SQN BI_sqn; // Bidirectional sequence number
-	TTL ttl;
-    SQN Current_sqn; //current sequence number
-	NEIGH_LIST list[N]; //neighbor list
-    int [0,SEQNO_MAX]myub;
-	int [0,SEQNO_MAX]mylb;
-}ORIG_LIST;
+/*
+*  --------- END CONFIGURATION SECTION
+*/
+clock time[Tasks];//, exec[Tasks];
+bool complete[Tasks];
 
+urgent broadcast chan ready[Procs];
+broadcast chan finished[Tasks];//run[Procs+1], stop[Procs], done[Procs];
 
-typedef struct {
-	IP oid; //originator ID
-	//SQN BI_sqn; // Bidirectional sequence number
-	IP sid;
-	TTL ttl;
-    SQN sqn; //current sequence number
-    bool IS_DIRECT_flag; // This flag indicates whether a node is a direct neighbor.
-	bool IS_UNIDIRECTIONAL_flag;// Thos inidcates whether the neighboring node is bidirectional or not.
-	
-} OGM;
-meta OGM ogmGlobal;
+meta struct {
+  meta t_id task;
+  meta r_id resource;
+  meta bool preempt;
+} param;
 
-
-
-
-
-OGM reset()
-{
-OGM ogm;
-ogm.oid = -1;
-ogm.sid = -1;
-ogm.ttl = 0;
-ogm.sqn = 0;
-ogm.IS_DIRECT_flag=false;
-ogm.IS_UNIDIRECTIONAL_flag=false;
-return ogm;
+void setParams(t_id t, r_id r, bool preempt) {
+  param.task = t; param.resource = r; param.preempt = preempt;
 }
 
-bool allBidirectional()
-{
-	
-	for (i : int[0,N-1]) 
-	{
-		
-		for (j : int[0,N-1]) 
-			if(adjMatrix[i][j] != biMatrix[i][j])
-				{
-					return false;
-				}
+//meta t_id ready_task;
+// modified by AG in order to have a more consistent behavior w.r.t Task IDs while executing on the resources
+t_id ready_task;
 
-	}
-	
-	return true;
+void insert_at(int[0,Tasks] pos, t_id tid, r_id rid) {
+  int i;
+  for(i = buffer[rid].length; i &gt; pos; i--) {
+    buffer[rid].element[i] = buffer[rid].element[i-1];
+  }
+  buffer[rid].element[pos] = tid;
+  buffer[rid].length++;
 
-}
-
-bool allBidirectionalcounter1()
-{
-//if (counter[0]==1&amp;&amp;	counter[1]==1&amp;&amp;	counter[2]==1&amp;&amp;	counter[3]==1){
-	for (i : int[0,N-1]) 
-	{
-		
-		for (j : int[0,N-1]) 
-			if(adjMatrix[i][j] != biMatrix[i][j])
-				{
-					return false;
-				}
-
-	}
-	
-	return true;
-
-//}else
-//return false;
 }
 
 
-bool hasloop() {
-    
-    //routing Matix is an array of adjancency matrices. We check for each oid if the matrix
-    //moutingMatrix[:][oid][:] has a loop.
-
-    //This first determines which nodes have no out going transition (ecept self loops)
-    //Then it discards, repeatedly, transitions to those nodes.
-    //If at the end of that process transitions remain, there is a loop.
-
-	for (oid : int[0,N-1]) { //For each originator check if there is a loop leading to it.		
-		
-		
-        int outdegree[N];
-        bool check[N];
-        bool anycheck = false;
-        int counter=0;
-
-        //compute the out degree
-		for(nhop : int[0,N-1]) {
-			for(sid : int[0,N-1]) {
-				if(sid!=nhop &amp;&amp; routingMatrix[sid][oid][nhop]) { //Compute out-degree. Ignore self loops.					
-					outdegree[sid]++;
-				}
-			}
-		}
-		 
-        //check if a node has no outgoing transition
-		for(nhop : int[0,N-1]) {
-			check[nhop]=(outdegree[nhop]==0);
-		}
-
-        //check if any node has an outgoing transition
-	    for(nhop : int[0,N-1]) {
-			if(check[nhop]){
-                anycheck = true;
-            }
-		}
-
-        //The main loop. Repeat removing transitions that lead to dead ends.
-        while(anycheck){
-		    anycheck = false;
-        	for(nhop : int[0,N-1]){
-        		if(check[nhop]){//It's a dead end and hasn't been checked before.
-        			check[nhop]=false;//Has been checked
-					for(sid : int[0,N-1]){
-				 		if(routingMatrix[sid][oid][nhop] &amp;&amp; sid!=nhop){
-							outdegree[sid]--;
-							if(outdegree[sid]==0){
-								check[sid]=true;//A new dead end that needs to be checked.
-							}
-						}			
-				  	}	
-				}
-			}
-           //Check if any node has an outgoing transition
-            for(nhop : int[0,N-1]) {
-			    if(check[nhop]){
-                    anycheck = true;
-                }
-		    }	
-		}
-        
-        //Check if there are transitions eft. If there are, there is a loop.
-        for(sid : int[0,N-1]){
-        	if(outdegree[sid]!=0){
-        		return true;       		
-			}        	
-		}
-        
-	}        
-
-	return false;
-
-}
-
- bool anyRoutingMatrix(){
-    for(sid:int[0,N-1]){
-       for(oid:int[0,N-1]){
-           for(nhop:int[0,N-1]){
-               if(routingMatrix[sid][oid][nhop]){
-                    return true;
-               }
-           }
-       }
-
-    }
-
-   return false;
-}
+// Girona irradiation curve parameters in june
+const double HEIGHT = 305000.0;
+const double SIGMA = 125.0;
+const double MU = 200.0; 
+const int OFFSET = -440; 
 
 
-bool twoNhopsRoutingMatrix(){
-    for(sid:int[0,N-1]){
-       for(oid:int[0,N-1]){
-           int counter = 0;
-           for(nhop:int[0,N-1]){
-               if(routingMatrix[sid][oid][nhop]){
-                    counter++;
-               }
-           }
-           if(counter&gt;=2){
-              return true;
-           }
-       }
+// storage configs for GiJ (in Watt.minutes)
+const int max_batt[Procs] = {280,1010,60,60,105};
+const int min_batt[Procs] = {0,0,0,0,0};
 
-    }
 
-   return false;
-}
+// nb minutes within a day
+const int DAY = 1440;
+
+
+// threshold constant for resuming battery recharging
+const double BATT_THRESHOLD = 0.5;
+
+
+// Watt-peak value of solar panels 
+const double panel_area=0.4;
+const double conv_eff=0.23;
+const double loss_coeff=0.95;
+
+
+// used in resource to compute dissipated power
+int pow_coeff[Procs] = {1,1,1,1,1};
+int load[Tasks] = {6,6,13,6,6,6,6,6,10,10,10};
+int[0,1] energyAvailable[Procs] = {1,1,1,1,1};
+
+
+// other variables
+clock global_time, battery_energy[Procs], depleted[Procs];
+
+double solar_panel_output;
+int dissipated_power[Procs];
+
+broadcast chan suspend[Procs], resume[Procs], resched[Procs];
+urgent broadcast chan empty_batt[Procs], replenished_batt[Procs];
 </declaration>
 	<template>
-		<name x="5" y="5">Node</name>
-		<parameter>const id_t id</parameter>
-		<declaration>// Place local declarations here.
+		<name x="5" y="5">Task</name>
+		<parameter>const t_id tid</parameter>
+		<declaration>clock x;
 
-int[0,11]counter = 0; //Feb: Remove
-bool BufferFlag = false;
-SQN SQ_NUMBER = 0;
-ORIG_LIST table[N]; 
-OGM ogmLocal[BUFFERSIZE];
-
-void initial()
-{
-	for (i : int[0,N-1]) 
-	{
-		table[i].BI_sqn  = -1;
-		table[i].mylb = SEQNO_MAX-WINDOW + 1;	
-        table[i].myub = 0;
-
-	}
-	for (i : int[0,BUFFERSIZE-1])
-	{
-		ogmLocal[i].oid = -1;
-		ogmLocal[i].sid = -1;
-	} 
-
+bool dependencies_met() {
+  return forall (j : t_id)  Depend[tid][j] imply complete[j];
 }
 
-int pkt_count(id_t oid,id_t sid){
- int count =0;
-    for (i : int [0,WINDOW-1]) 
-	{
-      count += (table[oid].list[sid].window[i]?1:0);
-    }
-
-    return count;
+void completed() {
+  complete[tid] = true;
 }
 
-bool inwindow(int newsqn, int oid, int sid){
-   //Check if a sqnnumber is in the window, i.e. between the lower and upper bound.
-   //The complication arises since the window will loop. 
-   if(table[oid].myub&gt;=table[oid].mylb){
-        if(newsqn&lt;=table[oid].myub &amp;&amp; newsqn &gt;= table[oid].mylb){
-            return true;
-        }
-        else{
-            return false;
-        }
-   }
-   else{
-       //This covers the case that window consists of the last few seqnence numbers
-       //below the max sequence number and the first few larger or equal to zero.
-        if(newsqn&gt;=table[oid].mylb || newsqn &lt;=table[oid].myub){ 
-            return true;
-        }
-        else{
-            return false;
-        }
-    } 
+void new_period() {
+  complete[tid] = false;
 }
 
-int sqn2index(int newsqn, int oid, int sid){
-  //Only use if newsqn inwindow
-  if(table[oid].mylb&lt;=table[oid].myub){
-       return newsqn-table[oid].mylb;
-  }else
-  if(newsqn&gt;=table[oid].mylb){
-      return newsqn-table[oid].mylb;
-  }else if (newsqn&lt;=table[oid].myub){
-     return WINDOW-1 - (table[oid].myub-newsqn);
-  }
-  return -1;
-}
+bool periodic() { return task[tid].periodic; }
+time_t initialOffset() { return task[tid].initial_offset; }
+time_t minPeriod() { return task[tid].min_period; }
+time_t maxPeriod() { return task[tid].max_period; }
+time_t offset() { return task[tid].offset; }
+time_t deadline() { return task[tid].deadline; }
+time_t BCET() { return task[tid].bcet; }
+time_t WCET() { return task[tid].wcet; }
+time_t resource() { return task[tid].resource; }
+time_t priotiry() { return task[tid].pri; }
 
-int newlb(int newub){
-//Given an upperbound, compute the corresponding lower bound
-    if(newub&gt;=WINDOW-1){
-        return newub-WINDOW+1;
-    }else{
-        return SEQNO_MAX -(WINDOW-1-newub);
-    }
-}
-
-int sizeshift(int newsqn, int oid, int sid){
-//return the number of places to shift the window
-//assumes not inwindow
-
- if(newsqn&gt;table[oid].myub){
-       return newsqn-table[oid].myub;
- } else if(newsqn&lt; table[oid].mylb){//Means, the new sequence number wrapped around
-       return SEQNO_MAX+newsqn-table[oid].myub;
- }
- return -1;
-}
-
-
-void shiftwindow(int newsqn, int oid, int sid){
-        int i=0,j=0;
-     
-        int n = sizeshift(newsqn, oid, sid);
-
-        if(n&gt;0){
-            for(j=0;j&lt;N;j++)
-            {
-                if(n&lt;WINDOW )
-                {            
-                    for(i=0;i&lt;WINDOW-n;i++){
-                      table[oid].list[j].window[i]=table[oid].list[j].window[i+n];               
-                    }        
-                    for(i=WINDOW-n;i&lt;WINDOW;i++){
-                        table[oid].list[j].window[i]=false;                 
-                    }
-                }else{           
-                    for(i=0;i&lt;WINDOW;i++){
-                        table[oid].list[j].window[i]=false; 
-                    }
-                }
-                table[ogmLocal[0].oid].list[j].pkt_count = pkt_count(ogmLocal[0].oid,j);//Feb:Possibly replaceable by use of function
-            }
-            //Update upper and lower bound
-            table[oid].myub = newsqn;
-            table[oid].mylb = newlb(table[oid].myub);  
-        }        
-}
-
-
-void sendOGM()
-{
-    ogmGlobal.oid = id;
-    ogmGlobal.sid = id;
-    SQ_NUMBER = (SQ_NUMBER + 1)% SEQNO_MAX;
-    ogmGlobal.sqn = SQ_NUMBER; 
-    ogmGlobal.ttl = MAXTTL; 
-    ogmGlobal.IS_DIRECT_flag = false; 
-    ogmGlobal.IS_UNIDIRECTIONAL_flag = false;
-}
-
-bool checkBuffer()
-{
-    int flag = false;
-    int [0,BUFFERSIZE]i;
-    for (i = 0; i &lt; BUFFERSIZE; i++) 
-    {
-        if(ogmLocal[i]==reset())
-	    {
-		    flag = true;
-	    }
-    }
-    return flag;
-}
-
-bool isemptyBuffer()
-{
-    int flag = true;
-    int [0,BUFFERSIZE]i;
-    for (i = 0; i &lt; BUFFERSIZE; i++) 
-    {
-  	    if(ogmLocal[i]!=reset())
-	    {
-		    flag = false;
-	    }
-    }
-    return flag;
-
-}
-int getEmptyBufferIndex()
-{
-    int [0,BUFFERSIZE] index = 0;
-    int [0,BUFFERSIZE]i;
-    for (i = 0; i &lt; BUFFERSIZE; i++) 
-    {
-  	    if(ogmLocal[i] == reset())
-	    {
-		    return i;
-	    }
-    }
-    return index;
-}
-
-
-bool checkOGM(int ind)
-{
-bool flag = false;
-
- if(ogmLocal[ind].oid != -1 &amp;&amp; ogmLocal[ind].sid != id  )
-{
-	flag = true;
-}
-
-
-return flag;
-
-}
-
-void updateBuffer()
-{
-
-OGM temp[BUFFERSIZE];
-
-
-
-int [0, BUFFERSIZE-1] index = 0;
-int [0,BUFFERSIZE]i;
-for (i : int[0,BUFFERSIZE-1])
-	{
-		temp[i].oid = -1;
-		temp[i].sid = -1;
-
-	} 
-for (i = 0; i &lt; BUFFERSIZE; i++) 
-{
-  	if(ogmLocal[i]!= reset())
-	{
-		temp[index] = ogmLocal[i];
-		index++;
-	}
-
-}
-
-
-for (i = 0; i &lt; BUFFERSIZE; i++) 
-{
-  	
-	ogmLocal[i] = temp[i] ;
-
-	
-
-}
-
-}
-void checkBufferAndUpdate()
-{
-    if(ogmLocal[0].ttl == 1)
-{
-	ogmLocal[0] =  reset();
-    updateBuffer();
-}
-
-
-}
-void forwardOGM()
-{
-    ogmLocal[0].sid=id;
-    //checkBufferAndUpdate(),
-    if(ogmLocal[0].ttl &gt; 1)
-    {
-	    ogmLocal[0].ttl = (ogmLocal[0].ttl&gt;0)?ogmLocal[0].ttl - 1:0;
-    ogmGlobal = ogmLocal[0];
-    }
-    
-    ogmLocal[0] = reset();
-    updateBuffer();
-
-
-}
-
-
-void updateOGM()
-{
-    if(!inwindow(ogmLocal[0].sqn, ogmLocal[0].oid, ogmLocal[0].sid)&amp;&amp;table[ogmLocal[0].sid].BI_sqn &gt; -1 &amp;&amp; ogmLocal[0].sqn &gt; table[ogmLocal[0].oid].Current_sqn ) 
-        {
-            shiftwindow(ogmLocal[0].sqn, ogmLocal[0].oid, ogmLocal[0].sid );
-            table[ogmLocal[0].oid].list[ogmLocal[0].sid].window[sqn2index(ogmLocal[0].sqn, ogmLocal[0].oid, ogmLocal[0].sid)]=true;
-            table[ogmLocal[0].oid].list[ogmLocal[0].sid].pkt_count = pkt_count(ogmLocal[0].oid,ogmLocal[0].sid);
-            table[ogmLocal[0].oid].ttl = ogmLocal[0].ttl;
-            table[ogmLocal[0].oid].Current_sqn = ogmLocal[0].sqn;
-        }
-    else if (inwindow(ogmLocal[0].sqn, ogmLocal[0].oid, ogmLocal[0].sid)&amp;&amp;table[ogmLocal[0].sid].BI_sqn &gt; -1 &amp;&amp; ogmLocal[0].sqn &gt; table[ogmLocal[0].oid].Current_sqn)
-        {
-            table[ogmLocal[0].oid].list[ogmLocal[0].sid].window[sqn2index(ogmLocal[0].sqn, ogmLocal[0].oid, ogmLocal[0].sid)]=true;
-            table[ogmLocal[0].oid].list[ogmLocal[0].sid].pkt_count = pkt_count(ogmLocal[0].oid,ogmLocal[0].sid);
-
-        }
-    ogmLocal[0] = reset();
-    updateBuffer();
-}
-
-void checkunidirectAndupdate()
-{
-
-
-if(((ogmGlobal.IS_UNIDIRECTIONAL_flag == true &amp;&amp; ogmGlobal.oid != id )))// || (ogmGlobal.IS_DIRECT_flag == false &amp;&amp; ogmGlobal.oid == id)))
-  {
- }else if ((ogmGlobal.IS_DIRECT_flag == false &amp;&amp; ogmGlobal.oid == id))
-{
-
-}else if(ogmGlobal.sqn &lt;= table[ogmGlobal.oid].Current_sqn)
-{
-}
-else
-ogmLocal[getEmptyBufferIndex()] = ogmGlobal;
-
-}
-
-void updateRoutingMatrix()
-{
-    int maxpktcount = 0;
-    for (i : int [0,N-1]) 
-	{
-       if(table[ogmLocal[0].oid].list[i].pkt_count &gt;= maxpktcount)
-            maxpktcount = table[ogmLocal[0].oid].list[i].pkt_count;
-    }
-    if (maxpktcount != 0)
-    for (i: int [0,N-1])
-    {
-        
-        if(table[ogmLocal[0].oid].list[i].pkt_count == maxpktcount)
-        {
-            routingMatrix[id][ogmLocal[0].oid][i] = 1;
-        }
-        else
-        {
-            routingMatrix[id][ogmLocal[0].oid][i] = 0;
-        }
-    }
-    }
-
-
-
-</declaration>
-		<location id="id0" x="176" y="120">
-			<name x="161" y="170">Wait</name>
-			<urgent/>
+int[0,1] isRunning() {
+  return (buffer[resource()].element[0] == tid? 1 : 0);
+}</declaration>
+		<location id="id0" x="-25" y="-442">
+			<name x="-178" y="-459">WaitingDependency</name>
+			<label kind="invariant" x="-136" y="-442">x' == 0</label>
 		</location>
-		<location id="id1" x="-297" y="68">
+		<location id="id1" x="255" y="-238" color="#0000ff">
+			<name x="238" y="-221">Frozen</name>
+			<label kind="invariant" x="221" y="-187">x' == 0 &amp;&amp;
+time[tid]&lt;=
+deadline()</label>
+			<label kind="exponentialrate" x="246" y="-204">1e6</label>
+		</location>
+		<location id="id2" x="-204" y="-51">
+			<name x="-220" y="-83">Done</name>
+			<label kind="invariant" x="-228" y="-35">x' == 0</label>
+		</location>
+		<location id="id3" x="-25" y="-51">
+			<name x="0" y="-59">Completed</name>
 			<committed/>
 		</location>
-		<init ref="id1"/>
+		<location id="id4" x="-195" y="-561">
+			<committed/>
+		</location>
+		<location id="id5" x="-195" y="-646">
+			<name x="-170" y="-661">Initial</name>
+			<label kind="invariant" x="-119" y="-664">x' == 0 &amp;&amp;
+time[tid] &lt;= initialOffset()</label>
+		</location>
+		<location id="id6" x="-204" y="-238" color="#ff0000">
+			<name x="-221" y="-221">Error</name>
+		</location>
+		<location id="id7" x="-25" y="43">
+			<name x="-8" y="17">PeriodDone</name>
+			<label kind="invariant" x="85" y="9">x' == 0 &amp;&amp;
+time[tid] &lt;= maxPeriod()</label>
+			<label kind="exponentialrate" x="0" y="43">1e6</label>
+		</location>
+		<location id="id8" x="-25" y="-239">
+			<name x="-9" y="-247">Ready</name>
+			<label kind="invariant" x="42" y="-264">x' == isRunning() &amp;&amp;
+x &lt;= WCET() &amp;&amp;
+time[tid] &lt;= deadline()</label>
+			<label kind="exponentialrate" x="-59" y="-222">1e6</label>
+		</location>
+		<location id="id9" x="-25" y="-561">
+			<name x="0" y="-569">WaitingOffset</name>
+			<label kind="invariant" x="102" y="-578">x' == 0 &amp;&amp;
+time[tid] &lt;= offset()</label>
+		</location>
+		<init ref="id5"/>
 		<transition>
 			<source ref="id0"/>
-			<target ref="id0"/>
-			<label kind="guard" x="-399" y="221">checkOGM(0) &amp;&amp; ogmLocal[0].ttl == 1</label>
-			<label kind="assignment" x="-280" y="238">updateOGM()</label>
-			<nail x="-161" y="204"/>
-			<nail x="-93" y="297"/>
-		</transition>
-		<transition>
-			<source ref="id0"/>
-			<target ref="id0"/>
-			<label kind="guard" x="510" y="68">counter == 1 || SQ_NUMBER == SEQNO_MAX</label>
-			<label kind="comments" x="518" y="85">//Feb: Remove</label>
-			<nail x="510" y="51"/>
-			<nail x="510" y="102"/>
-			<nail x="510" y="102"/>
-		</transition>
-		<transition>
-			<source ref="id0"/>
-			<target ref="id0"/>
-			<label kind="guard" x="-246" y="578">checkOGM(0)&amp;&amp;
-(inwindow(ogmLocal[0].sqn, ogmLocal[0].oid, ogmLocal[0].sid)&amp;&amp;table[ogmLocal[0].sid].BI_sqn &gt; -1 ) &amp;&amp;
-ogmLocal[0].oid != ogmLocal[0].sid &amp;&amp; ogmLocal[0].oid != id &amp;&amp; 
-ogmLocal[0].IS_UNIDIRECTIONAL_flag==false &amp;&amp; ogmLocal[0].ttl &gt; 1</label>
-			<label kind="synchronisation" x="136" y="425">SendOGM[id]!</label>
-			<label kind="assignment" x="-246" y="663">table[ogmLocal[0].oid].list[ogmLocal[0].sid].window[sqn2index(ogmLocal[0].sqn, ogmLocal[0].oid, ogmLocal[0].sid)]=true,
-table[ogmLocal[0].oid].list[ogmLocal[0].sid].pkt_count = pkt_count(ogmLocal[0].oid,ogmLocal[0].sid),
-ogmLocal[0].IS_DIRECT_flag = false,
-updateRoutingMatrix(),
-forwardOGM()</label>
-			<label kind="comments" x="59" y="714">Section 5.2 No. 6 &amp; 7
-Processing: Section 5.4 and 5.5</label>
-			<nail x="93" y="416"/>
-			<nail x="297" y="416"/>
-		</transition>
-		<transition>
-			<source ref="id0"/>
-			<target ref="id0"/>
-			<label kind="guard" x="416" y="331">checkOGM(0)&amp;&amp;(!inwindow(ogmLocal[0].sqn, ogmLocal[0].oid, ogmLocal[0].sid)&amp;&amp;table[ogmLocal[0].sid].BI_sqn &gt; -1 &amp;&amp;
-ogmLocal[0].oid != ogmLocal[0].sid &amp;&amp;ogmLocal[0].oid != id) &amp;&amp; 
-ogmLocal[0].IS_UNIDIRECTIONAL_flag==false &amp;&amp; ogmLocal[0].ttl &gt; 1</label>
-			<label kind="synchronisation" x="416" y="382">SendOGM[id]!</label>
-			<label kind="assignment" x="416" y="399">shiftwindow(ogmLocal[0].sqn, ogmLocal[0].oid, ogmLocal[0].sid ),
-table[ogmLocal[0].oid].list[ogmLocal[0].sid].window[sqn2index(ogmLocal[0].sqn, ogmLocal[0].oid, ogmLocal[0].sid)]=true,
-table[ogmLocal[0].oid].list[ogmLocal[0].sid].pkt_count = pkt_count(ogmLocal[0].oid,ogmLocal[0].sid),
-table[ogmLocal[0].oid].ttl = ogmLocal[0].ttl,
-table[ogmLocal[0].oid].Current_sqn = ogmLocal[0].sqn,
-ogmLocal[0].IS_DIRECT_flag = false,
-updateRoutingMatrix(),
-forwardOGM()</label>
-			<label kind="comments" x="714" y="518">Section 5.2 No. 6 &amp; 7
-Processing: Section 5.4 and 5.5</label>
-			<nail x="331" y="399"/>
-			<nail x="467" y="297"/>
-		</transition>
-		<transition>
-			<source ref="id0"/>
-			<target ref="id0"/>
-			<label kind="select" x="-204" y="-161">sid:int[0,N-1]</label>
-			<label kind="guard" x="-255" y="-204">adjMatrix[id][sid] &amp;&amp; !checkBuffer()</label>
-			<label kind="synchronisation" x="-212" y="-178">SendOGM[sid]?</label>
-			<label kind="assignment" x="-221" y="-144">BufferFlag = true</label>
-			<label kind="comments" x="-289" y="-229">Receive OGM When Buffer is full</label>
-			<nail x="-144" y="-102"/>
-			<nail x="-59" y="-178"/>
-		</transition>
-		<transition>
-			<source ref="id0"/>
-			<target ref="id0"/>
-			<label kind="guard" x="510" y="229">checkOGM(0)&amp;&amp;(((table[ogmLocal[0].sid].BI_sqn == -1 &amp;&amp; ogmLocal[0].oid != ogmLocal[0].sid &amp;&amp; ogmLocal[0].oid != id) &amp;&amp; 
-ogmLocal[0].IS_UNIDIRECTIONAL_flag==false))</label>
-			<label kind="assignment" x="553" y="263">ogmLocal[0] = reset(),
-updateBuffer()</label>
-			<nail x="510" y="204"/>
-			<nail x="484" y="272"/>
-		</transition>
-		<transition>
-			<source ref="id0"/>
-			<target ref="id0"/>
-			<label kind="guard" x="-476" y="119">ogmLocal[0].ttl == 0 &amp;&amp; ogmLocal[0] != reset()&amp;&amp; ogmLocal[0].sid==id</label>
-			<label kind="assignment" x="-433" y="136">ogmLocal[0] = reset(),
-updateBuffer()</label>
-			<nail x="-178" y="170"/>
-			<nail x="-187" y="93"/>
-		</transition>
-		<transition color="#0000ff">
-			<source ref="id0"/>
-			<target ref="id0"/>
-			<label kind="guard" x="518" y="102">checkOGM(0)&amp;&amp;((  ogmLocal[0].IS_DIRECT_flag == true )
-             &amp;&amp; ogmLocal[0].oid == id)</label>
-			<label kind="assignment" x="595" y="136">table[ogmLocal[0].sid].BI_sqn = ogmLocal[0].sqn,
-biMatrix[id][ogmLocal[0].sid] = 1,
-ogmLocal[0] = reset(),
-updateBuffer()</label>
-			<label kind="comments" x="909" y="161">Section 5.2 No 4
-Processing: Section 5.3</label>
-			<nail x="518" y="127"/>
-			<nail x="518" y="187"/>
-		</transition>
-		<transition>
-			<source ref="id0"/>
-			<target ref="id0"/>
-			<label kind="guard" x="153" y="-340">((ogmLocal[0].IS_UNIDIRECTIONAL_flag == true 
-         &amp;&amp; ogmLocal[0].oid != id )&amp;&amp;checkOGM(0))</label>
-			<label kind="assignment" x="195" y="-272">ogmLocal[0] = reset(),
-updateBuffer()</label>
-			<label kind="comments" x="161" y="-382">Section 5.2 No 5</label>
-			<nail x="306" y="-212"/>
-			<nail x="187" y="-229"/>
-		</transition>
-		<transition>
-			<source ref="id0"/>
-			<target ref="id0"/>
-			<label kind="guard" x="518" y="-127">checkOGM(0)&amp;&amp;(ogmLocal[0].oid == ogmLocal[0].sid &amp;&amp; ogmLocal[0].oid != id 
-&amp;&amp; table[ogmLocal[0].oid].BI_sqn == -1)</label>
-			<label kind="synchronisation" x="518" y="-85">SendOGM[id]!</label>
-			<label kind="assignment" x="518" y="-68">ogmLocal[0].sid=id,
-ogmLocal[0].IS_DIRECT_flag=true,
-ogmLocal[0].IS_UNIDIRECTIONAL_flag=true,
-ogmLocal[0].ttl = (ogmLocal[0].ttl&gt;0)?ogmLocal[0].ttl - 1:0,
-ogmGlobal = ogmLocal[0],
-ogmLocal[0] = reset(),
-updateBuffer()</label>
-			<label kind="comments" x="960" y="-68">Section 5.2 No 7
-Processing: Section 5.5</label>
-			<nail x="484" y="-51"/>
-			<nail x="510" y="25"/>
-		</transition>
-		<transition>
-			<source ref="id0"/>
-			<target ref="id0"/>
-			<label kind="guard" x="-671" y="391">checkOGM(0)&amp;&amp;(!inwindow(ogmLocal[0].sqn, ogmLocal[0].oid, ogmLocal[0].sid)&amp;&amp;table[ogmLocal[0].sid].BI_sqn &gt; -1 &amp;&amp;
-ogmLocal[0].oid == ogmLocal[0].sid) &amp;&amp; ogmLocal[0].IS_UNIDIRECTIONAL_flag == false &amp;&amp; ogmLocal[0].ttl &gt; 1</label>
-			<label kind="synchronisation" x="-663" y="425">SendOGM[id]!</label>
-			<label kind="assignment" x="-688" y="450">shiftwindow(ogmLocal[0].sqn, ogmLocal[0].oid, ogmLocal[0].sid ),
-table[ogmLocal[0].oid].list[ogmLocal[0].sid].window[sqn2index(ogmLocal[0].sqn, ogmLocal[0].oid, ogmLocal[0].sid)]=true,
-table[ogmLocal[0].oid].list[ogmLocal[0].sid].pkt_count = pkt_count(ogmLocal[0].oid,ogmLocal[0].sid),
-table[ogmLocal[0].oid].ttl = ogmLocal[0].ttl,
-table[ogmLocal[0].oid].Current_sqn = ogmLocal[0].sqn,
-ogmLocal[0].IS_DIRECT_flag = true,
-updateRoutingMatrix(),
-forwardOGM()</label>
-			<label kind="comments" x="-561" y="348">Section 5.2 No. 6 &amp; 7
-Processing: Section 5.4 and 5.5</label>
-			<nail x="17" y="408"/>
-			<nail x="-51" y="357"/>
-		</transition>
-		<transition>
-			<source ref="id0"/>
-			<target ref="id0"/>
-			<label kind="guard" x="501" y="-382">checkOGM(0)&amp;&amp;
-(inwindow(ogmLocal[0].sqn, ogmLocal[0].oid, ogmLocal[0].sid)&amp;&amp;table[ogmLocal[0].sid].BI_sqn &gt; -1 ) &amp;&amp;
-ogmLocal[0].oid == ogmLocal[0].sid &amp;&amp; ogmLocal[0].IS_UNIDIRECTIONAL_flag == false &amp;&amp; ogmLocal[0].ttl &gt; 1</label>
-			<label kind="synchronisation" x="510" y="-323">SendOGM[id]!</label>
-			<label kind="assignment" x="552" y="-306">table[ogmLocal[0].oid].list[ogmLocal[0].sid].window[sqn2index(ogmLocal[0].sqn, ogmLocal[0].oid, ogmLocal[0].sid)]=true,
-table[ogmLocal[0].oid].list[ogmLocal[0].sid].pkt_count = pkt_count(ogmLocal[0].oid,ogmLocal[0].sid),
-ogmLocal[0].IS_DIRECT_flag = true,
-updateRoutingMatrix(),
-forwardOGM()</label>
-			<label kind="comments" x="960" y="-255">Section 5.2 No. 6 &amp; 7
-Processing: Section 5.4 and 5.5</label>
-			<nail x="331" y="-195"/>
-			<nail x="476" y="-68"/>
-		</transition>
-		<transition>
-			<source ref="id0"/>
-			<target ref="id0"/>
-			<label kind="select" x="-8" y="-238">sid:int[0,N-1]</label>
-			<label kind="guard" x="-59" y="-289">adjMatrix[id][sid] &amp;&amp; checkBuffer()</label>
-			<label kind="synchronisation" x="-25" y="-272">SendOGM[sid]?</label>
-			<label kind="assignment" x="-25" y="-255">checkunidirectAndupdate()</label>
-			<label kind="comments" x="-34" y="-323">Receive OGM</label>
-			<nail x="-8" y="-195"/>
-			<nail x="153" y="-229"/>
-		</transition>
-		<transition>
-			<source ref="id0"/>
-			<target ref="id0"/>
-			<label kind="guard" x="-561" y="-136">SQ_NUMBER &lt; SEQNO_MAX</label>
-			<label kind="synchronisation" x="-552" y="-119">SendOGM[id]!</label>
-			<label kind="assignment" x="-177" y="72">sendOGM()</label>
-			<label kind="comments" x="-552" y="-161">Broadcast OGM</label>
-			<nail x="-195" y="25"/>
-			<nail x="-161" y="-60"/>
+			<target ref="id1"/>
+			<label kind="guard" x="8" y="-476">dependencies_met() &amp;&amp;
+energyAvailable[resource()]==0</label>
+			<label kind="synchronisation" x="34" y="-442">ready[resource()]!</label>
+			<label kind="assignment" x="34" y="-425">ready_task = tid</label>
+			<nail x="255" y="-441"/>
 		</transition>
 		<transition>
 			<source ref="id1"/>
+			<target ref="id6"/>
+			<label kind="guard" x="34" y="-357">time[tid] &gt;= deadline()</label>
+			<label kind="synchronisation" x="34" y="-340">resched[resource()]!</label>
+			<nail x="222" y="-322"/>
+			<nail x="-178" y="-323"/>
+		</transition>
+		<transition>
+			<source ref="id1"/>
+			<target ref="id8"/>
+			<label kind="synchronisation" x="25" y="-196">resume[resource()]?</label>
+			<nail x="212" y="-196"/>
+			<nail x="17" y="-196"/>
+		</transition>
+		<transition>
+			<source ref="id8"/>
+			<target ref="id1"/>
+			<label kind="synchronisation" x="25" y="-298">suspend[resource()]?</label>
+			<nail x="17" y="-281"/>
+			<nail x="212" y="-280"/>
+		</transition>
+		<transition>
+			<source ref="id9"/>
 			<target ref="id0"/>
-			<label kind="assignment" x="-153" y="59">initial()</label>
+			<label kind="guard" x="-17" y="-527">time[tid] == offset()</label>
+		</transition>
+		<transition>
+			<source ref="id3"/>
+			<target ref="id2"/>
+			<label kind="guard" x="-144" y="-68">!periodic()</label>
+		</transition>
+		<transition>
+			<source ref="id3"/>
+			<target ref="id7"/>
+			<label kind="guard" x="-17" y="-25">periodic()</label>
+		</transition>
+		<transition>
+			<source ref="id5"/>
+			<target ref="id4"/>
+			<label kind="guard" x="-195" y="-612">time[tid] == initialOffset()</label>
+		</transition>
+		<transition>
+			<source ref="id4"/>
+			<target ref="id9"/>
+			<label kind="assignment" x="-178" y="-552">time[tid] = 0, 
+x = 0,
+new_period()</label>
+		</transition>
+		<transition>
+			<source ref="id7"/>
+			<target ref="id4"/>
+			<label kind="guard" x="-221" y="25">time[tid] &gt;= minPeriod()</label>
+			<nail x="-238" y="42"/>
+			<nail x="-234" y="-562"/>
+		</transition>
+		<transition>
+			<source ref="id8"/>
+			<target ref="id6"/>
+			<label kind="guard" x="-187" y="-281">time[tid]&gt;=deadline()</label>
+			<label kind="synchronisation" x="-187" y="-264">resched[resource()]!</label>
+		</transition>
+		<transition>
+			<source ref="id8"/>
+			<target ref="id3"/>
+			<label kind="guard" x="-17" y="-161">x &gt;= BCET() &amp;&amp;
+time[tid] &lt;= maxPeriod()</label>
+			<label kind="synchronisation" x="-17" y="-127">finished[tid]!</label>
+			<label kind="assignment" x="-17" y="-110">completed()</label>
+		</transition>
+		<transition>
+			<source ref="id0"/>
+			<target ref="id8"/>
+			<label kind="guard" x="-170" y="-408">dependencies_met()</label>
+			<label kind="synchronisation" x="-170" y="-391">ready[resource()]!</label>
+			<label kind="assignment" x="-170" y="-374">ready_task = tid</label>
 		</transition>
 	</template>
-	<system>system Node;</system>
+	<template>
+		<name>Policy_FIFO</name>
+		<location id="id10" x="-176" y="-128">
+			<committed/>
+		</location>
+		<location id="id11" x="-176" y="-248">
+		</location>
+		<init ref="id11"/>
+		<transition>
+			<source ref="id10"/>
+			<target ref="id11"/>
+			<label kind="synchronisation" x="-256" y="-128">inserted!</label>
+			<nail x="-224" y="-128"/>
+			<nail x="-224" y="-248"/>
+		</transition>
+		<transition>
+			<source ref="id11"/>
+			<target ref="id10"/>
+			<label kind="synchronisation" x="-170" y="-221">insert_task[FIFO]?</label>
+			<label kind="assignment" x="-168" y="-200">insert_at(
+buffer[param.resource].length,
+param.task,
+param.resource)</label>
+		</transition>
+	</template>
+	<template>
+		<name>Policy_FPS</name>
+		<declaration>
+void insert_task_in_buffer() {
+  t_id t = param.task;
+  r_id r = param.resource;
+  int place = (param.preempt ? 0 : 1);
+  int i;
+  // Find out where to put the task
+  while ( place &lt; buffer[r].length &amp;&amp; task[buffer[r].element[place]].pri &gt;= task[t].pri ) {
+    place++;
+  }
+  insert_at(place,t,r);
+}</declaration>
+		<location id="id12" x="-176" y="-144">
+			<committed/>
+		</location>
+		<location id="id13" x="-176" y="-248">
+		</location>
+		<init ref="id13"/>
+		<transition>
+			<source ref="id12"/>
+			<target ref="id13"/>
+			<label kind="synchronisation" x="-256" y="-144">inserted!</label>
+			<nail x="-216" y="-144"/>
+			<nail x="-216" y="-248"/>
+		</transition>
+		<transition>
+			<source ref="id13"/>
+			<target ref="id12"/>
+			<label kind="synchronisation" x="-170" y="-212">insert_task[FPS]?</label>
+			<label kind="assignment" x="-168" y="-192">insert_task_in_buffer()</label>
+		</transition>
+	</template>
+	<template>
+		<name>Policy_EDF</name>
+		<declaration>int[0,Tasks] place;
+t_id tid;
+r_id rid;
+bool preempt;
+
+void readParameters() {
+  tid = param.task; rid = param.resource; preempt = param.preempt;
+}
+
+void resetVars() {
+  place = tid = rid = 0;
+}</declaration>
+		<location id="id14" x="-176" y="-128">
+			<committed/>
+		</location>
+		<location id="id15" x="-176" y="-264">
+			<committed/>
+		</location>
+		<location id="id16" x="-176" y="-384">
+		</location>
+		<init ref="id16"/>
+		<transition>
+			<source ref="id14"/>
+			<target ref="id16"/>
+			<label kind="synchronisation" x="-288" y="-176">inserted!</label>
+			<label kind="assignment" x="-304" y="-232">resetVars()</label>
+			<nail x="-224" y="-128"/>
+			<nail x="-224" y="-384"/>
+		</transition>
+		<transition>
+			<source ref="id15"/>
+			<target ref="id15"/>
+			<label kind="guard" x="-128" y="-304">place &lt; buffer[rid].length &amp;&amp;
+time[tid]-task[tid].deadline &lt;=
+time[buffer[rid].element[place]] - task[buffer[rid].element[place]].deadline</label>
+			<label kind="assignment" x="-128" y="-256">place++</label>
+			<nail x="-136" y="-280"/>
+			<nail x="-136" y="-248"/>
+		</transition>
+		<transition>
+			<source ref="id15"/>
+			<target ref="id14"/>
+			<label kind="guard" x="-168" y="-232">place == buffer[rid].length ||
+time[tid]-task[tid].deadline &gt;
+time[buffer[rid].element[place]] - task[buffer[rid].element[place]].deadline</label>
+			<label kind="assignment" x="-168" y="-176">insert_at(place,tid,rid)</label>
+		</transition>
+		<transition>
+			<source ref="id16"/>
+			<target ref="id15"/>
+			<label kind="synchronisation" x="-168" y="-368">insert_task[EDF]?</label>
+			<label kind="assignment" x="-168" y="-344">readParameters(),
+place = (preempt ? 0 : 1)</label>
+		</transition>
+	</template>
+	<template>
+		<name>Resource</name>
+		<parameter>const r_id rid, bool preemptive, policy_t policy</parameter>
+		<declaration>
+void removeTask() {
+  int i = 0;
+  buffer[rid].length--;
+  do {
+    buffer[rid].element[i] = buffer[rid].element[i+1];
+    i++;
+  } while (i &lt; buffer[rid].length);
+  buffer[rid].element[buffer[rid].length] = 0;
+}
+
+t_id front() { return buffer[rid].element[0]; }
+
+bool empty() {
+  return buffer[rid].length == 0;
+}
+</declaration>
+		<location id="id17" x="-620" y="-492">
+			<name x="-630" y="-526">st2</name>
+		</location>
+		<location id="id18" x="-425" y="-493">
+			<name x="-416" y="-484">st1</name>
+			<committed/>
+		</location>
+		<location id="id19" x="-858" y="-620">
+			<name x="-868" y="-654">st3</name>
+			<committed/>
+		</location>
+		<location id="id20" x="-850" y="-280">
+			<name x="-850" y="-255">InUse</name>
+		</location>
+		<location id="id21" x="-612" y="-620">
+			<name x="-628" y="-652">Idle</name>
+		</location>
+		<init ref="id21"/>
+		<transition>
+			<source ref="id20"/>
+			<target ref="id19"/>
+			<label kind="synchronisation" x="-1096" y="-654">resched[rid]?</label>
+			<label kind="assignment" x="-1096" y="-637">removeTask(), 
+dissipated_power[rid]=0</label>
+			<nail x="-1020" y="-279"/>
+			<nail x="-1105" y="-280"/>
+			<nail x="-1105" y="-620"/>
+		</transition>
+		<transition>
+			<source ref="id20"/>
+			<target ref="id20"/>
+			<label kind="synchronisation" x="-1054" y="-263">resume[rid]?</label>
+			<label kind="assignment" x="-1105" y="-246">dissipated_power[rid]=
+pow_coeff[rid]*load[front()]</label>
+			<nail x="-935" y="-255"/>
+			<nail x="-892" y="-221"/>
+		</transition>
+		<transition>
+			<source ref="id20"/>
+			<target ref="id20"/>
+			<label kind="synchronisation" x="-705" y="-246">suspend[rid]?</label>
+			<label kind="assignment" x="-705" y="-229">dissipated_power[rid]=0</label>
+			<nail x="-705" y="-246"/>
+			<nail x="-739" y="-221"/>
+		</transition>
+		<transition>
+			<source ref="id18"/>
+			<target ref="id20"/>
+			<label kind="guard" x="-637" y="-391">empty()</label>
+			<label kind="assignment" x="-697" y="-374">insert_at(0,ready_task,rid), 
+dissipated_power[rid]=
+pow_coeff[rid]*load[front()]*
+energyAvailable[rid]</label>
+			<nail x="-476" y="-374"/>
+			<nail x="-722" y="-374"/>
+		</transition>
+		<transition>
+			<source ref="id17"/>
+			<target ref="id20"/>
+			<label kind="synchronisation" x="-824" y="-468">inserted?</label>
+			<label kind="assignment" x="-824" y="-451">dissipated_power[rid]=
+pow_coeff[rid]*load[front()]*
+energyAvailable[rid]</label>
+			<nail x="-620" y="-450"/>
+			<nail x="-833" y="-450"/>
+			<nail x="-850" y="-425"/>
+		</transition>
+		<transition>
+			<source ref="id18"/>
+			<target ref="id17"/>
+			<label kind="guard" x="-560" y="-569">!empty()</label>
+			<label kind="synchronisation" x="-586" y="-552">insert_task[policy]!</label>
+			<label kind="assignment" x="-586" y="-535">setParams(ready_task,
+  rid, preemptive)</label>
+		</transition>
+		<transition>
+			<source ref="id20"/>
+			<target ref="id19"/>
+			<label kind="synchronisation" x="-1079" y="-467">finished[front()]?</label>
+			<label kind="assignment" x="-1079" y="-450">removeTask(), 
+dissipated_power[rid]=0</label>
+			<nail x="-969" y="-356"/>
+			<nail x="-969" y="-526"/>
+		</transition>
+		<transition>
+			<source ref="id20"/>
+			<target ref="id18"/>
+			<label kind="synchronisation" x="-510" y="-280">ready[rid]?</label>
+			<nail x="-427" y="-280"/>
+		</transition>
+		<transition>
+			<source ref="id19"/>
+			<target ref="id20"/>
+			<label kind="guard" x="-875" y="-577">!empty()</label>
+			<label kind="assignment" x="-918" y="-560">dissipated_power[rid]=
+pow_coeff[rid]*load[front()]*
+energyAvailable[rid]</label>
+			<nail x="-901" y="-543"/>
+			<nail x="-901" y="-356"/>
+		</transition>
+		<transition>
+			<source ref="id19"/>
+			<target ref="id21"/>
+			<label kind="guard" x="-765" y="-637">empty()</label>
+			<label kind="assignment" x="-824" y="-620">dissipated_power[rid]=0</label>
+		</transition>
+		<transition>
+			<source ref="id21"/>
+			<target ref="id18"/>
+			<label kind="synchronisation" x="-527" y="-637">ready[rid]?</label>
+			<nail x="-428" y="-619"/>
+		</transition>
+	</template>
+	<template>
+		<name x="5" y="5">SolarPanel</name>
+		<parameter>double&amp; solar_panel_output</parameter>
+		<declaration>double irrad; 
+
+double solar_panel(double gTime) {
+ const double PI=3.14159265; double totalPow, result;
+ double timeOfTheDay = fmod(gTime,DAY);
+   
+ irrad = HEIGHT * ((1 / (SIGMA * sqrt(2.0*PI))) * exp(- ((timeOfTheDay + OFFSET - MU) * (timeOfTheDay + OFFSET - MU)) / (2 * SIGMA * SIGMA)));
+ return irrad * panel_area * conv_eff * loss_coeff;
+}
+</declaration>
+		<location id="id22" x="-578" y="-459">
+			<name x="-561" y="-484">nominal</name>
+			<label kind="exponentialrate" x="-586" y="-442">1e2</label>
+		</location>
+		<init ref="id22"/>
+		<transition>
+			<source ref="id22"/>
+			<target ref="id22"/>
+			<label kind="assignment" x="-578" y="-578">solar_panel_output=
+solar_panel(global_time)</label>
+			<nail x="-578" y="-535"/>
+			<nail x="-408" y="-535"/>
+			<nail x="-408" y="-459"/>
+		</transition>
+	</template>
+	<template>
+		<name>BatteryManager</name>
+		<parameter>const r_id bid</parameter>
+		<location id="id23" x="-450" y="-688">
+			<name x="-518" y="-713">Nominal</name>
+			<label kind="invariant" x="-518" y="-790">battery_energy[bid]'== 
+solar_panel_output - 
+dissipated_power[bid]
+&amp;&amp; depleted[bid]'==0</label>
+			<label kind="exponentialrate" x="-433" y="-713">1e2</label>
+		</location>
+		<location id="id24" x="-705" y="-450">
+			<name x="-680" y="-458">Init</name>
+			<committed/>
+		</location>
+		<location id="id25" x="-705" y="-569">
+			<name x="-748" y="-577">Full</name>
+			<label kind="invariant" x="-790" y="-543">battery_energy[bid]'==0
+&amp;&amp; depleted[bid]'==0</label>
+			<label kind="exponentialrate" x="-748" y="-560">1e2</label>
+		</location>
+		<location id="id26" x="-161" y="-569">
+			<name x="-187" y="-560">Empty</name>
+			<label kind="invariant" x="-297" y="-526">battery_energy[bid]'==0
+&amp;&amp; depleted[bid]'==1</label>
+			<label kind="exponentialrate" x="-178" y="-543">1e2</label>
+		</location>
+		<location id="id27" x="-425" y="-569">
+			<committed/>
+		</location>
+		<init ref="id24"/>
+		<transition>
+			<source ref="id23"/>
+			<target ref="id27"/>
+			<label kind="guard" x="-442" y="-654">battery_energy[bid] 
+&lt;= min_batt[bid]</label>
+		</transition>
+		<transition>
+			<source ref="id27"/>
+			<target ref="id26"/>
+			<label kind="synchronisation" x="-365" y="-603">empty_batt[bid]!</label>
+			<label kind="assignment" x="-365" y="-586">battery_energy[bid] = 
+min_batt[bid]</label>
+		</transition>
+		<transition>
+			<source ref="id26"/>
+			<target ref="id23"/>
+			<label kind="guard" x="-323" y="-756">solar_panel_output &gt; 
+dissipated_power[bid] + 
+BATT_THRESHOLD</label>
+			<label kind="synchronisation" x="-323" y="-705">replenished_batt[bid]!</label>
+			<nail x="-161" y="-688"/>
+		</transition>
+		<transition>
+			<source ref="id25"/>
+			<target ref="id23"/>
+			<label kind="guard" x="-663" y="-603">solar_panel_output &lt; 
+dissipated_power[bid]</label>
+			<nail x="-476" y="-569"/>
+		</transition>
+		<transition>
+			<source ref="id23"/>
+			<target ref="id25"/>
+			<label kind="guard" x="-790" y="-722">battery_energy[bid] &gt;=max_batt[bid]</label>
+			<label kind="assignment" x="-790" y="-705">battery_energy[bid] = max_batt[bid]</label>
+			<nail x="-705" y="-688"/>
+		</transition>
+		<transition>
+			<source ref="id24"/>
+			<target ref="id25"/>
+			<label kind="assignment" x="-705" y="-484">battery_energy[bid] = max_batt[bid]</label>
+		</transition>
+	</template>
+	<template>
+		<name>Controller</name>
+		<parameter>const r_id id</parameter>
+		<location id="id28" x="-943" y="-1028">
+			<name x="-1020" y="-1054">Nominal</name>
+		</location>
+		<location id="id29" x="-731" y="-1028">
+			<name x="-756" y="-1062">st1</name>
+			<committed/>
+		</location>
+		<location id="id30" x="-943" y="-1130">
+			<name x="-952" y="-1173">st2</name>
+		</location>
+		<location id="id31" x="-1147" y="-1130">
+			<name x="-1156" y="-1172">st3</name>
+			<committed/>
+		</location>
+		<init ref="id28"/>
+		<transition>
+			<source ref="id28"/>
+			<target ref="id29"/>
+			<label kind="guard" x="-918" y="-960">energyAvailable[id]==0</label>
+			<label kind="synchronisation" x="-875" y="-943">ready[id]?</label>
+			<nail x="-943" y="-943"/>
+			<nail x="-731" y="-943"/>
+		</transition>
+		<transition>
+			<source ref="id28"/>
+			<target ref="id30"/>
+			<label kind="guard" x="-935" y="-1105">buffer[id].length &lt; 1</label>
+			<label kind="synchronisation" x="-935" y="-1088">empty_batt[id]?</label>
+			<label kind="assignment" x="-935" y="-1071">energyAvailable[id]=0</label>
+		</transition>
+		<transition>
+			<source ref="id31"/>
+			<target ref="id28"/>
+			<label kind="synchronisation" x="-1113" y="-1028">resume[id]!</label>
+			<nail x="-1147" y="-1028"/>
+		</transition>
+		<transition>
+			<source ref="id30"/>
+			<target ref="id31"/>
+			<label kind="synchronisation" x="-1122" y="-1164">replenished_batt[id]?</label>
+			<label kind="assignment" x="-1122" y="-1147">energyAvailable[id]=1</label>
+		</transition>
+		<transition>
+			<source ref="id29"/>
+			<target ref="id30"/>
+			<label kind="synchronisation" x="-858" y="-1147">suspend[id]!</label>
+			<nail x="-731" y="-1036"/>
+			<nail x="-731" y="-1045"/>
+			<nail x="-731" y="-1079"/>
+			<nail x="-731" y="-1130"/>
+		</transition>
+		<transition>
+			<source ref="id28"/>
+			<target ref="id29"/>
+			<label kind="guard" x="-918" y="-1028">buffer[id].length &gt;= 1</label>
+			<label kind="synchronisation" x="-892" y="-1011">empty_batt[id]?</label>
+			<label kind="assignment" x="-918" y="-994">energyAvailable[id]=0</label>
+		</transition>
+	</template>
+	<system>
+sp = SolarPanel(solar_panel_output);
+
+Node0 = Resource(0,true,FIFO);
+Node1 = Resource(1,true,FIFO);
+Node2 = Resource(2,true,FPS);
+Node3 = Resource(3,false,FPS);
+Node4 = Resource(4,false,FPS);
+
+Batt0 = BatteryManager(0);
+Batt1 = BatteryManager(1);
+Batt2 = BatteryManager(2);
+Batt3 = BatteryManager(3);
+Batt4 = BatteryManager(4);
+
+system sp, Task, Node0, Node1, Node2, Node3, Node4, Batt0, Batt1, Batt2, Batt3, Batt4, Controller, Policy_FPS, Policy_FIFO;</system>
 	<queries>
 		<query>
-			<formula>A[] routingMatrix[0][3][1] == 0 || routingMatrix[0][3][2] == 0
-			</formula>
-			<comment>
-			</comment>
+			<formula>simulate [&lt;=2*DAY; 1] {dissipated_power[0], dissipated_power[1], dissipated_power[2], dissipated_power[3], dissipated_power[4]}</formula>
+			<comment></comment>
 		</query>
 		<query>
-			<formula>E&lt;&gt; twoNhopsRoutingMatrix()
-			</formula>
-			<comment>
-			</comment>
+			<formula>simulate [&lt;=2*DAY; 1] {sp.irrad, battery_energy[0], battery_energy[1], battery_energy[2], battery_energy[3], battery_energy[4]}</formula>
+			<comment></comment>
 		</query>
 		<query>
-			<formula>E&lt;&gt; anyRoutingMatrix()
-			</formula>
-			<comment>
-			</comment>
+			<formula>simulate [&lt;=2*DAY; 1000] {battery_energy[0], battery_energy[1], battery_energy[2], battery_energy[3], battery_energy[4]} : 1 : exists(i:t_id) Task(i).Error</formula>
+			<comment></comment>
 		</query>
 		<query>
-			<formula>E&lt;&gt; exists(sid:id_t) (exists(oid:id_t) ( Node(sid).table[oid].mylb&gt;13))
-			</formula>
-			<comment>
-			</comment>
-		</query>
-		<query>
-			<formula>E&lt;&gt; allBidirectional()
-			</formula>
-			<comment>
-			</comment>
-		</query>
-		<query>
-			<formula>E&lt;&gt; hasloop()
-			</formula>
-			<comment>
-			</comment>
-		</query>
-		<query>
-			<formula>A[] (forall(sid:id_t) (forall(oid:id_t) (forall(nhop:id_t) (forall(i:int[0,WINDOW-1]) Node(sid).table[oid].list[nhop].window[i] &lt;=1))))
-			</formula>
-			<comment>
-			</comment>
-		</query>
-		<query>
-			<formula>A[] ( (forall(i:id_t)(Node(i).counter == 1 &amp;&amp; Node(i).ogmLocal[0] == reset())) imply allBidirectional())
-			</formula>
-			<comment>
-			</comment>
+			<formula>Pr [&lt;= 2*DAY] (&lt;&gt; exists(i:t_id) Task(i).Error)</formula>
+			<comment></comment>
 		</query>
 	</queries>
 </nta>
