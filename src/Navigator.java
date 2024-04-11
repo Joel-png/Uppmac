@@ -54,9 +54,10 @@ public class Navigator {
         System.out.println();
         for (int i = 0; i < nta.templates.length; i++) {
             // TEMPLATES
+            System.out.println();
             templateIndex = i;
             indent(1);
-            System.out.print("<");
+            System.out.print("<     NEXT     ");
             System.out.print("[" + templateIndex + "] ");
             nta.templates[templateIndex].printData(0);
             nta.templates[templateIndex].printLocations(2);
@@ -66,10 +67,11 @@ public class Navigator {
             identifier.printTemplateProperties(nta.templates[templateIndex].locations, nta.templates[templateIndex].transitions, 3);
             for (int j = 0; j < nta.templates[templateIndex].locations.length; j++) {
                 // LOCATION
+                System.out.println();
                 locationIndex = j;
                 System.out.println();
                 indent(2);
-                System.out.print("<");
+                System.out.print("<      next     ");
                 nta.templates[templateIndex].locations[locationIndex].printData(0);
                 nta.templates[templateIndex].locations[locationIndex].printTransitions(3);
                 System.out.println();

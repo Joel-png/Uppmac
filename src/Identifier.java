@@ -12,7 +12,7 @@ public class Identifier {
         Navigator.indent(indent);
         System.out.println("Location has degree involvement % of: " + checkDegreeInvolvement(location, transitions) * 100 + "%");
         Navigator.indent(indent);
-        System.out.println("Location has: " + checkAdjustedUniqueLoops(location, locations) + " adjusted unique loops");
+        System.out.println("Location has " + checkAdjustedUniqueLoops(location, locations) + " adjusted unique loops");
     }
 
     public void printTemplateProperties(Location[] locations, Transition[] transitions, int indent) {
