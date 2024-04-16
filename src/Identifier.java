@@ -3,9 +3,42 @@ import java.util.ArrayList;
 public class Identifier {
     Nta nta;
     ArrayList<String> visitedLocationIDs = new ArrayList<String>();
+    ArrayList<TemplateProperty> templateProperties = new ArrayList<TemplateProperty>();
 
     public Identifier(Nta nta) {
         this.nta = nta;
+    }
+
+    public void printNtaTemplateProperties() {
+        for (int i = 0; i < templateProperties.size(); i++) {
+            TemplateProperty currentTemplateProperty = templateProperties.get(i);
+
+            System.out.println();
+            System.out.println();
+            System.out.println();
+            System.out.println(currentTemplateProperty.template.name);
+            
+            Navigator.indent(1);
+            System.out.println("Has " + currentTemplateProperty.numOfPoplarLocations + " popular locations (75-100% degree presences)");
+
+            if (currentTemplateProperty.isLinear) {
+                Navigator.indent(1);
+                System.out.println("Linear");
+            } else {
+                Navigator.indent(1);
+                System.out.println("Not Linear");
+            }
+
+            if (currentTemplateProperty.lonelyInit) {
+                Navigator.indent(1);
+                System.out.println("Lonely init");
+            }
+
+            if (currentTemplateProperty.singleLocation) {
+                Navigator.indent(1);
+                System.out.println("Single location");
+            }
+        }
     }
 
     public void printLocationProperties(Location location, Location[] locations, Transition[] transitions, int indent) {
@@ -15,10 +48,16 @@ public class Identifier {
         System.out.println("Location has " + checkAdjustedUniqueLoops(location, locations) + " adjusted unique loops");
     }
 
-    public void printTemplateProperties(Location[] locations, Transition[] transitions, Location init, int indent) {
+    public void printTemplateProperties(Template template, int indent) {
+        Location[] locations = template.locations;
+        Transition[] transitions = template.transitions; 
+        Location init = template.getInit();
+        TemplateProperty tempTemplateProperty = new TemplateProperty(template);
+
         if (checkIsLinear(locations, init)) {
             Navigator.indent(indent);
             System.out.println("Template is linear");
+            tempTemplateProperty.isLinear = true;
         } else {
             Navigator.indent(indent);
             System.out.println("Template is not linear");
@@ -27,10 +66,13 @@ public class Identifier {
         if (init.sourceTransitions.size() <= 1 && init.targetTransitions.size() == 0) {
             Navigator.indent(indent);
             System.out.println("Template has a lonely init location");
+            tempTemplateProperty.lonelyInit = true;
         }
 
         Navigator.indent(indent);
-        System.out.println("Template has " + getNumOfPopularLocations(locations, transitions) + " popular locations (75-100% degree presences)");
+        int popularLocations = getNumOfPopularLocations(locations, transitions);
+        System.out.println("Template has " + popularLocations + " popular locations (75-100% degree presences)");
+        tempTemplateProperty.numOfPoplarLocations = popularLocations;
 
         int singleLocationState = isSingleLocation(locations);
         if (singleLocationState == 1) {
@@ -43,7 +85,8 @@ public class Identifier {
             System.out.println("Template has a single location with transitions");
         }
 
-        
+
+        templateProperties.add(tempTemplateProperty);
     }
 
     public int getNumOfPopularLocations(Location[] locations, Transition[] transitions) {
