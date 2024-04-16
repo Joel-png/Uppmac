@@ -57,21 +57,21 @@ public class Navigator {
             System.out.println();
             templateIndex = i;
             indent(1);
-            System.out.print("<     NEXT     ");
+            System.out.print("<     NEXT_T     ");
             System.out.print("[" + templateIndex + "] ");
             nta.templates[templateIndex].printData(0);
             nta.templates[templateIndex].printLocations(2);
             System.out.println();
             indent(2);
             System.out.println("[" + templateIndex + "] Template  properties:");
-            identifier.printTemplateProperties(nta.templates[templateIndex].locations, nta.templates[templateIndex].transitions, 3);
+            identifier.printTemplateProperties(nta.templates[templateIndex].locations, nta.templates[templateIndex].transitions, nta.templates[templateIndex].getInit(), 3);
             for (int j = 0; j < nta.templates[templateIndex].locations.length; j++) {
                 // LOCATION
                 System.out.println();
                 locationIndex = j;
                 System.out.println();
                 indent(2);
-                System.out.print("<      next     ");
+                System.out.print("<      Next_L     ");
                 nta.templates[templateIndex].locations[locationIndex].printData(0);
                 nta.templates[templateIndex].locations[locationIndex].printTransitions(3);
                 System.out.println();
@@ -140,7 +140,7 @@ public class Navigator {
                         
                         break;
                     case TEMPLATE:
-                        identifier.printTemplateProperties(nta.templates[templateIndex].locations, nta.templates[templateIndex].transitions, 0);
+                        identifier.printTemplateProperties(nta.templates[templateIndex].locations, nta.templates[templateIndex].transitions, nta.templates[templateIndex].getInit(), 0);
                         break;
                     case LOCATION:
                         identifier.printLocationProperties(nta.templates[templateIndex].locations[locationIndex], nta.templates[templateIndex].locations, nta.templates[templateIndex].transitions, 0);

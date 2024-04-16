@@ -40,6 +40,9 @@ public class DefaultParser {
             NodeList tempTemplateName = (NodeList) xPath.compile("/nta/template[" + String.valueOf(i) + "]/name/text()").evaluate(xmlDocument, XPathConstants.NODESET);
             Template tempTemplate = new Template(cleanText(tempTemplateName.item(0).toString()), tempLocationList.getLength(), tempTransitionList.getLength());
 
+            NodeList tempInit = (NodeList) xPath.compile("/nta/template[" + String.valueOf(i) + "]/init/@ref").evaluate(xmlDocument, XPathConstants.NODESET);
+            tempTemplate.init = cleanID(tempInit.item(0).toString(), 5);
+
             for (int j = 1; j <= tempLocationList.getLength(); j++) {
                 NodeList tempLocationIDList = (NodeList) xPath.compile("/nta/template[" + String.valueOf(i) + "]/location[" + String.valueOf(j) + "]/@id").evaluate(xmlDocument, XPathConstants.NODESET);
                 NodeList tempLocationNameList = (NodeList) xPath.compile("/nta/template[" + String.valueOf(i) + "]/location[" + String.valueOf(j) + "]/name/text()").evaluate(xmlDocument, XPathConstants.NODESET);

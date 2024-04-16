@@ -1,0 +1,353 @@
+<?xml version="1.0" encoding="utf-8"?>
+<nta>
+<declaration>
+broadcast chan Icache[2];
+int PC;
+</declaration>
+<template>
+<name x="5" y="5">observer</name>
+<declaration>
+//local variables for conds
+</declaration>
+<location id="node_0" x="-106" y="-1425"><name>node_0</name></location>
+<location id="node_1" x="-106" y="-1325"><name>node_1</name></location>
+<location id="node_1_5" x="-212" y="-925"><name>node_1_5</name></location>
+<location id="node_1_5_9" x="-181" y="-525"><name>node_1_5_9</name></location>
+<location id="node_1_5_9_13" x="-217" y="-125"><name>node_1_5_9_13</name></location>
+<location id="node_2" x="-106" y="-1225"><name>node_2</name></location>
+<location id="node_2_6" x="-212" y="-825"><name>node_2_6</name></location>
+<location id="node_2_6_10" x="-181" y="-425"><name>node_2_6_10</name></location>
+<location id="node_3" x="-106" y="-1125"><name>node_3</name></location>
+<location id="node_3_8" x="-181" y="-625"><name>node_3_8</name></location>
+<location id="node_3_8_12" x="-153" y="-225"><name>node_3_8_12</name></location>
+<location id="node_4" x="-106" y="-1025"><name>node_4</name></location>
+<location id="node_7" x="-206" y="-725"><name>node_7</name></location>
+<location id="node_7_11" x="-167" y="-325"><name>node_7_11</name></location>
+<location id="infeasible" x="-217" y="-25"><name>infeasible</name><committed/></location>
+<location id="unknown" x="200" y="-0"><name>unknown</name></location>
+<init ref="node_0"/>
+<transition>
+<source ref="node_0"/>
+<target ref="node_1"/>
+<label kind="guard"  x="-106" y="-1390">cacheLine == 1</label>
+<label kind="synchronisation" x="-106" y="-1375">Icache[M]?</label>
+</transition>
+<transition>
+<source ref="node_0"/>
+<target ref="infeasible"/>
+<label kind="guard"  x="-106" y="-1400">cacheLine == 1</label>
+<label kind="synchronisation" x="-106" y="-1375">Icache[H]?</label>
+</transition>
+<transition>
+<source ref="node_1"/>
+<target ref="node_2"/>
+<label kind="guard"  x="-106" y="-1290">cacheLine == 1</label>
+<label kind="synchronisation" x="-106" y="-1275">Icache[H]?</label>
+</transition>
+<transition>
+<source ref="node_1"/>
+<target ref="infeasible"/>
+<label kind="guard"  x="-106" y="-1300">cacheLine == 1</label>
+<label kind="synchronisation" x="-106" y="-1275">Icache[M]?</label>
+</transition>
+<transition>
+<source ref="node_1_5"/>
+<target ref="node_2_6"/>
+<label kind="guard"  x="-212" y="-890">cacheLine == 1</label>
+<label kind="synchronisation" x="-212" y="-875">Icache[H]?</label>
+</transition>
+<transition>
+<source ref="node_1_5"/>
+<target ref="infeasible"/>
+<label kind="guard"  x="-212" y="-900">cacheLine == 1</label>
+<label kind="synchronisation" x="-212" y="-875">Icache[M]?</label>
+</transition>
+<transition>
+<source ref="node_1_5_9"/>
+<target ref="node_2_6_10"/>
+<label kind="guard"  x="-181" y="-490">cacheLine == 1</label>
+<label kind="synchronisation" x="-181" y="-475">Icache[H]?</label>
+</transition>
+<transition>
+<source ref="node_1_5_9"/>
+<target ref="infeasible"/>
+<label kind="guard"  x="-181" y="-500">cacheLine == 1</label>
+<label kind="synchronisation" x="-181" y="-475">Icache[M]?</label>
+</transition>
+<transition>
+<source ref="node_1_5_9_13"/>
+<target ref="node_2_6_10"/>
+<label kind="guard"  x="-199" y="-290">cacheLine == 1</label>
+<label kind="synchronisation" x="-199" y="-275">Icache[H]?</label>
+</transition>
+<transition>
+<source ref="node_1_5_9_13"/>
+<target ref="infeasible"/>
+<label kind="guard"  x="-199" y="-300">cacheLine == 1</label>
+<label kind="synchronisation" x="-199" y="-275">Icache[M]?</label>
+</transition>
+<transition>
+<source ref="node_1_5_9_13"/>
+<target ref="infeasible"/>
+<label kind="guard"  x="-217" y="-90">cacheLine == 1</label>
+<label kind="synchronisation" x="-217" y="-75">Icache[M]?</label>
+</transition>
+<transition>
+<source ref="node_2"/>
+<target ref="node_3"/>
+<label kind="guard"  x="-106" y="-1190">cacheLine == 4</label>
+<label kind="synchronisation" x="-106" y="-1175">Icache[M]?</label>
+</transition>
+<transition>
+<source ref="node_2"/>
+<target ref="infeasible"/>
+<label kind="guard"  x="-106" y="-1200">cacheLine == 4</label>
+<label kind="synchronisation" x="-106" y="-1175">Icache[H]?</label>
+</transition>
+<transition>
+<source ref="node_2_6"/>
+<target ref="node_7"/>
+<label kind="guard"  x="-209" y="-790">cacheLine == 3</label>
+<label kind="synchronisation" x="-209" y="-775">Icache[M]?</label>
+</transition>
+<transition>
+<source ref="node_2_6"/>
+<target ref="infeasible"/>
+<label kind="guard"  x="-209" y="-800">cacheLine == 3</label>
+<label kind="synchronisation" x="-209" y="-775">Icache[H]?</label>
+</transition>
+<transition>
+<source ref="node_2_6"/>
+<target ref="node_3"/>
+<label kind="guard"  x="-159" y="-990">cacheLine == 4</label>
+<label kind="synchronisation" x="-159" y="-975">Icache[M]?</label>
+</transition>
+<transition>
+<source ref="node_2_6"/>
+<target ref="infeasible"/>
+<label kind="guard"  x="-159" y="-1000">cacheLine == 4</label>
+<label kind="synchronisation" x="-159" y="-975">Icache[H]?</label>
+</transition>
+<transition>
+<source ref="node_2_6_10"/>
+<target ref="node_7_11"/>
+<label kind="guard"  x="-174" y="-390">cacheLine == 3</label>
+<label kind="synchronisation" x="-174" y="-375">Icache[M]?</label>
+</transition>
+<transition>
+<source ref="node_2_6_10"/>
+<target ref="infeasible"/>
+<label kind="guard"  x="-174" y="-400">cacheLine == 3</label>
+<label kind="synchronisation" x="-174" y="-375">Icache[H]?</label>
+</transition>
+<transition>
+<source ref="node_2_6_10"/>
+<target ref="node_3"/>
+<label kind="guard"  x="-143" y="-790">cacheLine == 4</label>
+<label kind="synchronisation" x="-143" y="-775">Icache[M]?</label>
+</transition>
+<transition>
+<source ref="node_2_6_10"/>
+<target ref="infeasible"/>
+<label kind="guard"  x="-143" y="-800">cacheLine == 4</label>
+<label kind="synchronisation" x="-143" y="-775">Icache[H]?</label>
+</transition>
+<transition>
+<source ref="node_3"/>
+<target ref="node_4"/>
+<label kind="guard"  x="-106" y="-1090">cacheLine == 5</label>
+<label kind="synchronisation" x="-106" y="-1075">Icache[M]?</label>
+</transition>
+<transition>
+<source ref="node_3"/>
+<target ref="infeasible"/>
+<label kind="guard"  x="-106" y="-1100">cacheLine == 5</label>
+<label kind="synchronisation" x="-106" y="-1075">Icache[H]?</label>
+</transition>
+<transition>
+<source ref="node_3_8"/>
+<target ref="node_1_5_9"/>
+<label kind="guard"  x="-181" y="-590">cacheLine == 1</label>
+<label kind="synchronisation" x="-181" y="-575">Icache[M]?</label>
+</transition>
+<transition>
+<source ref="node_3_8"/>
+<target ref="infeasible"/>
+<label kind="guard"  x="-181" y="-600">cacheLine == 1</label>
+<label kind="synchronisation" x="-181" y="-575">Icache[H]?</label>
+</transition>
+<transition>
+<source ref="node_3_8"/>
+<target ref="node_4"/>
+<label kind="guard"  x="-143" y="-840">cacheLine == 5</label>
+<label kind="synchronisation" x="-143" y="-825">Icache[M]?</label>
+</transition>
+<transition>
+<source ref="node_3_8"/>
+<target ref="infeasible"/>
+<label kind="guard"  x="-143" y="-850">cacheLine == 5</label>
+<label kind="synchronisation" x="-143" y="-825">Icache[H]?</label>
+</transition>
+<transition>
+<source ref="node_3_8_12"/>
+<target ref="node_1_5_9_13"/>
+<label kind="guard"  x="-185" y="-190">cacheLine == 1</label>
+<label kind="synchronisation" x="-185" y="-175">Icache[M]?</label>
+</transition>
+<transition>
+<source ref="node_3_8_12"/>
+<target ref="infeasible"/>
+<label kind="guard"  x="-185" y="-200">cacheLine == 1</label>
+<label kind="synchronisation" x="-185" y="-175">Icache[H]?</label>
+</transition>
+<transition>
+<source ref="node_3_8_12"/>
+<target ref="node_4"/>
+<label kind="guard"  x="-129" y="-640">cacheLine == 5</label>
+<label kind="synchronisation" x="-129" y="-625">Icache[M]?</label>
+</transition>
+<transition>
+<source ref="node_3_8_12"/>
+<target ref="infeasible"/>
+<label kind="guard"  x="-129" y="-650">cacheLine == 5</label>
+<label kind="synchronisation" x="-129" y="-625">Icache[H]?</label>
+</transition>
+<transition>
+<source ref="node_4"/>
+<target ref="node_1_5"/>
+<label kind="guard"  x="-159" y="-990">cacheLine == 1</label>
+<label kind="synchronisation" x="-159" y="-975">Icache[M]?</label>
+</transition>
+<transition>
+<source ref="node_4"/>
+<target ref="infeasible"/>
+<label kind="guard"  x="-159" y="-1000">cacheLine == 1</label>
+<label kind="synchronisation" x="-159" y="-975">Icache[H]?</label>
+</transition>
+<transition>
+<source ref="node_7"/>
+<target ref="node_3_8"/>
+<label kind="guard"  x="-193" y="-690">cacheLine == 4</label>
+<label kind="synchronisation" x="-193" y="-675">Icache[M]?</label>
+</transition>
+<transition>
+<source ref="node_7"/>
+<target ref="infeasible"/>
+<label kind="guard"  x="-193" y="-700">cacheLine == 4</label>
+<label kind="synchronisation" x="-193" y="-675">Icache[H]?</label>
+</transition>
+<transition>
+<source ref="node_7_11"/>
+<target ref="node_3_8_12"/>
+<label kind="guard"  x="-160" y="-290">cacheLine == 4</label>
+<label kind="synchronisation" x="-160" y="-275">Icache[M]?</label>
+</transition>
+<transition>
+<source ref="node_7_11"/>
+<target ref="infeasible"/>
+<label kind="guard"  x="-160" y="-300">cacheLine == 4</label>
+<label kind="synchronisation" x="-160" y="-275">Icache[H]?</label>
+</transition>
+<transition>
+<source ref="node_0"/>
+<target ref="unknown"/>
+<label kind="select" x="-106" y="-15">k:int[0,1]</label>
+<label kind="guard"  x="-106" y="-25">true  &amp;&amp; !(cacheLine == 1)</label>
+<label kind="synchronisation" x="-106" y="-0">Icache[k]?</label>
+</transition>
+<transition>
+<source ref="node_1"/>
+<target ref="unknown"/>
+<label kind="select" x="-106" y="-15">k:int[0,1]</label>
+<label kind="guard"  x="-106" y="-25">true  &amp;&amp; !(cacheLine == 1)</label>
+<label kind="synchronisation" x="-106" y="-0">Icache[k]?</label>
+</transition>
+<transition>
+<source ref="node_1_5"/>
+<target ref="unknown"/>
+<label kind="select" x="-212" y="-15">k:int[0,1]</label>
+<label kind="guard"  x="-212" y="-25">true  &amp;&amp; !(cacheLine == 1)</label>
+<label kind="synchronisation" x="-212" y="-0">Icache[k]?</label>
+</transition>
+<transition>
+<source ref="node_1_5_9"/>
+<target ref="unknown"/>
+<label kind="select" x="-181" y="-15">k:int[0,1]</label>
+<label kind="guard"  x="-181" y="-25">true  &amp;&amp; !(cacheLine == 1)</label>
+<label kind="synchronisation" x="-181" y="-0">Icache[k]?</label>
+</transition>
+<transition>
+<source ref="node_1_5_9_13"/>
+<target ref="unknown"/>
+<label kind="select" x="-217" y="-15">k:int[0,1]</label>
+<label kind="guard"  x="-217" y="-25">true  &amp;&amp; !(cacheLine == 1) &amp;&amp; (!(cacheLine ==1) || (( cacheLine == 1) &amp;&amp; ( k != M )))</label>
+<label kind="synchronisation" x="-217" y="-0">Icache[k]?</label>
+</transition>
+<transition>
+<source ref="node_2"/>
+<target ref="unknown"/>
+<label kind="select" x="-106" y="-15">k:int[0,1]</label>
+<label kind="guard"  x="-106" y="-25">true  &amp;&amp; !(cacheLine == 4)</label>
+<label kind="synchronisation" x="-106" y="-0">Icache[k]?</label>
+</transition>
+<transition>
+<source ref="node_2_6"/>
+<target ref="unknown"/>
+<label kind="select" x="-212" y="-15">k:int[0,1]</label>
+<label kind="guard"  x="-212" y="-25">true  &amp;&amp; !(cacheLine == 3) &amp;&amp; !(cacheLine == 4)</label>
+<label kind="synchronisation" x="-212" y="-0">Icache[k]?</label>
+</transition>
+<transition>
+<source ref="node_2_6_10"/>
+<target ref="unknown"/>
+<label kind="select" x="-181" y="-15">k:int[0,1]</label>
+<label kind="guard"  x="-181" y="-25">true  &amp;&amp; !(cacheLine == 3) &amp;&amp; !(cacheLine == 4)</label>
+<label kind="synchronisation" x="-181" y="-0">Icache[k]?</label>
+</transition>
+<transition>
+<source ref="node_3"/>
+<target ref="unknown"/>
+<label kind="select" x="-106" y="-15">k:int[0,1]</label>
+<label kind="guard"  x="-106" y="-25">true  &amp;&amp; !(cacheLine == 5)</label>
+<label kind="synchronisation" x="-106" y="-0">Icache[k]?</label>
+</transition>
+<transition>
+<source ref="node_3_8"/>
+<target ref="unknown"/>
+<label kind="select" x="-181" y="-15">k:int[0,1]</label>
+<label kind="guard"  x="-181" y="-25">true  &amp;&amp; !(cacheLine == 1) &amp;&amp; !(cacheLine == 5)</label>
+<label kind="synchronisation" x="-181" y="-0">Icache[k]?</label>
+</transition>
+<transition>
+<source ref="node_3_8_12"/>
+<target ref="unknown"/>
+<label kind="select" x="-153" y="-15">k:int[0,1]</label>
+<label kind="guard"  x="-153" y="-25">true  &amp;&amp; !(cacheLine == 1) &amp;&amp; !(cacheLine == 5)</label>
+<label kind="synchronisation" x="-153" y="-0">Icache[k]?</label>
+</transition>
+<transition>
+<source ref="node_4"/>
+<target ref="unknown"/>
+<label kind="select" x="-106" y="-15">k:int[0,1]</label>
+<label kind="guard"  x="-106" y="-25">true  &amp;&amp; !(cacheLine == 1)</label>
+<label kind="synchronisation" x="-106" y="-0">Icache[k]?</label>
+</transition>
+<transition>
+<source ref="node_7"/>
+<target ref="unknown"/>
+<label kind="select" x="-206" y="-15">k:int[0,1]</label>
+<label kind="guard"  x="-206" y="-25">true  &amp;&amp; !(cacheLine == 4)</label>
+<label kind="synchronisation" x="-206" y="-0">Icache[k]?</label>
+</transition>
+<transition>
+<source ref="node_7_11"/>
+<target ref="unknown"/>
+<label kind="select" x="-167" y="-15">k:int[0,1]</label>
+<label kind="guard"  x="-167" y="-25">true  &amp;&amp; !(cacheLine == 4)</label>
+<label kind="synchronisation" x="-167" y="-0">Icache[k]?</label>
+</transition>
+</template>
+<system>
+system observer;
+</system>
+</nta>

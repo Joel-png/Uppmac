@@ -1,0 +1,20 @@
+
+
+This directory contains the UPPAAL files for the paper:
+"Timed Automata for Modelling Caches and Pipelines", MARS Workshop
+Franck Cassez and Pablo González de Aledo Marugán
+	http://arxiv.org/abs/1511.04172
+
+The files simple-prog-*.xml contain the examples of Figugues 1, 2 and 3.
+
+The files in simple-prog-mars-{union, product} contain the caches computed by our
+abstraction refinement strategy. This is the computation for simple-prog-mars.xml.
+
+In union, the refinement at iteration n is unioned with the refinement at iteration n - 1.
+In product, the refinements are kept as different machines.
+
+Notice that the executables to compute the refinements are not provided in this distribution.
+Contact the authors if you want to get the (C) sources.
+
+franck.cassez@mq.edu.au
+pablo.aledo@gmail.com

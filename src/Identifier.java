@@ -10,23 +10,65 @@ public class Identifier {
 
     public void printLocationProperties(Location location, Location[] locations, Transition[] transitions, int indent) {
         Navigator.indent(indent);
-        System.out.println("Location has degree involvement % of: " + checkDegreeInvolvement(location, transitions) * 100 + "%");
+        System.out.println("Location has in-out degree presence % of: " + checkDegreePresence(location, transitions) * 100 + "%");
         Navigator.indent(indent);
         System.out.println("Location has " + checkAdjustedUniqueLoops(location, locations) + " adjusted unique loops");
     }
 
-    public void printTemplateProperties(Location[] locations, Transition[] transitions, int indent) {
-        if (checkIsLinear(locations)) {
+    public void printTemplateProperties(Location[] locations, Transition[] transitions, Location init, int indent) {
+        if (checkIsLinear(locations, init)) {
             Navigator.indent(indent);
             System.out.println("Template is linear");
         } else {
             Navigator.indent(indent);
             System.out.println("Template is not linear");
         }
+
+        if (init.sourceTransitions.size() <= 1 && init.targetTransitions.size() == 0) {
+            Navigator.indent(indent);
+            System.out.println("Template has a lonely init location");
+        }
+
+        Navigator.indent(indent);
+        System.out.println("Template has " + getNumOfPopularLocations(locations, transitions) + " popular locations (75-100% degree presences)");
+
+        int singleLocationState = isSingleLocation(locations);
+        if (singleLocationState == 1) {
+            System.out.println();
+            Navigator.indent(indent);
+            System.out.println("Template has a single location with no transitions");
+        } else if (singleLocationState == 2) {
+            System.out.println();
+            Navigator.indent(indent);
+            System.out.println("Template has a single location with transitions");
+        }
+
+        
+    }
+
+    public int getNumOfPopularLocations(Location[] locations, Transition[] transitions) {
+        int counter = 0;
+        for (int i = 0; i < locations.length; i++) {
+            if (checkDegreePresence(locations[i], transitions) >= 0.75) {
+                counter++;
+            }
+        }
+        return counter;
+    }
+
+    // returns 1 if single location, returns 2 if single location with transitions, returns 0 if not single
+    public int isSingleLocation(Location[] locations) {
+        if (locations.length == 1) {
+            if (locations[0].sourceTransitions.size() + locations[0].targetTransitions.size() > 0) {
+                return 2;
+            }
+            return 1;
+        }
+        return 0;
     }
 
     // returns the % of edges involved with a given location
-    public float checkDegreeInvolvement(Location location, Transition[] transitions) {
+    public float checkDegreePresence(Location location, Transition[] transitions) {
         if (transitions.length == 0) {
             return 0;
         }
@@ -84,15 +126,10 @@ public class Identifier {
         return false;
     }
 
-    public boolean checkIsLinear(Location[] locations) {
-        int startingLocationIndex = getStartingNode(locations);
-        if (startingLocationIndex == -1) {
-            return false;
-        }
-
+    public boolean checkIsLinear(Location[] locations, Location init) {
         visitedLocationIDs = new ArrayList<String>();
 
-        return checkLocationIsLinear(locations[startingLocationIndex], locations);
+        return checkLocationIsLinear(init, locations);
 
     }
 
@@ -123,16 +160,6 @@ public class Identifier {
         }
         visitedLocationIDs.add(location.id);
         return false;
-    }
-
-    // returns node that has no target transitions, returns -1 if no such node exists
-    public int getStartingNode(Location[] locations) {
-        for (int i = 0; i < locations.length; i++) {
-            if (locations[i].targetTransitions.size() == 0) {
-                return i;
-            }
-        }
-        return -1;
     }
 
     public Location fetchLocationFromID(String id, Location[] locations) {

@@ -1,785 +1,123 @@
 <?xml version="1.0" encoding="utf-8"?>
-<nta>
-	<declaration>/*
-*  --------- BEGIN CONFIGURATION SECTION
-*/
+<nta><declaration>const int N_Math = 4;
+typedef scalar [N_Math] pid_Math;
 
-const int MaxTime = 485;
-typedef int[0,MaxTime] time_t;
+const int N_Main = 1;
+typedef scalar [N_Main] pid_Main;
 
-// Number of tasks
-const int Tasks = 11;                 
-typedef int[0,Tasks-1] t_id;
+chan Math#$init$#$$V#call;
+chan Math#$init$#$$V#return;
+chan Math#isPrime#$$$Z#call;
+chan Math#isPrime#$$$Z#return;
+chan Math#isEven#$$$Z#call;
+chan Math#isEven#$$$Z#return;
+chan Main#main#$$Ljava$lang$String$$V#call;
+chan Main#main#$$Ljava$lang$String$$V#return;</declaration><template><name>Math</name><parameter>const pid_Math id</parameter><declaration>clock localClock;
 
-// Number of resources
-const int Procs = 5;                 
-typedef int[0,Procs-1] r_id;
+const int tlb_l_1_2_8 = 1;
+const int tub_l_1_2_8 = 1;
+const int tlb_l_1_4_9 = 1;
+const int tub_l_1_4_9 = 1;
+const int tlb_l_7_34_10 = 1;
+const int tub_l_7_34_10 = 1;
+const int tlb_l_7_32_11 = 1;
+const int tub_l_7_32_11 = 1;
+const int tlb_l_16_39_12 = 1;
+const int tub_l_16_39_12 = 1;
+const int tlb_l_12_24_13 = 1;
+const int tub_l_12_24_13 = 1;
+const int tlb_l_14_28_14 = 1;
+const int tub_l_14_28_14 = 1;
+const int tlb_l_16_38_15 = 1;
+const int tub_l_16_38_15 = 1;
+const int tlb_l_9_15_16 = 1;
+const int tub_l_9_15_16 = 1;
+const int tlb_l_6_6_17 = 1;
+const int tub_l_6_6_17 = 1;
+const int tlb_l_5_3_18 = 1;
+const int tub_l_5_3_18 = 1;
+const int tlb_l_7_33_19 = 1;
+const int tub_l_7_33_19 = 1;
+const int tlb_l_5_2_20 = 1;
+const int tub_l_5_2_20 = 1;
+const int tlb_l_7_10_21 = 1;
+const int tub_l_7_10_21 = 1;
+const int tlb_l_9_14_22 = 1;
+const int tub_l_9_14_22 = 1;
+const int tlb_l_9_16_23 = 1;
+const int tub_l_9_16_23 = 1;
+const int tlb_l_11_21_24 = 1;
+const int tub_l_11_21_24 = 1;
+const int tlb_l_11_20_25 = 1;
+const int tub_l_11_20_25 = 1;
+const int tlb_l_9_17_26 = 1;
+const int tub_l_9_17_26 = 1;
+const int tlb_l_6_7_27 = 1;
+const int tub_l_6_7_27 = 1;
+const int tlb_l_21_5_28 = 1;
+const int tub_l_21_5_28 = 1;
+const int tlb_l_26_13_29 = 1;
+const int tub_l_26_13_29 = 1;
+const int tlb_l_23_9_30 = 1;
+const int tub_l_23_9_30 = 1;
+const int tlb_l_23_8_31 = 1;
+const int tub_l_23_8_31 = 1;
+const int tlb_l_26_14_32 = 1;
+const int tub_l_26_14_32 = 1;
+const int tlb_l_21_4_33 = 1;
+const int tub_l_21_4_33 = 1;
+const int tlb_l_21_2_34 = 1;
+const int tub_l_21_2_34 = 1;
+const int tlb_l_21_3_35 = 1;
+const int tub_l_21_3_35 = 1;
 
-typedef struct { 
-  bool periodic;
-  time_t initial_offset;
-  time_t min_period;
-  time_t max_period;
-  time_t offset;
-  time_t deadline;
-  time_t bcet;
-  time_t wcet;
-  r_id resource;
-  int pri;  
-} task_t;
+int lc_l_7_32_11 = 0;
+const int ll_l_7_32_11 = 15;</declaration><location id="id0" x="40" y="80"><name x="30" y="50">initial</name></location><location id="id1" x="190" y="80"><name x="180" y="50">l_Math#$init$#$$V#call_return</name><urgent/></location><location id="id2" x="190" y="230"><name x="180" y="200">l_Math#isPrime#$$$Z#call_return</name><urgent/></location><location id="id3" x="40" y="230"><name x="30" y="200">l_Math#isEven#$$$Z#call_return</name><urgent/></location><location id="id4" x="340" y="80" color="#ffc0cb"><name x="330" y="50">l_1_3_7</name><label kind="comments">&lt;init&gt;_()V</label></location><location id="id5" x="340" y="230"><name x="330" y="200">l_1_2_8</name><label kind="invariant" x="330" y="245">localClock &lt;= (tub_l_1_2_8)</label></location><location id="id6" x="340" y="380"><name x="330" y="350">l_1_4_9</name><label kind="invariant" x="330" y="395">localClock &lt;= (tub_l_1_4_9)</label></location><location id="id7" x="190" y="380"><name x="180" y="350">l_7_34_10</name><label kind="invariant" x="180" y="395">localClock &lt;= (tub_l_7_34_10)</label></location><location id="id8" x="40" y="380" color="#ff0000"><name x="30" y="350">l_7_32_11</name><label kind="invariant" x="30" y="395">localClock &lt;= (tub_l_7_32_11)</label></location><location id="id9" x="490" y="80"><name x="480" y="50">l_16_39_12</name><label kind="invariant" x="480" y="95">localClock &lt;= (tub_l_16_39_12)</label></location><location id="id10" x="490" y="230"><name x="480" y="200">l_12_24_13</name><label kind="invariant" x="480" y="245">localClock &lt;= (tub_l_12_24_13)</label></location><location id="id11" x="490" y="380"><name x="480" y="350">l_14_28_14</name><label kind="invariant" x="480" y="395">localClock &lt;= (tub_l_14_28_14)</label></location><location id="id12" x="490" y="530"><name x="480" y="500">l_16_38_15</name><label kind="invariant" x="480" y="545">localClock &lt;= (tub_l_16_38_15)</label></location><location id="id13" x="340" y="530"><name x="330" y="500">l_9_15_16</name><label kind="invariant" x="330" y="545">localClock &lt;= (tub_l_9_15_16)</label></location><location id="id14" x="190" y="530"><name x="180" y="500">l_6_6_17</name><label kind="invariant" x="180" y="545">localClock &lt;= (tub_l_6_6_17)</label></location><location id="id15" x="40" y="530"><name x="30" y="500">l_5_3_18</name><label kind="invariant" x="30" y="545">localClock &lt;= (tub_l_5_3_18)</label></location><location id="id16" x="640" y="80"><name x="630" y="50">l_7_33_19</name><label kind="invariant" x="630" y="95">localClock &lt;= (tub_l_7_33_19)</label></location><location id="id17" x="640" y="230"><name x="630" y="200">l_5_2_20</name><label kind="invariant" x="630" y="245">localClock &lt;= (tub_l_5_2_20)</label></location><location id="id18" x="640" y="380"><name x="630" y="350">l_7_10_21</name><label kind="invariant" x="630" y="395">localClock &lt;= (tub_l_7_10_21)</label></location><location id="id19" x="640" y="530"><name x="630" y="500">l_9_14_22</name><label kind="invariant" x="630" y="545">localClock &lt;= (tub_l_9_14_22)</label></location><location id="id20" x="640" y="680"><name x="630" y="650">l_9_16_23</name><label kind="invariant" x="630" y="695">localClock &lt;= (tub_l_9_16_23)</label></location><location id="id21" x="490" y="680"><name x="480" y="650">l_11_21_24</name><label kind="invariant" x="480" y="695">localClock &lt;= (tub_l_11_21_24)</label></location><location id="id22" x="340" y="680"><name x="330" y="650">l_11_20_25</name><label kind="invariant" x="330" y="695">localClock &lt;= (tub_l_11_20_25)</label></location><location id="id23" x="190" y="680"><name x="180" y="650">l_9_17_26</name><label kind="invariant" x="180" y="695">localClock &lt;= (tub_l_9_17_26)</label></location><location id="id24" x="40" y="680"><name x="30" y="650">l_6_7_27</name><label kind="invariant" x="30" y="695">localClock &lt;= (tub_l_6_7_27)</label></location><location id="id25" x="790" y="80"><name x="780" y="50">l_21_5_28</name><label kind="invariant" x="780" y="95">localClock &lt;= (tub_l_21_5_28)</label></location><location id="id26" x="790" y="230"><name x="780" y="200">l_26_13_29</name><label kind="invariant" x="780" y="245">localClock &lt;= (tub_l_26_13_29)</label></location><location id="id27" x="790" y="380"><name x="780" y="350">l_23_9_30</name><label kind="invariant" x="780" y="395">localClock &lt;= (tub_l_23_9_30)</label></location><location id="id28" x="790" y="530"><name x="780" y="500">l_23_8_31</name><label kind="invariant" x="780" y="545">localClock &lt;= (tub_l_23_8_31)</label></location><location id="id29" x="790" y="680"><name x="780" y="650">l_26_14_32</name><label kind="invariant" x="780" y="695">localClock &lt;= (tub_l_26_14_32)</label></location><location id="id30" x="790" y="830"><name x="780" y="800">l_21_4_33</name><label kind="invariant" x="780" y="845">localClock &lt;= (tub_l_21_4_33)</label></location><location id="id31" x="640" y="830"><name x="630" y="800">l_21_2_34</name><label kind="invariant" x="630" y="845">localClock &lt;= (tub_l_21_2_34)</label></location><location id="id32" x="490" y="830"><name x="480" y="800">l_21_3_35</name><label kind="invariant" x="480" y="845">localClock &lt;= (tub_l_21_3_35)</label></location><init ref="id0"/><transition><source ref="id4"/><target ref="id6"/><label kind="assignment" x="280" y="230">localClock = 0</label></transition><transition><source ref="id5"/><target ref="id4"/><label kind="guard" x="280" y="125">localClock &gt;= (tlb_l_1_2_8)</label><label kind="assignment" x="280" y="155">localClock = 0</label></transition><transition><source ref="id7"/><target ref="id19"/><label kind="guard" x="355" y="425">localClock &gt;= (tlb_l_7_34_10) and lc_l_7_32_11 &lt; ll_l_7_32_11</label><label kind="assignment" x="355" y="455">localClock = 0</label><label kind="comments">Condition:true</label></transition><transition><source ref="id7"/><target ref="id12"/><label kind="guard" x="280" y="425">localClock &gt;= (tlb_l_7_34_10) and lc_l_7_32_11 == (ll_l_7_32_11)</label><label kind="assignment" x="280" y="455">localClock = 0,
+lc_l_7_32_11 = 0</label><label kind="comments">Condition:false</label></transition><transition><source ref="id8"/><target ref="id16"/><label kind="guard" x="280" y="200">localClock &gt;= (tlb_l_7_32_11)</label><label kind="assignment" x="280" y="230">localClock = 0</label></transition><transition><source ref="id10"/><target ref="id12"/><label kind="guard" x="430" y="350">localClock &gt;= (tlb_l_12_24_13)</label><label kind="assignment" x="430" y="380">localClock = 0</label></transition><transition><source ref="id11"/><target ref="id8"/><label kind="guard" x="205" y="350">localClock &gt;= (tlb_l_14_28_14)</label><label kind="assignment" x="205" y="380">localClock = 0,
+lc_l_7_32_11 = lc_l_7_32_11+ 1</label></transition><transition><source ref="id12"/><target ref="id9"/><label kind="guard" x="430" y="275">localClock &gt;= (tlb_l_16_38_15)</label><label kind="assignment" x="430" y="305">localClock = 0</label></transition><transition><source ref="id13"/><target ref="id20"/><label kind="guard" x="430" y="575">localClock &gt;= (tlb_l_9_15_16)</label><label kind="assignment" x="430" y="605">localClock = 0</label></transition><transition><source ref="id14"/><target ref="id24"/><label kind="guard" x="55" y="575">localClock &gt;= (tlb_l_6_6_17)</label><label kind="assignment" x="55" y="605">localClock = 0</label></transition><transition><source ref="id15"/><target ref="id14"/><label kind="guard" x="55" y="500">localClock &gt;= (tlb_l_5_3_18)</label><label kind="assignment" x="55" y="530">localClock = 0</label></transition><transition><source ref="id16"/><target ref="id7"/><label kind="guard" x="355" y="200">localClock &gt;= (tlb_l_7_33_19)</label><label kind="assignment" x="355" y="230">localClock = 0</label></transition><transition><source ref="id17"/><target ref="id15"/><label kind="guard" x="280" y="350">localClock &gt;= (tlb_l_5_2_20)</label><label kind="assignment" x="280" y="380">localClock = 0</label></transition><transition><source ref="id18"/><target ref="id8"/><label kind="guard" x="280" y="350">localClock &gt;= (tlb_l_7_10_21)</label><label kind="assignment" x="280" y="380">localClock = 0</label></transition><transition><source ref="id19"/><target ref="id13"/><label kind="guard" x="430" y="500">localClock &gt;= (tlb_l_9_14_22)</label><label kind="assignment" x="430" y="530">localClock = 0</label></transition><transition><source ref="id20"/><target ref="id23"/><label kind="guard" x="355" y="650">localClock &gt;= (tlb_l_9_16_23)</label><label kind="assignment" x="355" y="680">localClock = 0</label></transition><transition><source ref="id21"/><target ref="id10"/><label kind="guard" x="430" y="425">localClock &gt;= (tlb_l_11_21_24)</label><label kind="assignment" x="430" y="455">localClock = 0</label></transition><transition><source ref="id22"/><target ref="id21"/><label kind="guard" x="355" y="650">localClock &gt;= (tlb_l_11_20_25)</label><label kind="assignment" x="355" y="680">localClock = 0</label></transition><transition><source ref="id23"/><target ref="id11"/><label kind="guard" x="280" y="500">localClock &gt;= (tlb_l_9_17_26) and lc_l_7_32_11 &lt; ll_l_7_32_11</label><label kind="assignment" x="280" y="530">localClock = 0</label><label kind="comments">Condition:true</label></transition><transition><source ref="id23"/><target ref="id22"/><label kind="guard" x="205" y="650">localClock &gt;= (tlb_l_9_17_26) and lc_l_7_32_11 == (ll_l_7_32_11)</label><label kind="assignment" x="205" y="680">localClock = 0,
+lc_l_7_32_11 = 0</label><label kind="comments">Condition:false</label></transition><transition><source ref="id24"/><target ref="id18"/><label kind="guard" x="280" y="500">localClock &gt;= (tlb_l_6_7_27)</label><label kind="assignment" x="280" y="530">localClock = 0</label></transition><transition><source ref="id25"/><target ref="id26"/><label kind="guard" x="730" y="125">localClock &gt;= (tlb_l_21_5_28)</label><label kind="assignment" x="730" y="155">localClock = 0</label><label kind="comments">Condition:true</label></transition><transition><source ref="id25"/><target ref="id28"/><label kind="guard" x="730" y="275">localClock &gt;= (tlb_l_21_5_28)</label><label kind="assignment" x="730" y="305">localClock = 0</label><label kind="comments">Condition:false</label></transition><transition><source ref="id26"/><target ref="id29"/><label kind="guard" x="730" y="425">localClock &gt;= (tlb_l_26_13_29)</label><label kind="assignment" x="730" y="455">localClock = 0</label></transition><transition><source ref="id28"/><target ref="id27"/><label kind="guard" x="730" y="425">localClock &gt;= (tlb_l_23_8_31)</label><label kind="assignment" x="730" y="455">localClock = 0</label></transition><transition><source ref="id30"/><target ref="id25"/><label kind="guard" x="730" y="425">localClock &gt;= (tlb_l_21_4_33)</label><label kind="assignment" x="730" y="455">localClock = 0</label></transition><transition><source ref="id31"/><target ref="id32"/><label kind="guard" x="505" y="800">localClock &gt;= (tlb_l_21_2_34)</label><label kind="assignment" x="505" y="830">localClock = 0</label></transition><transition><source ref="id32"/><target ref="id30"/><label kind="guard" x="580" y="800">localClock &gt;= (tlb_l_21_3_35)</label><label kind="assignment" x="580" y="830">localClock = 0</label></transition><transition><source ref="id0"/><target ref="id5"/><label kind="synchronisation" x="130" y="140">Math#$init$#$$V#call?</label><label kind="assignment" x="130" y="155">localClock = 0</label></transition><transition><source ref="id1"/><target ref="id0"/><label kind="synchronisation" x="55" y="65">Math#$init$#$$V#return!</label></transition><transition><source ref="id0"/><target ref="id17"/><label kind="synchronisation" x="280" y="140">Math#isPrime#$$$Z#call?</label><label kind="assignment" x="280" y="155">localClock = 0</label></transition><transition><source ref="id2"/><target ref="id0"/><label kind="synchronisation" x="55" y="140">Math#isPrime#$$$Z#return!</label></transition><transition><source ref="id0"/><target ref="id31"/><label kind="synchronisation" x="280" y="440">Math#isEven#$$$Z#call?</label><label kind="assignment" x="280" y="455">localClock = 0</label></transition><transition><source ref="id3"/><target ref="id0"/><label kind="synchronisation" x="-20" y="140">Math#isEven#$$$Z#return!</label></transition><transition><source ref="id6"/><target ref="id1"/><label kind="guard" x="205" y="200">localClock &gt;= (tlb_l_1_4_9)</label><label kind="assignment" x="205" y="230">localClock = 0</label></transition><transition><source ref="id9"/><target ref="id2"/><label kind="guard" x="280" y="125">localClock &gt;= (tlb_l_16_39_12)</label><label kind="assignment" x="280" y="155">localClock = 0</label></transition><transition><source ref="id27"/><target ref="id3"/><label kind="guard" x="355" y="275">localClock &gt;= (tlb_l_23_9_30)</label><label kind="assignment" x="355" y="305">localClock = 0</label></transition><transition><source ref="id29"/><target ref="id3"/><label kind="guard" x="355" y="425">localClock &gt;= (tlb_l_26_14_32)</label><label kind="assignment" x="355" y="455">localClock = 0</label></transition></template><template><name>Main</name><declaration>clock localClock;
 
+const int tlb_l_7_5_36 = 1;
+const int tub_l_7_5_36 = 1;
+const int tlb_l_8_9_37 = 1;
+const int tub_l_8_9_37 = 1;
+const int tlb_l_10_26_39 = 1;
+const int tub_l_10_26_39 = 1;
+const int tlb_l_9_15_40 = 1;
+const int tub_l_9_15_40 = 1;
+const int tlb_l_13_55_41 = 1;
+const int tub_l_13_55_41 = 1;
+const int tlb_l_9_18_42 = 1;
+const int tub_l_9_18_42 = 1;
+const int tlb_l_9_17_44 = 1;
+const int tub_l_9_17_44 = 1;
+const int tlb_l_7_3_47 = 1;
+const int tub_l_7_3_47 = 1;
+const int tlb_l_10_25_50 = 1;
+const int tub_l_10_25_50 = 1;
+const int tlb_l_12_45_52 = 1;
+const int tub_l_12_45_52 = 1;
+const int tlb_l_10_23_53 = 1;
+const int tub_l_10_23_53 = 1;
+const int tlb_l_11_37_57 = 1;
+const int tub_l_11_37_57 = 1;
+const int tlb_l_11_36_58 = 1;
+const int tub_l_11_36_58 = 1;
+const int tlb_l_11_35_59 = 1;
+const int tub_l_11_35_59 = 1;
+const int tlb_l_8_8_61 = 1;
+const int tub_l_8_8_61 = 1;
+const int tlb_l_9_16_63 = 1;
+const int tub_l_9_16_63 = 1;
+const int tlb_l_12_46_66 = 1;
+const int tub_l_12_46_66 = 1;
+const int tlb_l_12_43_67 = 1;
+const int tub_l_12_43_67 = 1;
+const int tlb_l_7_2_68 = 1;
+const int tub_l_7_2_68 = 1;
+const int tlb_l_11_38_69 = 1;
+const int tub_l_11_38_69 = 1;
+const int tlb_l_8_12_70 = 1;
+const int tub_l_8_12_70 = 1;</declaration><location id="id33" x="40" y="80"><name x="30" y="50">initial</name></location><location id="id34" x="190" y="80"><name x="180" y="50">l_Main#main#$$Ljava$lang$String$$V#call_return</name><urgent/></location><location id="id35" x="190" y="230" color="#ffa500"><name x="180" y="200">l_10_27_1_calling</name><urgent/></location><location id="id36" x="40" y="230" color="#00ff00"><name x="30" y="200">l_10_27_1_returning</name><urgent/></location><location id="id37" x="340" y="80" color="#ffff00"><name x="330" y="50">l_10_27_2_waiting</name></location><location id="id38" x="340" y="230" color="#ffa500"><name x="330" y="200">l_12_47_3_calling</name><urgent/></location><location id="id39" x="340" y="380" color="#00ff00"><name x="330" y="350">l_12_47_3_returning</name><urgent/></location><location id="id40" x="190" y="380" color="#ffff00"><name x="180" y="350">l_12_47_4_waiting</name></location><location id="id41" x="40" y="380" color="#ffa500"><name x="30" y="350">l_7_4_5_calling</name><urgent/></location><location id="id42" x="490" y="80" color="#00ff00"><name x="480" y="50">l_7_4_5_returning</name><urgent/></location><location id="id43" x="490" y="230" color="#ffff00"><name x="480" y="200">l_7_4_6_waiting</name></location><location id="id44" x="490" y="380"><name x="480" y="350">l_7_5_36</name><label kind="invariant" x="480" y="395">localClock &lt;= (tub_l_7_5_36)</label></location><location id="id45" x="490" y="530"><name x="480" y="500">l_8_9_37</name><label kind="invariant" x="480" y="545">localClock &lt;= (tub_l_8_9_37)</label></location><location id="id46" x="340" y="530" color="#ffc0cb"><name x="330" y="500">l_9_19_38</name><label kind="comments">valueOf_(I)Ljava/lang/String;</label></location><location id="id47" x="190" y="530"><name x="180" y="500">l_10_26_39</name><label kind="invariant" x="180" y="545">localClock &lt;= (tub_l_10_26_39)</label></location><location id="id48" x="40" y="530"><name x="30" y="500">l_9_15_40</name><label kind="invariant" x="30" y="545">localClock &lt;= (tub_l_9_15_40)</label><label kind="comments">out_Ljava/io/PrintStream;</label></location><location id="id49" x="640" y="80"><name x="630" y="50">l_13_55_41</name><label kind="invariant" x="630" y="95">localClock &lt;= (tub_l_13_55_41)</label></location><location id="id50" x="640" y="230"><name x="630" y="200">l_9_18_42</name><label kind="invariant" x="630" y="245">localClock &lt;= (tub_l_9_18_42)</label></location><location id="id51" x="640" y="380" color="#ffc0cb"><name x="630" y="350">l_10_28_43</name><label kind="comments">append_(Z)Ljava/lang/StringBuilder;</label></location><location id="id52" x="640" y="530"><name x="630" y="500">l_9_17_44</name><label kind="invariant" x="630" y="545">localClock &lt;= (tub_l_9_17_44)</label></location><location id="id53" x="640" y="680" color="#ffc0cb"><name x="630" y="650">l_10_29_45</name><label kind="comments">toString_()Ljava/lang/String;</label></location><location id="id54" x="490" y="680" color="#ffc0cb"><name x="480" y="650">l_11_40_46</name><label kind="comments">&lt;init&gt;_(Ljava/lang/String;)V</label></location><location id="id55" x="340" y="680"><name x="330" y="650">l_7_3_47</name><label kind="invariant" x="330" y="695">localClock &lt;= (tub_l_7_3_47)</label></location><location id="id56" x="190" y="680" color="#ffc0cb"><name x="180" y="650">l_11_52_48</name><label kind="comments">println_(Ljava/lang/String;)V</label></location><location id="id57" x="40" y="680" color="#ffc0cb"><name x="30" y="650">l_8_11_49</name><label kind="comments">nextInt_()I</label></location><location id="id58" x="790" y="80"><name x="780" y="50">l_10_25_50</name><label kind="invariant" x="780" y="95">localClock &lt;= (tub_l_10_25_50)</label></location><location id="id59" x="790" y="230" color="#ffc0cb"><name x="780" y="200">l_8_10_51</name><label kind="comments">&lt;init&gt;_()V</label></location><location id="id60" x="790" y="380"><name x="780" y="350">l_12_45_52</name><label kind="invariant" x="780" y="395">localClock &lt;= (tub_l_12_45_52)</label></location><location id="id61" x="790" y="530"><name x="780" y="500">l_10_23_53</name><label kind="invariant" x="780" y="545">localClock &lt;= (tub_l_10_23_53)</label></location><location id="id62" x="790" y="680" color="#ffc0cb"><name x="780" y="650">l_10_24_54</name><label kind="comments">append_(Ljava/lang/String;)Ljava/lang/StringBuilder;</label></location><location id="id63" x="790" y="830" color="#ffc0cb"><name x="780" y="800">l_11_39_55</name><label kind="comments">valueOf_(I)Ljava/lang/String;</label></location><location id="id64" x="640" y="830" color="#ffc0cb"><name x="630" y="800">l_9_32_56</name><label kind="comments">println_(Ljava/lang/String;)V</label></location><location id="id65" x="490" y="830"><name x="480" y="800">l_11_37_57</name><label kind="invariant" x="480" y="845">localClock &lt;= (tub_l_11_37_57)</label></location><location id="id66" x="340" y="830"><name x="330" y="800">l_11_36_58</name><label kind="invariant" x="330" y="845">localClock &lt;= (tub_l_11_36_58)</label><label kind="comments">_java/lang/StringBuilder</label></location><location id="id67" x="190" y="830"><name x="180" y="800">l_11_35_59</name><label kind="invariant" x="180" y="845">localClock &lt;= (tub_l_11_35_59)</label><label kind="comments">out_Ljava/io/PrintStream;</label></location><location id="id68" x="40" y="830" color="#ffc0cb"><name x="30" y="800">l_12_49_60</name><label kind="comments">toString_()Ljava/lang/String;</label></location><location id="id69" x="940" y="80"><name x="930" y="50">l_8_8_61</name><label kind="invariant" x="930" y="95">localClock &lt;= (tub_l_8_8_61)</label><label kind="comments">_java/util/Random</label></location><location id="id70" x="940" y="230" color="#ffc0cb"><name x="930" y="200">l_12_48_62</name><label kind="comments">append_(Z)Ljava/lang/StringBuilder;</label></location><location id="id71" x="940" y="380"><name x="930" y="350">l_9_16_63</name><label kind="invariant" x="930" y="395">localClock &lt;= (tub_l_9_16_63)</label><label kind="comments">_java/lang/StringBuilder</label></location><location id="id72" x="940" y="530" color="#ffc0cb"><name x="930" y="500">l_9_20_64</name><label kind="comments">&lt;init&gt;_(Ljava/lang/String;)V</label></location><location id="id73" x="940" y="680" color="#ffc0cb"><name x="930" y="650">l_12_44_65</name><label kind="comments">append_(Ljava/lang/String;)Ljava/lang/StringBuilder;</label></location><location id="id74" x="940" y="830"><name x="930" y="800">l_12_46_66</name><label kind="invariant" x="930" y="845">localClock &lt;= (tub_l_12_46_66)</label></location><location id="id75" x="940" y="980"><name x="930" y="950">l_12_43_67</name><label kind="invariant" x="930" y="995">localClock &lt;= (tub_l_12_43_67)</label></location><location id="id76" x="790" y="980"><name x="780" y="950">l_7_2_68</name><label kind="invariant" x="780" y="995">localClock &lt;= (tub_l_7_2_68)</label><label kind="comments">_Math</label></location><location id="id77" x="640" y="980"><name x="630" y="950">l_11_38_69</name><label kind="invariant" x="630" y="995">localClock &lt;= (tub_l_11_38_69)</label></location><location id="id78" x="490" y="980"><name x="480" y="950">l_8_12_70</name><label kind="invariant" x="480" y="995">localClock &lt;= (tub_l_8_12_70)</label></location><init ref="id33"/><transition><source ref="id35"/><target ref="id37"/><label kind="synchronisation" x="205" y="140">Math#isPrime#$$$Z#call!</label></transition><transition><source ref="id37"/><target ref="id36"/><label kind="synchronisation" x="130" y="140">Math#isPrime#$$$Z#return?</label></transition><transition><source ref="id38"/><target ref="id40"/><label kind="synchronisation" x="205" y="290">Math#isEven#$$$Z#call!</label></transition><transition><source ref="id40"/><target ref="id39"/><label kind="synchronisation" x="205" y="365">Math#isEven#$$$Z#return?</label></transition><transition><source ref="id41"/><target ref="id43"/><label kind="synchronisation" x="205" y="290">Math#$init$#$$V#call!</label></transition><transition><source ref="id43"/><target ref="id42"/><label kind="synchronisation" x="430" y="140">Math#$init$#$$V#return?</label></transition><transition><source ref="id44"/><target ref="id69"/><label kind="guard" x="655" y="200">localClock &gt;= (tlb_l_7_5_36)</label><label kind="assignment" x="655" y="230">localClock = 0</label></transition><transition><source ref="id45"/><target ref="id59"/><label kind="guard" x="580" y="350">localClock &gt;= (tlb_l_8_9_37)</label><label kind="assignment" x="580" y="380">localClock = 0</label></transition><transition><source ref="id46"/><target ref="id72"/><label kind="assignment" x="580" y="530">localClock = 0</label></transition><transition><source ref="id47"/><target ref="id35"/><label kind="guard" x="130" y="350">localClock &gt;= (tlb_l_10_26_39)</label><label kind="assignment" x="130" y="380">localClock = 0</label></transition><transition><source ref="id48"/><target ref="id71"/><label kind="guard" x="430" y="425">localClock &gt;= (tlb_l_9_15_40)</label><label kind="assignment" x="430" y="455">localClock = 0</label></transition><transition><source ref="id50"/><target ref="id46"/><label kind="guard" x="430" y="350">localClock &gt;= (tlb_l_9_18_42)</label><label kind="assignment" x="430" y="380">localClock = 0</label></transition><transition><source ref="id51"/><target ref="id53"/><label kind="assignment" x="580" y="530">localClock = 0</label></transition><transition><source ref="id52"/><target ref="id50"/><label kind="guard" x="580" y="350">localClock &gt;= (tlb_l_9_17_44)</label><label kind="assignment" x="580" y="380">localClock = 0</label></transition><transition><source ref="id53"/><target ref="id64"/><label kind="assignment" x="580" y="755">localClock = 0</label></transition><transition><source ref="id54"/><target ref="id75"/><label kind="assignment" x="655" y="830">localClock = 0</label></transition><transition><source ref="id55"/><target ref="id41"/><label kind="guard" x="130" y="500">localClock &gt;= (tlb_l_7_3_47)</label><label kind="assignment" x="130" y="530">localClock = 0</label></transition><transition><source ref="id56"/><target ref="id49"/><label kind="assignment" x="355" y="380">localClock = 0</label></transition><transition><source ref="id57"/><target ref="id78"/><label kind="assignment" x="205" y="830">localClock = 0</label></transition><transition><source ref="id58"/><target ref="id47"/><label kind="guard" x="430" y="275">localClock &gt;= (tlb_l_10_25_50)</label><label kind="assignment" x="430" y="305">localClock = 0</label></transition><transition><source ref="id59"/><target ref="id57"/><label kind="assignment" x="355" y="455">localClock = 0</label></transition><transition><source ref="id36"/><target ref="id51"/><label kind="assignment" x="280" y="305">localClock = 0</label></transition><transition><source ref="id60"/><target ref="id74"/><label kind="guard" x="805" y="575">localClock &gt;= (tlb_l_12_45_52)</label><label kind="assignment" x="805" y="605">localClock = 0</label></transition><transition><source ref="id39"/><target ref="id70"/><label kind="assignment" x="580" y="305">localClock = 0</label></transition><transition><source ref="id61"/><target ref="id62"/><label kind="guard" x="730" y="575">localClock &gt;= (tlb_l_10_23_53)</label><label kind="assignment" x="730" y="605">localClock = 0</label></transition><transition><source ref="id62"/><target ref="id58"/><label kind="assignment" x="730" y="380">localClock = 0</label></transition><transition><source ref="id63"/><target ref="id54"/><label kind="assignment" x="580" y="755">localClock = 0</label></transition><transition><source ref="id64"/><target ref="id67"/><label kind="assignment" x="355" y="830">localClock = 0</label></transition><transition><source ref="id65"/><target ref="id77"/><label kind="guard" x="505" y="875">localClock &gt;= (tlb_l_11_37_57)</label><label kind="assignment" x="505" y="905">localClock = 0</label></transition><transition><source ref="id66"/><target ref="id65"/><label kind="guard" x="355" y="800">localClock &gt;= (tlb_l_11_36_58)</label><label kind="assignment" x="355" y="830">localClock = 0</label></transition><transition><source ref="id42"/><target ref="id44"/><label kind="assignment" x="430" y="230">localClock = 0</label></transition><transition><source ref="id67"/><target ref="id66"/><label kind="guard" x="205" y="800">localClock &gt;= (tlb_l_11_35_59)</label><label kind="assignment" x="205" y="830">localClock = 0</label></transition><transition><source ref="id68"/><target ref="id56"/><label kind="assignment" x="55" y="755">localClock = 0</label></transition><transition><source ref="id69"/><target ref="id45"/><label kind="guard" x="655" y="275">localClock &gt;= (tlb_l_8_8_61)</label><label kind="assignment" x="655" y="305">localClock = 0</label></transition><transition><source ref="id70"/><target ref="id68"/><label kind="assignment" x="430" y="530">localClock = 0</label></transition><transition><source ref="id71"/><target ref="id52"/><label kind="guard" x="730" y="425">localClock &gt;= (tlb_l_9_16_63)</label><label kind="assignment" x="730" y="455">localClock = 0</label></transition><transition><source ref="id72"/><target ref="id61"/><label kind="assignment" x="805" y="530">localClock = 0</label></transition><transition><source ref="id73"/><target ref="id60"/><label kind="assignment" x="805" y="530">localClock = 0</label></transition><transition><source ref="id74"/><target ref="id38"/><label kind="guard" x="580" y="500">localClock &gt;= (tlb_l_12_46_66)</label><label kind="assignment" x="580" y="530">localClock = 0</label></transition><transition><source ref="id75"/><target ref="id73"/><label kind="guard" x="880" y="800">localClock &gt;= (tlb_l_12_43_67)</label><label kind="assignment" x="880" y="830">localClock = 0</label></transition><transition><source ref="id76"/><target ref="id55"/><label kind="guard" x="505" y="800">localClock &gt;= (tlb_l_7_2_68)</label><label kind="assignment" x="505" y="830">localClock = 0</label></transition><transition><source ref="id77"/><target ref="id63"/><label kind="guard" x="655" y="875">localClock &gt;= (tlb_l_11_38_69)</label><label kind="assignment" x="655" y="905">localClock = 0</label></transition><transition><source ref="id78"/><target ref="id48"/><label kind="guard" x="205" y="725">localClock &gt;= (tlb_l_8_12_70)</label><label kind="assignment" x="205" y="755">localClock = 0</label></transition><transition><source ref="id33"/><target ref="id76"/><label kind="synchronisation" x="355" y="515">Main#main#$$Ljava$lang$String$$V#call?</label><label kind="assignment" x="355" y="530">localClock = 0</label></transition><transition><source ref="id34"/><target ref="id33"/><label kind="synchronisation" x="55" y="65">Main#main#$$Ljava$lang$String$$V#return!</label></transition><transition><source ref="id49"/><target ref="id34"/><label kind="guard" x="355" y="50">localClock &gt;= (tlb_l_13_55_41)</label><label kind="assignment" x="355" y="80">localClock = 0</label></transition></template><template><name>Main#main</name><declaration>clock wallClock;
 
-//init_offset, min_period, max_period, offset, deadline, bcet, wcet, resource, priority
-//time units in minutes
-const task_t task[Tasks] = {
-
-{true,0,120,120,0,120,5,5,0,1}, //Elevator
-{true,0,120,120,0,120,5,5,1,1}, //Engine
-
-{true,0,120,120,0,120,10,10,1,1}, //Aircraft dynamics
-
-{true,0,240,240,0,240,5,5,0,1}, //H_filter 
-{true,0,240,240,0,240,5,5,1,1}, //Az_filter
-{true,0,240,240,0,240,5,5,2,1}, //Vz_filter
-{true,0,240,240,0,240,5,5,3,1}, //Q_filter
-{true,0,240,240,0,240,5,5,4,1}, //Va_filter
-
-{true,0,480,480,0,480,5,5,0,1}, //Altitude_hold
-
-{true,0,480,480,0,480,5,5,1,1}, //Vz_control
-{true,0,480,480,0,480,5,5,4,1} //Va_control
-};
-
-
-typedef struct {
-  int[0,Tasks] length;
-  t_id element[Tasks];
-} buffer_t; 
-
-buffer_t buffer[Procs];
-
-const int Policies      = 3;
-const int EDF  		= 0;
-const int FIFO 		= 1;
-const int FPS  		= 2;
-
-broadcast chan inserted, insert_task[Policies];
-typedef int[0,Policies-1] policy_t;
-
-
-/*
-* Task graph definition of dependencies
-*
-* Meaning of Depend[i][j]:
-*    - 0/false : task i does not depend on task j
-*    - 1/true  : task i depends on task j
-*/
-const bool Depend[Tasks][Tasks] = {  // Task graph
-{0,0,0,0,0,0,0,0,0,0,0},
-{0,0,0,0,0,0,0,0,0,0,0},
-
-{1,1,0,0,0,0,0,0,0,0,0},
-
-{0,0,1,0,0,0,0,0,0,0,0},
-{0,0,1,0,0,0,0,0,0,0,0},
-{0,0,1,0,0,0,0,0,0,0,0},
-{0,0,1,0,0,0,0,0,0,0,0},
-{0,0,1,0,0,0,0,0,0,0,0},
-
-{0,0,0,1,0,0,0,0,0,0,0},
-
-{0,0,0,0,1,1,1,0,1,0,0},
-{0,0,0,0,0,1,0,1,0,0,0}
-
-};
-
-
-/*
-*  --------- END CONFIGURATION SECTION
-*/
-clock time[Tasks];//, exec[Tasks];
-bool complete[Tasks];
-
-urgent broadcast chan ready[Procs];
-broadcast chan finished[Tasks];//run[Procs+1], stop[Procs], done[Procs];
-
-meta struct {
-  meta t_id task;
-  meta r_id resource;
-  meta bool preempt;
-} param;
-
-void setParams(t_id t, r_id r, bool preempt) {
-  param.task = t; param.resource = r; param.preempt = preempt;
-}
-
-//meta t_id ready_task;
-// modified by AG in order to have a more consistent behavior w.r.t Task IDs while executing on the resources
-t_id ready_task;
-
-void insert_at(int[0,Tasks] pos, t_id tid, r_id rid) {
-  int i;
-  for(i = buffer[rid].length; i &gt; pos; i--) {
-    buffer[rid].element[i] = buffer[rid].element[i-1];
-  }
-  buffer[rid].element[pos] = tid;
-  buffer[rid].length++;
-
-}
-
-
-// Girona irradiation curve parameters in june
-const double HEIGHT = 305000.0;
-const double SIGMA = 125.0;
-const double MU = 200.0; 
-const int OFFSET = -440; 
-
-
-// storage configs for GiJ (in Watt.minutes)
-const int max_batt[Procs] = {280,1010,60,60,105};
-const int min_batt[Procs] = {0,0,0,0,0};
-
-
-// nb minutes within a day
-const int DAY = 1440;
-
-
-// threshold constant for resuming battery recharging
-const double BATT_THRESHOLD = 0.5;
-
-
-// Watt-peak value of solar panels 
-const double panel_area=0.4;
-const double conv_eff=0.23;
-const double loss_coeff=0.95;
-
-
-// used in resource to compute dissipated power
-int pow_coeff[Procs] = {1,1,1,1,1};
-int load[Tasks] = {6,6,13,6,6,6,6,6,10,10,10};
-int[0,1] energyAvailable[Procs] = {1,1,1,1,1};
-
-
-// other variables
-clock global_time, battery_energy[Procs], depleted[Procs];
-
-double solar_panel_output;
-int dissipated_power[Procs];
-
-broadcast chan suspend[Procs], resume[Procs], resched[Procs];
-urgent broadcast chan empty_batt[Procs], replenished_batt[Procs];
-</declaration>
-	<template>
-		<name x="5" y="5">Task</name>
-		<parameter>const t_id tid</parameter>
-		<declaration>clock x;
-
-bool dependencies_met() {
-  return forall (j : t_id)  Depend[tid][j] imply complete[j];
-}
-
-void completed() {
-  complete[tid] = true;
-}
-
-void new_period() {
-  complete[tid] = false;
-}
-
-bool periodic() { return task[tid].periodic; }
-time_t initialOffset() { return task[tid].initial_offset; }
-time_t minPeriod() { return task[tid].min_period; }
-time_t maxPeriod() { return task[tid].max_period; }
-time_t offset() { return task[tid].offset; }
-time_t deadline() { return task[tid].deadline; }
-time_t BCET() { return task[tid].bcet; }
-time_t WCET() { return task[tid].wcet; }
-time_t resource() { return task[tid].resource; }
-time_t priotiry() { return task[tid].pri; }
-
-int[0,1] isRunning() {
-  return (buffer[resource()].element[0] == tid? 1 : 0);
-}</declaration>
-		<location id="id0" x="-25" y="-442">
-			<name x="-178" y="-459">WaitingDependency</name>
-			<label kind="invariant" x="-136" y="-442">x' == 0</label>
-		</location>
-		<location id="id1" x="255" y="-238" color="#0000ff">
-			<name x="238" y="-221">Frozen</name>
-			<label kind="invariant" x="221" y="-187">x' == 0 &amp;&amp;
-time[tid]&lt;=
-deadline()</label>
-			<label kind="exponentialrate" x="246" y="-204">1e6</label>
-		</location>
-		<location id="id2" x="-204" y="-51">
-			<name x="-220" y="-83">Done</name>
-			<label kind="invariant" x="-228" y="-35">x' == 0</label>
-		</location>
-		<location id="id3" x="-25" y="-51">
-			<name x="0" y="-59">Completed</name>
-			<committed/>
-		</location>
-		<location id="id4" x="-195" y="-561">
-			<committed/>
-		</location>
-		<location id="id5" x="-195" y="-646">
-			<name x="-170" y="-661">Initial</name>
-			<label kind="invariant" x="-119" y="-664">x' == 0 &amp;&amp;
-time[tid] &lt;= initialOffset()</label>
-		</location>
-		<location id="id6" x="-204" y="-238" color="#ff0000">
-			<name x="-221" y="-221">Error</name>
-		</location>
-		<location id="id7" x="-25" y="43">
-			<name x="-8" y="17">PeriodDone</name>
-			<label kind="invariant" x="85" y="9">x' == 0 &amp;&amp;
-time[tid] &lt;= maxPeriod()</label>
-			<label kind="exponentialrate" x="0" y="43">1e6</label>
-		</location>
-		<location id="id8" x="-25" y="-239">
-			<name x="-9" y="-247">Ready</name>
-			<label kind="invariant" x="42" y="-264">x' == isRunning() &amp;&amp;
-x &lt;= WCET() &amp;&amp;
-time[tid] &lt;= deadline()</label>
-			<label kind="exponentialrate" x="-59" y="-222">1e6</label>
-		</location>
-		<location id="id9" x="-25" y="-561">
-			<name x="0" y="-569">WaitingOffset</name>
-			<label kind="invariant" x="102" y="-578">x' == 0 &amp;&amp;
-time[tid] &lt;= offset()</label>
-		</location>
-		<init ref="id5"/>
-		<transition>
-			<source ref="id0"/>
-			<target ref="id1"/>
-			<label kind="guard" x="8" y="-476">dependencies_met() &amp;&amp;
-energyAvailable[resource()]==0</label>
-			<label kind="synchronisation" x="34" y="-442">ready[resource()]!</label>
-			<label kind="assignment" x="34" y="-425">ready_task = tid</label>
-			<nail x="255" y="-441"/>
-		</transition>
-		<transition>
-			<source ref="id1"/>
-			<target ref="id6"/>
-			<label kind="guard" x="34" y="-357">time[tid] &gt;= deadline()</label>
-			<label kind="synchronisation" x="34" y="-340">resched[resource()]!</label>
-			<nail x="222" y="-322"/>
-			<nail x="-178" y="-323"/>
-		</transition>
-		<transition>
-			<source ref="id1"/>
-			<target ref="id8"/>
-			<label kind="synchronisation" x="25" y="-196">resume[resource()]?</label>
-			<nail x="212" y="-196"/>
-			<nail x="17" y="-196"/>
-		</transition>
-		<transition>
-			<source ref="id8"/>
-			<target ref="id1"/>
-			<label kind="synchronisation" x="25" y="-298">suspend[resource()]?</label>
-			<nail x="17" y="-281"/>
-			<nail x="212" y="-280"/>
-		</transition>
-		<transition>
-			<source ref="id9"/>
-			<target ref="id0"/>
-			<label kind="guard" x="-17" y="-527">time[tid] == offset()</label>
-		</transition>
-		<transition>
-			<source ref="id3"/>
-			<target ref="id2"/>
-			<label kind="guard" x="-144" y="-68">!periodic()</label>
-		</transition>
-		<transition>
-			<source ref="id3"/>
-			<target ref="id7"/>
-			<label kind="guard" x="-17" y="-25">periodic()</label>
-		</transition>
-		<transition>
-			<source ref="id5"/>
-			<target ref="id4"/>
-			<label kind="guard" x="-195" y="-612">time[tid] == initialOffset()</label>
-		</transition>
-		<transition>
-			<source ref="id4"/>
-			<target ref="id9"/>
-			<label kind="assignment" x="-178" y="-552">time[tid] = 0, 
-x = 0,
-new_period()</label>
-		</transition>
-		<transition>
-			<source ref="id7"/>
-			<target ref="id4"/>
-			<label kind="guard" x="-221" y="25">time[tid] &gt;= minPeriod()</label>
-			<nail x="-238" y="42"/>
-			<nail x="-234" y="-562"/>
-		</transition>
-		<transition>
-			<source ref="id8"/>
-			<target ref="id6"/>
-			<label kind="guard" x="-187" y="-281">time[tid]&gt;=deadline()</label>
-			<label kind="synchronisation" x="-187" y="-264">resched[resource()]!</label>
-		</transition>
-		<transition>
-			<source ref="id8"/>
-			<target ref="id3"/>
-			<label kind="guard" x="-17" y="-161">x &gt;= BCET() &amp;&amp;
-time[tid] &lt;= maxPeriod()</label>
-			<label kind="synchronisation" x="-17" y="-127">finished[tid]!</label>
-			<label kind="assignment" x="-17" y="-110">completed()</label>
-		</transition>
-		<transition>
-			<source ref="id0"/>
-			<target ref="id8"/>
-			<label kind="guard" x="-170" y="-408">dependencies_met()</label>
-			<label kind="synchronisation" x="-170" y="-391">ready[resource()]!</label>
-			<label kind="assignment" x="-170" y="-374">ready_task = tid</label>
-		</transition>
-	</template>
-	<template>
-		<name>Policy_FIFO</name>
-		<location id="id10" x="-176" y="-128">
-			<committed/>
-		</location>
-		<location id="id11" x="-176" y="-248">
-		</location>
-		<init ref="id11"/>
-		<transition>
-			<source ref="id10"/>
-			<target ref="id11"/>
-			<label kind="synchronisation" x="-256" y="-128">inserted!</label>
-			<nail x="-224" y="-128"/>
-			<nail x="-224" y="-248"/>
-		</transition>
-		<transition>
-			<source ref="id11"/>
-			<target ref="id10"/>
-			<label kind="synchronisation" x="-170" y="-221">insert_task[FIFO]?</label>
-			<label kind="assignment" x="-168" y="-200">insert_at(
-buffer[param.resource].length,
-param.task,
-param.resource)</label>
-		</transition>
-	</template>
-	<template>
-		<name>Policy_FPS</name>
-		<declaration>
-void insert_task_in_buffer() {
-  t_id t = param.task;
-  r_id r = param.resource;
-  int place = (param.preempt ? 0 : 1);
-  int i;
-  // Find out where to put the task
-  while ( place &lt; buffer[r].length &amp;&amp; task[buffer[r].element[place]].pri &gt;= task[t].pri ) {
-    place++;
-  }
-  insert_at(place,t,r);
-}</declaration>
-		<location id="id12" x="-176" y="-144">
-			<committed/>
-		</location>
-		<location id="id13" x="-176" y="-248">
-		</location>
-		<init ref="id13"/>
-		<transition>
-			<source ref="id12"/>
-			<target ref="id13"/>
-			<label kind="synchronisation" x="-256" y="-144">inserted!</label>
-			<nail x="-216" y="-144"/>
-			<nail x="-216" y="-248"/>
-		</transition>
-		<transition>
-			<source ref="id13"/>
-			<target ref="id12"/>
-			<label kind="synchronisation" x="-170" y="-212">insert_task[FPS]?</label>
-			<label kind="assignment" x="-168" y="-192">insert_task_in_buffer()</label>
-		</transition>
-	</template>
-	<template>
-		<name>Policy_EDF</name>
-		<declaration>int[0,Tasks] place;
-t_id tid;
-r_id rid;
-bool preempt;
-
-void readParameters() {
-  tid = param.task; rid = param.resource; preempt = param.preempt;
-}
-
-void resetVars() {
-  place = tid = rid = 0;
-}</declaration>
-		<location id="id14" x="-176" y="-128">
-			<committed/>
-		</location>
-		<location id="id15" x="-176" y="-264">
-			<committed/>
-		</location>
-		<location id="id16" x="-176" y="-384">
-		</location>
-		<init ref="id16"/>
-		<transition>
-			<source ref="id14"/>
-			<target ref="id16"/>
-			<label kind="synchronisation" x="-288" y="-176">inserted!</label>
-			<label kind="assignment" x="-304" y="-232">resetVars()</label>
-			<nail x="-224" y="-128"/>
-			<nail x="-224" y="-384"/>
-		</transition>
-		<transition>
-			<source ref="id15"/>
-			<target ref="id15"/>
-			<label kind="guard" x="-128" y="-304">place &lt; buffer[rid].length &amp;&amp;
-time[tid]-task[tid].deadline &lt;=
-time[buffer[rid].element[place]] - task[buffer[rid].element[place]].deadline</label>
-			<label kind="assignment" x="-128" y="-256">place++</label>
-			<nail x="-136" y="-280"/>
-			<nail x="-136" y="-248"/>
-		</transition>
-		<transition>
-			<source ref="id15"/>
-			<target ref="id14"/>
-			<label kind="guard" x="-168" y="-232">place == buffer[rid].length ||
-time[tid]-task[tid].deadline &gt;
-time[buffer[rid].element[place]] - task[buffer[rid].element[place]].deadline</label>
-			<label kind="assignment" x="-168" y="-176">insert_at(place,tid,rid)</label>
-		</transition>
-		<transition>
-			<source ref="id16"/>
-			<target ref="id15"/>
-			<label kind="synchronisation" x="-168" y="-368">insert_task[EDF]?</label>
-			<label kind="assignment" x="-168" y="-344">readParameters(),
-place = (preempt ? 0 : 1)</label>
-		</transition>
-	</template>
-	<template>
-		<name>Resource</name>
-		<parameter>const r_id rid, bool preemptive, policy_t policy</parameter>
-		<declaration>
-void removeTask() {
-  int i = 0;
-  buffer[rid].length--;
-  do {
-    buffer[rid].element[i] = buffer[rid].element[i+1];
-    i++;
-  } while (i &lt; buffer[rid].length);
-  buffer[rid].element[buffer[rid].length] = 0;
-}
-
-t_id front() { return buffer[rid].element[0]; }
-
-bool empty() {
-  return buffer[rid].length == 0;
-}
-</declaration>
-		<location id="id17" x="-620" y="-492">
-			<name x="-630" y="-526">st2</name>
-		</location>
-		<location id="id18" x="-425" y="-493">
-			<name x="-416" y="-484">st1</name>
-			<committed/>
-		</location>
-		<location id="id19" x="-858" y="-620">
-			<name x="-868" y="-654">st3</name>
-			<committed/>
-		</location>
-		<location id="id20" x="-850" y="-280">
-			<name x="-850" y="-255">InUse</name>
-		</location>
-		<location id="id21" x="-612" y="-620">
-			<name x="-628" y="-652">Idle</name>
-		</location>
-		<init ref="id21"/>
-		<transition>
-			<source ref="id20"/>
-			<target ref="id19"/>
-			<label kind="synchronisation" x="-1096" y="-654">resched[rid]?</label>
-			<label kind="assignment" x="-1096" y="-637">removeTask(), 
-dissipated_power[rid]=0</label>
-			<nail x="-1020" y="-279"/>
-			<nail x="-1105" y="-280"/>
-			<nail x="-1105" y="-620"/>
-		</transition>
-		<transition>
-			<source ref="id20"/>
-			<target ref="id20"/>
-			<label kind="synchronisation" x="-1054" y="-263">resume[rid]?</label>
-			<label kind="assignment" x="-1105" y="-246">dissipated_power[rid]=
-pow_coeff[rid]*load[front()]</label>
-			<nail x="-935" y="-255"/>
-			<nail x="-892" y="-221"/>
-		</transition>
-		<transition>
-			<source ref="id20"/>
-			<target ref="id20"/>
-			<label kind="synchronisation" x="-705" y="-246">suspend[rid]?</label>
-			<label kind="assignment" x="-705" y="-229">dissipated_power[rid]=0</label>
-			<nail x="-705" y="-246"/>
-			<nail x="-739" y="-221"/>
-		</transition>
-		<transition>
-			<source ref="id18"/>
-			<target ref="id20"/>
-			<label kind="guard" x="-637" y="-391">empty()</label>
-			<label kind="assignment" x="-697" y="-374">insert_at(0,ready_task,rid), 
-dissipated_power[rid]=
-pow_coeff[rid]*load[front()]*
-energyAvailable[rid]</label>
-			<nail x="-476" y="-374"/>
-			<nail x="-722" y="-374"/>
-		</transition>
-		<transition>
-			<source ref="id17"/>
-			<target ref="id20"/>
-			<label kind="synchronisation" x="-824" y="-468">inserted?</label>
-			<label kind="assignment" x="-824" y="-451">dissipated_power[rid]=
-pow_coeff[rid]*load[front()]*
-energyAvailable[rid]</label>
-			<nail x="-620" y="-450"/>
-			<nail x="-833" y="-450"/>
-			<nail x="-850" y="-425"/>
-		</transition>
-		<transition>
-			<source ref="id18"/>
-			<target ref="id17"/>
-			<label kind="guard" x="-560" y="-569">!empty()</label>
-			<label kind="synchronisation" x="-586" y="-552">insert_task[policy]!</label>
-			<label kind="assignment" x="-586" y="-535">setParams(ready_task,
-  rid, preemptive)</label>
-		</transition>
-		<transition>
-			<source ref="id20"/>
-			<target ref="id19"/>
-			<label kind="synchronisation" x="-1079" y="-467">finished[front()]?</label>
-			<label kind="assignment" x="-1079" y="-450">removeTask(), 
-dissipated_power[rid]=0</label>
-			<nail x="-969" y="-356"/>
-			<nail x="-969" y="-526"/>
-		</transition>
-		<transition>
-			<source ref="id20"/>
-			<target ref="id18"/>
-			<label kind="synchronisation" x="-510" y="-280">ready[rid]?</label>
-			<nail x="-427" y="-280"/>
-		</transition>
-		<transition>
-			<source ref="id19"/>
-			<target ref="id20"/>
-			<label kind="guard" x="-875" y="-577">!empty()</label>
-			<label kind="assignment" x="-918" y="-560">dissipated_power[rid]=
-pow_coeff[rid]*load[front()]*
-energyAvailable[rid]</label>
-			<nail x="-901" y="-543"/>
-			<nail x="-901" y="-356"/>
-		</transition>
-		<transition>
-			<source ref="id19"/>
-			<target ref="id21"/>
-			<label kind="guard" x="-765" y="-637">empty()</label>
-			<label kind="assignment" x="-824" y="-620">dissipated_power[rid]=0</label>
-		</transition>
-		<transition>
-			<source ref="id21"/>
-			<target ref="id18"/>
-			<label kind="synchronisation" x="-527" y="-637">ready[rid]?</label>
-			<nail x="-428" y="-619"/>
-		</transition>
-	</template>
-	<template>
-		<name x="5" y="5">SolarPanel</name>
-		<parameter>double&amp; solar_panel_output</parameter>
-		<declaration>double irrad; 
-
-double solar_panel(double gTime) {
- const double PI=3.14159265; double totalPow, result;
- double timeOfTheDay = fmod(gTime,DAY);
-   
- irrad = HEIGHT * ((1 / (SIGMA * sqrt(2.0*PI))) * exp(- ((timeOfTheDay + OFFSET - MU) * (timeOfTheDay + OFFSET - MU)) / (2 * SIGMA * SIGMA)));
- return irrad * panel_area * conv_eff * loss_coeff;
-}
-</declaration>
-		<location id="id22" x="-578" y="-459">
-			<name x="-561" y="-484">nominal</name>
-			<label kind="exponentialrate" x="-586" y="-442">1e2</label>
-		</location>
-		<init ref="id22"/>
-		<transition>
-			<source ref="id22"/>
-			<target ref="id22"/>
-			<label kind="assignment" x="-578" y="-578">solar_panel_output=
-solar_panel(global_time)</label>
-			<nail x="-578" y="-535"/>
-			<nail x="-408" y="-535"/>
-			<nail x="-408" y="-459"/>
-		</transition>
-	</template>
-	<template>
-		<name>BatteryManager</name>
-		<parameter>const r_id bid</parameter>
-		<location id="id23" x="-450" y="-688">
-			<name x="-518" y="-713">Nominal</name>
-			<label kind="invariant" x="-518" y="-790">battery_energy[bid]'== 
-solar_panel_output - 
-dissipated_power[bid]
-&amp;&amp; depleted[bid]'==0</label>
-			<label kind="exponentialrate" x="-433" y="-713">1e2</label>
-		</location>
-		<location id="id24" x="-705" y="-450">
-			<name x="-680" y="-458">Init</name>
-			<committed/>
-		</location>
-		<location id="id25" x="-705" y="-569">
-			<name x="-748" y="-577">Full</name>
-			<label kind="invariant" x="-790" y="-543">battery_energy[bid]'==0
-&amp;&amp; depleted[bid]'==0</label>
-			<label kind="exponentialrate" x="-748" y="-560">1e2</label>
-		</location>
-		<location id="id26" x="-161" y="-569">
-			<name x="-187" y="-560">Empty</name>
-			<label kind="invariant" x="-297" y="-526">battery_energy[bid]'==0
-&amp;&amp; depleted[bid]'==1</label>
-			<label kind="exponentialrate" x="-178" y="-543">1e2</label>
-		</location>
-		<location id="id27" x="-425" y="-569">
-			<committed/>
-		</location>
-		<init ref="id24"/>
-		<transition>
-			<source ref="id23"/>
-			<target ref="id27"/>
-			<label kind="guard" x="-442" y="-654">battery_energy[bid] 
-&lt;= min_batt[bid]</label>
-		</transition>
-		<transition>
-			<source ref="id27"/>
-			<target ref="id26"/>
-			<label kind="synchronisation" x="-365" y="-603">empty_batt[bid]!</label>
-			<label kind="assignment" x="-365" y="-586">battery_energy[bid] = 
-min_batt[bid]</label>
-		</transition>
-		<transition>
-			<source ref="id26"/>
-			<target ref="id23"/>
-			<label kind="guard" x="-323" y="-756">solar_panel_output &gt; 
-dissipated_power[bid] + 
-BATT_THRESHOLD</label>
-			<label kind="synchronisation" x="-323" y="-705">replenished_batt[bid]!</label>
-			<nail x="-161" y="-688"/>
-		</transition>
-		<transition>
-			<source ref="id25"/>
-			<target ref="id23"/>
-			<label kind="guard" x="-663" y="-603">solar_panel_output &lt; 
-dissipated_power[bid]</label>
-			<nail x="-476" y="-569"/>
-		</transition>
-		<transition>
-			<source ref="id23"/>
-			<target ref="id25"/>
-			<label kind="guard" x="-790" y="-722">battery_energy[bid] &gt;=max_batt[bid]</label>
-			<label kind="assignment" x="-790" y="-705">battery_energy[bid] = max_batt[bid]</label>
-			<nail x="-705" y="-688"/>
-		</transition>
-		<transition>
-			<source ref="id24"/>
-			<target ref="id25"/>
-			<label kind="assignment" x="-705" y="-484">battery_energy[bid] = max_batt[bid]</label>
-		</transition>
-	</template>
-	<template>
-		<name>Controller</name>
-		<parameter>const r_id id</parameter>
-		<location id="id28" x="-943" y="-1028">
-			<name x="-1020" y="-1054">Nominal</name>
-		</location>
-		<location id="id29" x="-731" y="-1028">
-			<name x="-756" y="-1062">st1</name>
-			<committed/>
-		</location>
-		<location id="id30" x="-943" y="-1130">
-			<name x="-952" y="-1173">st2</name>
-		</location>
-		<location id="id31" x="-1147" y="-1130">
-			<name x="-1156" y="-1172">st3</name>
-			<committed/>
-		</location>
-		<init ref="id28"/>
-		<transition>
-			<source ref="id28"/>
-			<target ref="id29"/>
-			<label kind="guard" x="-918" y="-960">energyAvailable[id]==0</label>
-			<label kind="synchronisation" x="-875" y="-943">ready[id]?</label>
-			<nail x="-943" y="-943"/>
-			<nail x="-731" y="-943"/>
-		</transition>
-		<transition>
-			<source ref="id28"/>
-			<target ref="id30"/>
-			<label kind="guard" x="-935" y="-1105">buffer[id].length &lt; 1</label>
-			<label kind="synchronisation" x="-935" y="-1088">empty_batt[id]?</label>
-			<label kind="assignment" x="-935" y="-1071">energyAvailable[id]=0</label>
-		</transition>
-		<transition>
-			<source ref="id31"/>
-			<target ref="id28"/>
-			<label kind="synchronisation" x="-1113" y="-1028">resume[id]!</label>
-			<nail x="-1147" y="-1028"/>
-		</transition>
-		<transition>
-			<source ref="id30"/>
-			<target ref="id31"/>
-			<label kind="synchronisation" x="-1122" y="-1164">replenished_batt[id]?</label>
-			<label kind="assignment" x="-1122" y="-1147">energyAvailable[id]=1</label>
-		</transition>
-		<transition>
-			<source ref="id29"/>
-			<target ref="id30"/>
-			<label kind="synchronisation" x="-858" y="-1147">suspend[id]!</label>
-			<nail x="-731" y="-1036"/>
-			<nail x="-731" y="-1045"/>
-			<nail x="-731" y="-1079"/>
-			<nail x="-731" y="-1130"/>
-		</transition>
-		<transition>
-			<source ref="id28"/>
-			<target ref="id29"/>
-			<label kind="guard" x="-918" y="-1028">buffer[id].length &gt;= 1</label>
-			<label kind="synchronisation" x="-892" y="-1011">empty_batt[id]?</label>
-			<label kind="assignment" x="-918" y="-994">energyAvailable[id]=0</label>
-		</transition>
-	</template>
-	<system>
-sp = SolarPanel(solar_panel_output);
-
-Node0 = Resource(0,true,FIFO);
-Node1 = Resource(1,true,FIFO);
-Node2 = Resource(2,true,FPS);
-Node3 = Resource(3,false,FPS);
-Node4 = Resource(4,false,FPS);
-
-Batt0 = BatteryManager(0);
-Batt1 = BatteryManager(1);
-Batt2 = BatteryManager(2);
-Batt3 = BatteryManager(3);
-Batt4 = BatteryManager(4);
-
-system sp, Task, Node0, Node1, Node2, Node3, Node4, Batt0, Batt1, Batt2, Batt3, Batt4, Controller, Policy_FPS, Policy_FIFO;</system>
-	<queries>
-		<query>
-			<formula>simulate [&lt;=2*DAY; 1] {dissipated_power[0], dissipated_power[1], dissipated_power[2], dissipated_power[3], dissipated_power[4]}</formula>
-			<comment></comment>
-		</query>
-		<query>
-			<formula>simulate [&lt;=2*DAY; 1] {sp.irrad, battery_energy[0], battery_energy[1], battery_energy[2], battery_energy[3], battery_energy[4]}</formula>
-			<comment></comment>
-		</query>
-		<query>
-			<formula>simulate [&lt;=2*DAY; 1000] {battery_energy[0], battery_energy[1], battery_energy[2], battery_energy[3], battery_energy[4]} : 1 : exists(i:t_id) Task(i).Error</formula>
-			<comment></comment>
-		</query>
-		<query>
-			<formula>Pr [&lt;= 2*DAY] (&lt;&gt; exists(i:t_id) Task(i).Error)</formula>
-			<comment></comment>
-		</query>
-	</queries>
-</nta>
+</declaration><location id="id79" x="40" y="80"><name x="30" y="50">start</name><urgent/></location><location id="id80" x="190" y="80"><name x="180" y="50">running</name></location><location id="id81" x="190" y="230"><name x="180" y="200">finish</name></location><init ref="id79"/><transition><source ref="id79"/><target ref="id80"/><label kind="synchronisation" x="55" y="65">Main#main#$$Ljava$lang$String$$V#call!</label></transition><transition><source ref="id80"/><target ref="id81"/><label kind="synchronisation" x="130" y="140">Main#main#$$Ljava$lang$String$$V#return?</label></transition><transition><source ref="id81"/><target ref="id81"/><nail x="160" y="200"/><nail x="220" y="200"/></transition></template><system>system Math, Main, Main#main;</system></nta>

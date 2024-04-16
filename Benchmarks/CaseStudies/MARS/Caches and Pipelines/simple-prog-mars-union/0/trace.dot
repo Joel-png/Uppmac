@@ -1,0 +1,6 @@
+digraph automaton {
+  node [shape = doublecircle]; node_final;
+  node [shape = circle]
+  node_0 -> node_1 [label="1_M"]
+  node_1 -> node_final [label="1_M"]
+}

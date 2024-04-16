@@ -3,6 +3,7 @@ public class Template {
     Declaration declaration;
     Location[] locations;
     Transition[] transitions;
+    String init = "";
 
     public Template(String name, int locationsLength, int transitionsLength) {
         this.name = name;
@@ -20,7 +21,11 @@ public class Template {
 
     public void printData(int indent) {
         Navigator.indent(indent);
-        System.out.println("Template: " + name + ", " + String.valueOf(locations.length) + " locations, " + String.valueOf(transitions.length) + " transitions");
+        System.out.println("Template: " + name + ", " + String.valueOf(locations.length) + " locations, " + String.valueOf(transitions.length) + " transitions, init location: " + init);
+    }
+
+    public Location getInit() {
+        return fetchLocationFromID(init);
     }
 
     public Location fetchLocationFromID(String id) {
