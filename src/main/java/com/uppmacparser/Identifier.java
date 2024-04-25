@@ -16,7 +16,7 @@ public class Identifier {
     }
 
 
-    public void outputNtaTemplateProperties() throws IOException, InterruptedException{
+    public void outputNtaTemplateProperties() throws IOException {
         excelWriter.writeRow(new Object[] {nta.name}); // print name of nta
         for (int i = 0; i < templateProperties.size(); i++) {
             TemplateProperty currentTemplateProperty = templateProperties.get(i);

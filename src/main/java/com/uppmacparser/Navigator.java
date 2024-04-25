@@ -49,7 +49,7 @@ public class Navigator {
         }
     }
 
-    public void getProperties() throws IOException, InterruptedException {
+    public void getProperties() throws IOException {
         boolean print = false;
         // NTA
         if (print) {
@@ -106,7 +106,6 @@ public class Navigator {
         }
         System.out.println();
         identifier.outputNtaTemplateProperties();
-        TimeUnit.MILLISECONDS.sleep(200);
     }
 
     public void navigate() {

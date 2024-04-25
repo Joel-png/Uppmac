@@ -26,7 +26,7 @@ public class ExcelWriter {
         ntaData = new ArrayList<Object[]>(); 
     }
 
-    public void writeRow(Object[] object) throws InterruptedException {
+    public void writeRow(Object[] object) {
         System.out.println(rowIndex++);
         printObject(object);
         ntaData.add(object);
