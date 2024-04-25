@@ -1,3 +1,4 @@
+package com.uppmacparser;
 public class Transition {
     String source;
     String target;

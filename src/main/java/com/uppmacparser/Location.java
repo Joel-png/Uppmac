@@ -1,3 +1,4 @@
+package com.uppmacparser;
 import java.util.ArrayList;
 
 public class Location {

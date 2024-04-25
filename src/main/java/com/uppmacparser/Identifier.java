@@ -1,4 +1,15 @@
+package com.uppmacparser;
+
 import java.util.ArrayList;
+import java.io.File; 
+import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.xssf.usermodel.XSSFRow;
+import org.apache.poi.xssf.usermodel.XSSFSheet;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import java.io.FileOutputStream; 
+import java.util.Map; 
+import java.util.Set; 
+import java.util.TreeMap; 
 
 public class Identifier {
     Nta nta;
@@ -9,7 +20,10 @@ public class Identifier {
         this.nta = nta;
     }
 
-    public void printNtaTemplateProperties() {
+    public void outputNtaTemplateProperties() {
+        XSSFWorkbook workbook = new XSSFWorkbook();
+
+
         for (int i = 0; i < templateProperties.size(); i++) {
             TemplateProperty currentTemplateProperty = templateProperties.get(i);
 

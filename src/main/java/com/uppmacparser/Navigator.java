@@ -1,3 +1,4 @@
+package com.uppmacparser;
 import java.util.Scanner;
 import java.util.regex.Pattern;
 
@@ -89,7 +90,7 @@ public class Navigator {
         System.out.println();
         System.out.println();
         System.out.println();
-        identifier.printNtaTemplateProperties();
+        identifier.outputNtaTemplateProperties();
     }
 
     public void navigate() {
