@@ -1,6 +1,9 @@
 package com.uppmacparser;
+import java.io.IOException;
 import java.util.Scanner;
 import java.util.regex.Pattern;
+import java.util.concurrent.TimeUnit;
+
 
 public class Navigator {
     enum State {
@@ -21,11 +24,11 @@ public class Navigator {
 
     Identifier identifier;
 
-    public Navigator(Nta nta, String fileName) {
+    public Navigator(Nta nta, String fileName, ExcelWriter excelWriter) {
         this.nta = nta;
         this.state = State.NTA;
         this.fileName = fileName;
-        this.identifier = new Identifier(nta);
+        this.identifier = new Identifier(nta, excelWriter);
     }
 
     public String sub(String string, int start, int end) {
@@ -46,51 +49,64 @@ public class Navigator {
         }
     }
 
-    public void getProperties() {
-        
+    public void getProperties() throws IOException, InterruptedException {
+        boolean print = false;
         // NTA
-        System.out.print("<");
-        System.out.println("NTA has Templates:");
+        if (print) {
+            System.out.print("<");
+            System.out.println("NTA has Templates:");
+        }
         nta.printTemplates(1);
         System.out.println();
+
         for (int i = 0; i < nta.templates.length; i++) {
             // TEMPLATES
-            System.out.println();
             templateIndex = i;
-            indent(1);
-            System.out.print("<     NEXT_T     ");
-            System.out.print("[" + templateIndex + "] ");
-            nta.templates[templateIndex].printData(0);
-            nta.templates[templateIndex].printLocations(2);
-            System.out.println();
-            indent(2);
+            if (print) {
+                System.out.println();
+                indent(1);
+                System.out.print("<     NEXT_T     ");
+                System.out.print("[" + templateIndex + "] ");
+                nta.templates[templateIndex].printData(0);
+                nta.templates[templateIndex].printLocations(2);
+                System.out.println();
+                indent(2);
+            }
             System.out.println("[" + templateIndex + "] Template  properties:");
             identifier.printTemplateProperties(nta.templates[templateIndex], 3);
+            
             for (int j = 0; j < nta.templates[templateIndex].locations.length; j++) {
                 // LOCATION
                 System.out.println();
                 locationIndex = j;
                 System.out.println();
                 indent(2);
-                System.out.print("<      Next_L     ");
-                nta.templates[templateIndex].locations[locationIndex].printData(0);
-                nta.templates[templateIndex].locations[locationIndex].printTransitions(3);
-                System.out.println();
-                indent(3);
-                System.out.println("[" + locationIndex + "] Location properties:");
-                identifier.printLocationProperties(nta.templates[templateIndex].locations[locationIndex], nta.templates[templateIndex].locations, nta.templates[templateIndex].transitions, 4);
-                indent(2);
-                System.out.println("[" + locationIndex + "] Location: " + nta.templates[templateIndex].locations[locationIndex].name + "/>");
+                if (print) {
+                    System.out.print("<      Next_L     ");
+                    nta.templates[templateIndex].locations[locationIndex].printData(0);
+                    nta.templates[templateIndex].locations[locationIndex].printTransitions(3);
+                    System.out.println();
+                    indent(3);
+                    System.out.println("[" + locationIndex + "] Location properties:");
+                    identifier.printLocationProperties(nta.templates[templateIndex].locations[locationIndex], nta.templates[templateIndex].locations, nta.templates[templateIndex].transitions, 4);
+                    indent(2);
+                    System.out.println("[" + locationIndex + "] Location: " + nta.templates[templateIndex].locations[locationIndex].name + "/>");
+                }
             }
-            indent(1);
-            System.out.print("[" + templateIndex + "] Template: " + nta.templates[templateIndex].name + "/>");
+            if (print) {
+                indent(1);
+                System.out.print("[" + templateIndex + "] Template: " + nta.templates[templateIndex].name + "/>");
+                System.out.println();
+            }
+        }
+        if (print) {
+            System.out.print("NTA/>");
+            System.out.println();
             System.out.println();
         }
-        System.out.print("NTA/>");
-        System.out.println();
-        System.out.println();
         System.out.println();
         identifier.outputNtaTemplateProperties();
+        TimeUnit.MILLISECONDS.sleep(200);
     }
 
     public void navigate() {

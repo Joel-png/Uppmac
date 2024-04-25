@@ -14,8 +14,10 @@ import org.w3c.dom.NodeList;
 public class DefaultParser {
     
     private File file;
-    public DefaultParser(File file) {
+    String NTAName;
+    public DefaultParser(File file, String NTAName) {
         this.file = file;
+        this.NTAName = NTAName;
     }
 
     public Nta parse() throws Exception {
@@ -28,7 +30,7 @@ public class DefaultParser {
 
         NodeList templateList = (NodeList) xPath.compile("/nta/template").evaluate(xmlDocument, XPathConstants.NODESET);
         
-        Nta nta = new Nta(templateList.getLength());
+        Nta nta = new Nta(templateList.getLength(), NTAName);
 
         // do for each template
         // - find locations

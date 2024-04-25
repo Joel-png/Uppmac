@@ -16,12 +16,17 @@ public class Runner {
 
     public Navigator run(String[] args) throws Exception {
 
+        
         if (args.length == 0) {
             System.out.println("You need to specify a path!");
             System.out.println("For mass property analysis use the args '-a [folder]'");
             System.exit(1);
         }
         
+        ExcelWriter excelWriter = new ExcelWriter();
+        // excel column names
+        excelWriter.writeRow(new Object[] {"NTA name", "Template Name", "numPopularLocations", "isLinear", "hasLonelyInit", "isSingleLocation"});
+
         if (args.length == 1) {
             if (args[0] == null || args[0].trim().isEmpty()) {
                 System.out.println("You need to specify a path!");
@@ -36,8 +41,8 @@ public class Runner {
                 File inputFile = new File(args[0]);
                 
                 // all the computing of file is done here
-                DefaultParser parser = new DefaultParser(formatXML(inputFile));
-                navigator = new Navigator(parser.parse(), args[0]);
+                DefaultParser parser = new DefaultParser(formatXML(inputFile), args[0]);
+                navigator = new Navigator(parser.parse(), args[0], excelWriter);
                 navigator.navigate();
                 
             } else {
@@ -59,6 +64,7 @@ public class Runner {
                 File inputDirectory = new File(args[1]);
                 //File tempFile = new File("temp.xml");
                 String contents[] = inputDirectory.list();
+
                 for (int j = 0; j < contents.length; j++) {
                     System.out.println("Analysing file: " + contents[j]);
                     
@@ -71,14 +77,16 @@ public class Runner {
                         File inputFile = new File(inputDirectory.getAbsolutePath() + "\\" + contents[j]);
                         
                         // all the computing of file is done here
-                        DefaultParser parser = new DefaultParser(formatXML(inputFile));
-                        navigator = new Navigator(parser.parse(), args[0]);
+                        DefaultParser parser = new DefaultParser(formatXML(inputFile), contents[j]);
+                        navigator = new Navigator(parser.parse(), args[0], excelWriter);
                         navigator.getProperties();
+                        
                         
                     } else {
                         System.out.println("Specified file is of type '" + extension + "', please use a file with type 'xml'");
                     }
                 }
+                excelWriter.finish();
 
             // file -p
             } else if (args[0].equals(new String("-p"))) {
@@ -89,7 +97,7 @@ public class Runner {
                 System.out.println();
         
                 System.out.println("Analysing file: " + args[1]);
-                
+                excelWriter.writeRow(new Object[] {args[1]});
                 // pass file if .xml
                 String extension = "";
                 int i = args[1].lastIndexOf('.');
@@ -99,9 +107,10 @@ public class Runner {
                     File inputFile = new File(args[1]);
 
                     // all the computing of file is done here
-                    DefaultParser parser = new DefaultParser(formatXML(inputFile));
-                    navigator = new Navigator(parser.parse(), args[0]);
+                    DefaultParser parser = new DefaultParser(formatXML(inputFile), args[1]);
+                    navigator = new Navigator(parser.parse(), args[0], excelWriter);
                     navigator.getProperties();
+                    excelWriter.finish();
                     
                 } else {
                     System.out.println("Specified file is of type '" + extension + "', please use a file with type 'xml'");

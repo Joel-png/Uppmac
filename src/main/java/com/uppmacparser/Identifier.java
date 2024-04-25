@@ -1,58 +1,64 @@
 package com.uppmacparser;
 
+import java.io.IOException;
 import java.util.ArrayList;
-import java.io.File; 
-import org.apache.poi.ss.usermodel.Cell;
-import org.apache.poi.xssf.usermodel.XSSFRow;
-import org.apache.poi.xssf.usermodel.XSSFSheet;
-import org.apache.poi.xssf.usermodel.XSSFWorkbook;
-import java.io.FileOutputStream; 
-import java.util.Map; 
-import java.util.Set; 
-import java.util.TreeMap; 
+
 
 public class Identifier {
     Nta nta;
     ArrayList<String> visitedLocationIDs = new ArrayList<String>();
     ArrayList<TemplateProperty> templateProperties = new ArrayList<TemplateProperty>();
+    ExcelWriter excelWriter;
 
-    public Identifier(Nta nta) {
+    public Identifier(Nta nta, ExcelWriter excelWriter) {
         this.nta = nta;
+        this.excelWriter = excelWriter;
     }
 
-    public void outputNtaTemplateProperties() {
-        XSSFWorkbook workbook = new XSSFWorkbook();
 
-
+    public void outputNtaTemplateProperties() throws IOException, InterruptedException{
+        excelWriter.writeRow(new Object[] {nta.name}); // print name of nta
         for (int i = 0; i < templateProperties.size(); i++) {
             TemplateProperty currentTemplateProperty = templateProperties.get(i);
 
-            System.out.println();
-            System.out.println();
-            System.out.println();
-            System.out.println(currentTemplateProperty.template.name);
+            int numOfPoplarLocations = currentTemplateProperty.numOfPoplarLocations;
+            String isLinear = "no";
+            String hasLonelyInit = "";
+            String isSingleLocation = "no";
+
+            // System.out.println();
+            // System.out.println();
+            // System.out.println();
+            // System.out.println(currentTemplateProperty.template.name);
             
-            Navigator.indent(1);
-            System.out.println("Has " + currentTemplateProperty.numOfPoplarLocations + " popular locations (75-100% degree presences)");
+            // Navigator.indent(1);
+            // System.out.println("Has " + numOfPoplarLocations + " popular locations (75-100% degree presences)");
 
             if (currentTemplateProperty.isLinear) {
-                Navigator.indent(1);
-                System.out.println("Linear");
+                // Navigator.indent(1);
+                // System.out.println("Linear");
+                isLinear = "yes";
             } else {
-                Navigator.indent(1);
-                System.out.println("Not Linear");
+                // Navigator.indent(1);
+                // System.out.println("Not Linear");
+                isLinear = "no";
             }
 
             if (currentTemplateProperty.lonelyInit) {
-                Navigator.indent(1);
-                System.out.println("Lonely init");
+                // Navigator.indent(1);
+                // System.out.println("Lonely init");
+                hasLonelyInit = "yes";
             }
 
             if (currentTemplateProperty.singleLocation) {
-                Navigator.indent(1);
-                System.out.println("Single location");
+                // Navigator.indent(1);
+                // System.out.println("Single location");
+                isSingleLocation = "yes";
             }
+
+            excelWriter.writeRow(new Object[] {"", currentTemplateProperty.template.name, String.valueOf(numOfPoplarLocations), isLinear, hasLonelyInit, isSingleLocation});
         }
+        excelWriter.writeRow(new Object[] {""});
     }
 
     public void printLocationProperties(Location location, Location[] locations, Transition[] transitions, int indent) {
