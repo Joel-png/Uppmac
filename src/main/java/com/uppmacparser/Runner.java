@@ -25,7 +25,7 @@ public class Runner {
         
         ExcelWriter excelWriter = new ExcelWriter();
         // excel column names
-        excelWriter.writeRow(new Object[] {"NTA name", "Template Name", "numPopularLocations", "isLinear", "hasLonelyInit", "isSingleLocation"});
+        excelWriter.writeRow(new String[] {"NTA name", "Template Name", "numPopularLocations", "isLinear", "hasLonelyInit", "isSingleLocation"});
 
         if (args.length == 1) {
             if (args[0] == null || args[0].trim().isEmpty()) {
@@ -97,7 +97,7 @@ public class Runner {
                 System.out.println();
         
                 System.out.println("Analysing file: " + args[1]);
-                excelWriter.writeRow(new Object[] {args[1]});
+                excelWriter.writeRow(new String[] {args[1]});
                 // pass file if .xml
                 String extension = "";
                 int i = args[1].lastIndexOf('.');

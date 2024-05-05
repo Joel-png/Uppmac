@@ -2,8 +2,6 @@ package com.uppmacparser;
 import java.io.IOException;
 import java.util.Scanner;
 import java.util.regex.Pattern;
-import java.util.concurrent.TimeUnit;
-
 
 public class Navigator {
     enum State {
