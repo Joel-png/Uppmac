@@ -1,4 +1,155 @@
 NTA name | Template Name | numPopularLocations | isLinear | hasLonelyInit | isSingleLocation | 
+covid19-ctmc.xml | 
+ |          name          | lonelyInit | locations | transitions | flowers | linear | single | 
+ | Move                   | no         | 1         | 1           | 1       | no     | yes    | 
+ | Infect                 | no         | 1         | 1           | 1       | no     | yes    | 
+ | 
+covid19-ode.xml | 
+ |          name          | lonelyInit | locations | transitions | flowers | linear | single | 
+ | P                      | no         | 2         | 2           | 2       | no     | no     | 
+ | 
+seihr-ctmc-agent.xml | 
+ |          name          | lonelyInit | locations | transitions | flowers | linear | single | 
+ | Pretty                 | yes        | 5         | 6           | 0       | yes    | no     | 
+ | Susceptible            | yes        | 5         | 6           | 0       | yes    | no     | 
+ | Exposed                | no         | 5         | 6           | 0       | yes    | no     | 
+ | Susceptible2           | yes        | 5         | 6           | 0       | yes    | no     | 
+ | Exposed2               | no         | 5         | 6           | 0       | yes    | no     | 
+ | 
+seihr-ctmc.xml | 
+ |          name          | lonelyInit | locations | transitions | flowers | linear | single | 
+ | Move                   | no         | 1         | 1           | 1       | no     | yes    | 
+ | Infect                 | no         | 1         | 1           | 1       | no     | yes    | 
+ | 
+seihr-ode.xml | 
+ |          name          | lonelyInit | locations | transitions | flowers | linear | single | 
+ | Simple                 | yes        | 1         | 0           | 0       | yes    | yes    | 
+ | P                      | yes        | 1         | 0           | 0       | yes    | yes    | 
+ | Quarantine             | yes        | 4         | 3           | 0       | yes    | no     | 
+ | 
+GiDecember-5Nodes-NoEnergyTransfer.xml | 
+ |          name          | lonelyInit | locations | transitions | flowers | linear | single | 
+ | Task                   | yes        | 10        | 13          | 0       | no     | no     | 
+ | Policy_FIFO            | no         | 2         | 2           | 2       | no     | no     | 
+ | Policy_FPS             | no         | 2         | 2           | 2       | no     | no     | 
+ | Policy_EDF             | no         | 3         | 4           | 1       | no     | no     | 
+ | Resource               | no         | 5         | 11          | 0       | no     | no     | 
+ | SolarPanel             | no         | 1         | 1           | 1       | no     | yes    | 
+ | BatteryManager         | yes        | 5         | 6           | 0       | no     | no     | 
+ | Controller             | no         | 4         | 6           | 0       | no     | no     | 
+ | 
+GiDecember-5Nodes-WithEnergyTransfer.xml | 
+ |          name          | lonelyInit | locations | transitions | flowers | linear | single | 
+ | Task                   | yes        | 10        | 13          | 0       | no     | no     | 
+ | Policy_FIFO            | no         | 2         | 2           | 2       | no     | no     | 
+ | Policy_FPS             | no         | 2         | 2           | 2       | no     | no     | 
+ | Policy_EDF             | no         | 3         | 4           | 1       | no     | no     | 
+ | Resource               | no         | 5         | 11          | 0       | no     | no     | 
+ | SolarPanel             | no         | 1         | 1           | 1       | no     | yes    | 
+ | BatteryManager         | yes        | 6         | 11          | 0       | no     | no     | 
+ | Controller             | no         | 7         | 14          | 0       | no     | no     | 
+ | 
+GiJune-5Nodes-NoEnergyTransfer.xml | 
+ |          name          | lonelyInit | locations | transitions | flowers | linear | single | 
+ | Task                   | yes        | 10        | 13          | 0       | no     | no     | 
+ | Policy_FIFO            | no         | 2         | 2           | 2       | no     | no     | 
+ | Policy_FPS             | no         | 2         | 2           | 2       | no     | no     | 
+ | Policy_EDF             | no         | 3         | 4           | 1       | no     | no     | 
+ | Resource               | no         | 5         | 11          | 0       | no     | no     | 
+ | SolarPanel             | no         | 1         | 1           | 1       | no     | yes    | 
+ | BatteryManager         | yes        | 5         | 6           | 0       | no     | no     | 
+ | Controller             | no         | 4         | 6           | 0       | no     | no     | 
+ | 
+HerschelEvents2.xml | 
+ |          name          | lonelyInit | locations | transitions | flowers | linear | single | 
+ | Scheduler              | yes        | 4         | 6           | 1       | no     | no     | 
+ | IdleTask               | no         | 2         | 2           | 2       | no     | no     | 
+ | MainCycleOld           | yes        | 5         | 6           | 0       | no     | no     | 
+ | MainCycleChain         | yes        | 13        | 19          | 0       | no     | no     | 
+ | MainCycle              | yes        | 14        | 23          | 0       | no     | no     | 
+ | ASW                    | no         | 13        | 22          | 0       | no     | no     | 
+ | ASWspor                | yes        | 15        | 26          | 0       | no     | no     | 
+ | BSW                    | no         | 13        | 24          | 0       | no     | no     | 
+ | Global                 | no         | 1         | 3           | 1       | no     | yes    | 
+ | 
+HerschelEvents2spor.xml | 
+ |          name          | lonelyInit | locations | transitions | flowers | linear | single | 
+ | Scheduler              | yes        | 4         | 6           | 1       | no     | no     | 
+ | IdleTask               | no         | 2         | 2           | 2       | no     | no     | 
+ | MainCycleOld           | yes        | 5         | 6           | 0       | no     | no     | 
+ | MainCycleChain         | yes        | 13        | 19          | 0       | no     | no     | 
+ | MainCycle              | yes        | 14        | 23          | 0       | no     | no     | 
+ | ASW                    | no         | 13        | 22          | 0       | no     | no     | 
+ | ASWspor                | yes        | 15        | 26          | 0       | no     | no     | 
+ | BSW                    | no         | 13        | 24          | 0       | no     | no     | 
+ | Global                 | no         | 1         | 3           | 1       | no     | yes    | 
+ | 
+HerschelNonDet-10-16.xml | 
+ |          name          | lonelyInit | locations | transitions | flowers | linear | single | 
+ | Scheduler              | yes        | 4         | 6           | 1       | no     | no     | 
+ | IdleTask               | no         | 2         | 2           | 2       | no     | no     | 
+ | MainCycle              | yes        | 14        | 23          | 0       | no     | no     | 
+ | ASW                    | no         | 13        | 22          | 0       | no     | no     | 
+ | ASWspor                | yes        | 15        | 26          | 0       | no     | no     | 
+ | BSW                    | no         | 13        | 24          | 0       | no     | no     | 
+ | Global                 | no         | 1         | 3           | 1       | no     | yes    | 
+ | 
+HerschelNonDet-10.xml | 
+ |          name          | lonelyInit | locations | transitions | flowers | linear | single | 
+ | Scheduler              | yes        | 4         | 6           | 1       | no     | no     | 
+ | IdleTask               | no         | 2         | 2           | 2       | no     | no     | 
+ | MainCycle              | yes        | 14        | 23          | 0       | no     | no     | 
+ | ASW                    | no         | 13        | 22          | 0       | no     | no     | 
+ | ASWspor                | yes        | 15        | 26          | 0       | no     | no     | 
+ | BSW                    | no         | 13        | 24          | 0       | no     | no     | 
+ | Global                 | no         | 1         | 3           | 1       | no     | yes    | 
+ | 
+HerschelNonDet-14-16.xml | 
+ |          name          | lonelyInit | locations | transitions | flowers | linear | single | 
+ | Scheduler              | yes        | 4         | 6           | 1       | no     | no     | 
+ | IdleTask               | no         | 2         | 2           | 2       | no     | no     | 
+ | MainCycle              | yes        | 14        | 23          | 0       | no     | no     | 
+ | ASW                    | no         | 13        | 22          | 0       | no     | no     | 
+ | ASWspor                | yes        | 15        | 26          | 0       | no     | no     | 
+ | BSW                    | no         | 13        | 24          | 0       | no     | no     | 
+ | Global                 | no         | 1         | 3           | 1       | no     | yes    | 
+ | 
+HerschelNonDet-14.xml | 
+ |          name          | lonelyInit | locations | transitions | flowers | linear | single | 
+ | Scheduler              | yes        | 4         | 6           | 1       | no     | no     | 
+ | IdleTask               | no         | 2         | 2           | 2       | no     | no     | 
+ | MainCycle              | yes        | 14        | 23          | 0       | no     | no     | 
+ | ASW                    | no         | 13        | 22          | 0       | no     | no     | 
+ | ASWspor                | yes        | 15        | 26          | 0       | no     | no     | 
+ | BSW                    | no         | 13        | 24          | 0       | no     | no     | 
+ | Global                 | no         | 1         | 3           | 1       | no     | yes    | 
+ | 
+Herschel-SMC2.xml | 
+ |          name          | lonelyInit | locations | transitions | flowers | linear | single | 
+ | Scheduler              | yes        | 4         | 6           | 1       | no     | no     | 
+ | IdleTask               | no         | 2         | 2           | 2       | no     | no     | 
+ | MainCycle              | yes        | 14        | 26          | 0       | no     | no     | 
+ | ASW                    | no         | 13        | 26          | 0       | no     | no     | 
+ | BSW                    | no         | 13        | 28          | 0       | no     | no     | 
+ | GlobalPlain            | yes        | 1         | 0           | 0       | yes    | yes    | 
+ | Global                 | no         | 1         | 2           | 1       | no     | yes    | 
+ | 
+schedulability4.xml | 
+ |          name          | lonelyInit | locations | transitions | flowers | linear | single | 
+ | CPUScheduler           | no         | 5         | 8           | 0       | no     | no     | 
+ | InheritanceScheduler   | no         | 4         | 6           | 1       | no     | no     | 
+ | CeilingScheduler       | no         | 4         | 6           | 1       | no     | no     | 
+ | Task                   | yes        | 6         | 8           | 0       | no     | no     | 
+ | Global                 | no         | 1         | 1           | 1       | no     | yes    | 
+ | 
+linear.xml | 
+ |          name          | lonelyInit | locations | transitions | flowers | linear | single | 
+ | Template               | yes        | 4         | 3           | 0       | yes    | no     | 
+ | 
+linearbranch.xml | 
+ |          name          | lonelyInit | locations | transitions | flowers | linear | single | 
+ | Template               | no         | 6         | 6           | 0       | no     | no     | 
+ | 
 Batman 6 Jan 2016.xml | 
  |          name          | lonelyInit | locations | transitions | flowers | linear | single | 
  | Node                   | yes        | 2         | 15          | 1       | no     | no     | 
@@ -44,22 +195,22 @@ ospf_attack_phantom.xml |
 respiratory-motion.xml | 
  |          name          | lonelyInit | locations | transitions | flowers | linear | single | 
  | TermModifier           | no         | 2         | 3           | 2       | no     | no     | 
- | Timer                  | no         | 1         | 1           | 1       | no     | no     | 
- | CoeffModifier          | no         | 1         | 2           | 1       | no     | no     | 
- | Summer                 | no         | 1         | 1           | 1       | no     | no     | 
- | FSTerm                 | no         | 1         | 1           | 1       | no     | no     | 
+ | Timer                  | no         | 1         | 1           | 1       | no     | yes    | 
+ | CoeffModifier          | no         | 1         | 2           | 1       | no     | yes    | 
+ | Summer                 | no         | 1         | 1           | 1       | no     | yes    | 
+ | FSTerm                 | no         | 1         | 1           | 1       | no     | yes    | 
  | 
 SCTP model.xml | 
  |          name          | lonelyInit | locations | transitions | flowers | linear | single | 
  | Server                 | no         | 3         | 9           | 1       | no     | no     | 
  | Legit_Client           | no         | 4         | 12          | 0       | no     | no     | 
- | Illegit_Client         | no         | 1         | 1           | 1       | no     | no     | 
+ | Illegit_Client         | no         | 1         | 1           | 1       | no     | yes    | 
  | 
 TCP model.xml | 
  |          name          | lonelyInit | locations | transitions | flowers | linear | single | 
  | Server                 | yes        | 3         | 9           | 1       | no     | no     | 
  | Legit_Client           | no         | 3         | 9           | 1       | no     | no     | 
- | Illegit_Client         | no         | 1         | 1           | 1       | no     | no     | 
+ | Illegit_Client         | no         | 1         | 1           | 1       | no     | yes    | 
  | 
 uppaal-3D-needle-steering-model.xml | 
  |          name          | lonelyInit | locations | transitions | flowers | linear | single | 
@@ -67,4 +218,1194 @@ uppaal-3D-needle-steering-model.xml |
  | Needle_Device_Tmpl     | no         | 3         | 4           | 1       | no     | no     | 
  | Tissue_Tmpl            | no         | 2         | 2           | 2       | no     | no     | 
  | Checker_Tmpl           | no         | 10        | 11          | 0       | no     | no     | 
+ | 
+csma-20N.xml | 
+ |          name          | lonelyInit | locations | transitions | flowers | linear | single | 
+ | P0                     | no         | 22        | 24          | 0       | no     | no     | 
+ | P1                     | no         | 3         | 8           | 0       | no     | no     | 
+ | P2                     | no         | 3         | 8           | 0       | no     | no     | 
+ | P3                     | no         | 3         | 8           | 0       | no     | no     | 
+ | P4                     | no         | 3         | 8           | 0       | no     | no     | 
+ | P5                     | no         | 3         | 8           | 0       | no     | no     | 
+ | P6                     | no         | 3         | 8           | 0       | no     | no     | 
+ | P7                     | no         | 3         | 8           | 0       | no     | no     | 
+ | P8                     | no         | 3         | 8           | 0       | no     | no     | 
+ | P9                     | no         | 3         | 8           | 0       | no     | no     | 
+ | P10                    | no         | 3         | 8           | 0       | no     | no     | 
+ | P11                    | no         | 3         | 8           | 0       | no     | no     | 
+ | P12                    | no         | 3         | 8           | 0       | no     | no     | 
+ | P13                    | no         | 3         | 8           | 0       | no     | no     | 
+ | P14                    | no         | 3         | 8           | 0       | no     | no     | 
+ | P15                    | no         | 3         | 8           | 0       | no     | no     | 
+ | P16                    | no         | 3         | 8           | 0       | no     | no     | 
+ | P17                    | no         | 3         | 8           | 0       | no     | no     | 
+ | P18                    | no         | 3         | 8           | 0       | no     | no     | 
+ | P19                    | no         | 3         | 8           | 0       | no     | no     | 
+ | P20                    | no         | 3         | 8           | 0       | no     | no     | 
+ | 
+csma-22N.xml | 
+ |          name          | lonelyInit | locations | transitions | flowers | linear | single | 
+ | P0                     | no         | 24        | 26          | 0       | no     | no     | 
+ | P1                     | no         | 3         | 8           | 0       | no     | no     | 
+ | P2                     | no         | 3         | 8           | 0       | no     | no     | 
+ | P3                     | no         | 3         | 8           | 0       | no     | no     | 
+ | P4                     | no         | 3         | 8           | 0       | no     | no     | 
+ | P5                     | no         | 3         | 8           | 0       | no     | no     | 
+ | P6                     | no         | 3         | 8           | 0       | no     | no     | 
+ | P7                     | no         | 3         | 8           | 0       | no     | no     | 
+ | P8                     | no         | 3         | 8           | 0       | no     | no     | 
+ | P9                     | no         | 3         | 8           | 0       | no     | no     | 
+ | P10                    | no         | 3         | 8           | 0       | no     | no     | 
+ | P11                    | no         | 3         | 8           | 0       | no     | no     | 
+ | P12                    | no         | 3         | 8           | 0       | no     | no     | 
+ | P13                    | no         | 3         | 8           | 0       | no     | no     | 
+ | P14                    | no         | 3         | 8           | 0       | no     | no     | 
+ | P15                    | no         | 3         | 8           | 0       | no     | no     | 
+ | P16                    | no         | 3         | 8           | 0       | no     | no     | 
+ | P17                    | no         | 3         | 8           | 0       | no     | no     | 
+ | P18                    | no         | 3         | 8           | 0       | no     | no     | 
+ | P19                    | no         | 3         | 8           | 0       | no     | no     | 
+ | P20                    | no         | 3         | 8           | 0       | no     | no     | 
+ | P21                    | no         | 3         | 8           | 0       | no     | no     | 
+ | P22                    | no         | 3         | 8           | 0       | no     | no     | 
+ | 
+csma-25N.xml | 
+ |          name          | lonelyInit | locations | transitions | flowers | linear | single | 
+ | P0                     | no         | 27        | 29          | 0       | no     | no     | 
+ | P1                     | no         | 3         | 8           | 0       | no     | no     | 
+ | P2                     | no         | 3         | 8           | 0       | no     | no     | 
+ | P3                     | no         | 3         | 8           | 0       | no     | no     | 
+ | P4                     | no         | 3         | 8           | 0       | no     | no     | 
+ | P5                     | no         | 3         | 8           | 0       | no     | no     | 
+ | P6                     | no         | 3         | 8           | 0       | no     | no     | 
+ | P7                     | no         | 3         | 8           | 0       | no     | no     | 
+ | P8                     | no         | 3         | 8           | 0       | no     | no     | 
+ | P9                     | no         | 3         | 8           | 0       | no     | no     | 
+ | P10                    | no         | 3         | 8           | 0       | no     | no     | 
+ | P11                    | no         | 3         | 8           | 0       | no     | no     | 
+ | P12                    | no         | 3         | 8           | 0       | no     | no     | 
+ | P13                    | no         | 3         | 8           | 0       | no     | no     | 
+ | P14                    | no         | 3         | 8           | 0       | no     | no     | 
+ | P15                    | no         | 3         | 8           | 0       | no     | no     | 
+ | P16                    | no         | 3         | 8           | 0       | no     | no     | 
+ | P17                    | no         | 3         | 8           | 0       | no     | no     | 
+ | P18                    | no         | 3         | 8           | 0       | no     | no     | 
+ | P19                    | no         | 3         | 8           | 0       | no     | no     | 
+ | P20                    | no         | 3         | 8           | 0       | no     | no     | 
+ | P21                    | no         | 3         | 8           | 0       | no     | no     | 
+ | P22                    | no         | 3         | 8           | 0       | no     | no     | 
+ | P23                    | no         | 3         | 8           | 0       | no     | no     | 
+ | P24                    | no         | 3         | 8           | 0       | no     | no     | 
+ | P25                    | no         | 3         | 8           | 0       | no     | no     | 
+ | 
+csma-30N.xml | 
+ |          name          | lonelyInit | locations | transitions | flowers | linear | single | 
+ | P0                     | no         | 32        | 34          | 0       | no     | no     | 
+ | P1                     | no         | 3         | 8           | 0       | no     | no     | 
+ | P2                     | no         | 3         | 8           | 0       | no     | no     | 
+ | P3                     | no         | 3         | 8           | 0       | no     | no     | 
+ | P4                     | no         | 3         | 8           | 0       | no     | no     | 
+ | P5                     | no         | 3         | 8           | 0       | no     | no     | 
+ | P6                     | no         | 3         | 8           | 0       | no     | no     | 
+ | P7                     | no         | 3         | 8           | 0       | no     | no     | 
+ | P8                     | no         | 3         | 8           | 0       | no     | no     | 
+ | P9                     | no         | 3         | 8           | 0       | no     | no     | 
+ | P10                    | no         | 3         | 8           | 0       | no     | no     | 
+ | P11                    | no         | 3         | 8           | 0       | no     | no     | 
+ | P12                    | no         | 3         | 8           | 0       | no     | no     | 
+ | P13                    | no         | 3         | 8           | 0       | no     | no     | 
+ | P14                    | no         | 3         | 8           | 0       | no     | no     | 
+ | P15                    | no         | 3         | 8           | 0       | no     | no     | 
+ | P16                    | no         | 3         | 8           | 0       | no     | no     | 
+ | P17                    | no         | 3         | 8           | 0       | no     | no     | 
+ | P18                    | no         | 3         | 8           | 0       | no     | no     | 
+ | P19                    | no         | 3         | 8           | 0       | no     | no     | 
+ | P20                    | no         | 3         | 8           | 0       | no     | no     | 
+ | P21                    | no         | 3         | 8           | 0       | no     | no     | 
+ | P22                    | no         | 3         | 8           | 0       | no     | no     | 
+ | P23                    | no         | 3         | 8           | 0       | no     | no     | 
+ | P24                    | no         | 3         | 8           | 0       | no     | no     | 
+ | P25                    | no         | 3         | 8           | 0       | no     | no     | 
+ | P26                    | no         | 3         | 8           | 0       | no     | no     | 
+ | P27                    | no         | 3         | 8           | 0       | no     | no     | 
+ | P28                    | no         | 3         | 8           | 0       | no     | no     | 
+ | P29                    | no         | 3         | 8           | 0       | no     | no     | 
+ | P30                    | no         | 3         | 8           | 0       | no     | no     | 
+ | 
+csma-50N.xml | 
+ |          name          | lonelyInit | locations | transitions | flowers | linear | single | 
+ | P0                     | no         | 52        | 54          | 0       | no     | no     | 
+ | P1                     | no         | 3         | 8           | 0       | no     | no     | 
+ | P2                     | no         | 3         | 8           | 0       | no     | no     | 
+ | P3                     | no         | 3         | 8           | 0       | no     | no     | 
+ | P4                     | no         | 3         | 8           | 0       | no     | no     | 
+ | P5                     | no         | 3         | 8           | 0       | no     | no     | 
+ | P6                     | no         | 3         | 8           | 0       | no     | no     | 
+ | P7                     | no         | 3         | 8           | 0       | no     | no     | 
+ | P8                     | no         | 3         | 8           | 0       | no     | no     | 
+ | P9                     | no         | 3         | 8           | 0       | no     | no     | 
+ | P10                    | no         | 3         | 8           | 0       | no     | no     | 
+ | P11                    | no         | 3         | 8           | 0       | no     | no     | 
+ | P12                    | no         | 3         | 8           | 0       | no     | no     | 
+ | P13                    | no         | 3         | 8           | 0       | no     | no     | 
+ | P14                    | no         | 3         | 8           | 0       | no     | no     | 
+ | P15                    | no         | 3         | 8           | 0       | no     | no     | 
+ | P16                    | no         | 3         | 8           | 0       | no     | no     | 
+ | P17                    | no         | 3         | 8           | 0       | no     | no     | 
+ | P18                    | no         | 3         | 8           | 0       | no     | no     | 
+ | P19                    | no         | 3         | 8           | 0       | no     | no     | 
+ | P20                    | no         | 3         | 8           | 0       | no     | no     | 
+ | P21                    | no         | 3         | 8           | 0       | no     | no     | 
+ | P22                    | no         | 3         | 8           | 0       | no     | no     | 
+ | P23                    | no         | 3         | 8           | 0       | no     | no     | 
+ | P24                    | no         | 3         | 8           | 0       | no     | no     | 
+ | P25                    | no         | 3         | 8           | 0       | no     | no     | 
+ | P26                    | no         | 3         | 8           | 0       | no     | no     | 
+ | P27                    | no         | 3         | 8           | 0       | no     | no     | 
+ | P28                    | no         | 3         | 8           | 0       | no     | no     | 
+ | P29                    | no         | 3         | 8           | 0       | no     | no     | 
+ | P30                    | no         | 3         | 8           | 0       | no     | no     | 
+ | P31                    | no         | 3         | 8           | 0       | no     | no     | 
+ | P32                    | no         | 3         | 8           | 0       | no     | no     | 
+ | P33                    | no         | 3         | 8           | 0       | no     | no     | 
+ | P34                    | no         | 3         | 8           | 0       | no     | no     | 
+ | P35                    | no         | 3         | 8           | 0       | no     | no     | 
+ | P36                    | no         | 3         | 8           | 0       | no     | no     | 
+ | P37                    | no         | 3         | 8           | 0       | no     | no     | 
+ | P38                    | no         | 3         | 8           | 0       | no     | no     | 
+ | P39                    | no         | 3         | 8           | 0       | no     | no     | 
+ | P40                    | no         | 3         | 8           | 0       | no     | no     | 
+ | P41                    | no         | 3         | 8           | 0       | no     | no     | 
+ | P42                    | no         | 3         | 8           | 0       | no     | no     | 
+ | P43                    | no         | 3         | 8           | 0       | no     | no     | 
+ | P44                    | no         | 3         | 8           | 0       | no     | no     | 
+ | P45                    | no         | 3         | 8           | 0       | no     | no     | 
+ | P46                    | no         | 3         | 8           | 0       | no     | no     | 
+ | P47                    | no         | 3         | 8           | 0       | no     | no     | 
+ | P48                    | no         | 3         | 8           | 0       | no     | no     | 
+ | P49                    | no         | 3         | 8           | 0       | no     | no     | 
+ | P50                    | no         | 3         | 8           | 0       | no     | no     | 
+ | 
+fischer-10N.xml | 
+ |          name          | lonelyInit | locations | transitions | flowers | linear | single | 
+ | P                      | no         | 4         | 5           | 0       | no     | no     | 
+ | 
+fischer-15N.xml | 
+ |          name          | lonelyInit | locations | transitions | flowers | linear | single | 
+ | P                      | no         | 4         | 5           | 0       | no     | no     | 
+ | 
+fischer-20N.xml | 
+ |          name          | lonelyInit | locations | transitions | flowers | linear | single | 
+ | P                      | no         | 4         | 5           | 0       | no     | no     | 
+ | 
+fischer-25N.xml | 
+ |          name          | lonelyInit | locations | transitions | flowers | linear | single | 
+ | P                      | no         | 4         | 5           | 0       | no     | no     | 
+ | 
+fischer-50N.xml | 
+ |          name          | lonelyInit | locations | transitions | flowers | linear | single | 
+ | P                      | no         | 4         | 5           | 0       | no     | no     | 
+ | 
+fischerImply-10N.xml | 
+ |          name          | lonelyInit | locations | transitions | flowers | linear | single | 
+ | P                      | no         | 4         | 5           | 0       | no     | no     | 
+ | 
+fischerImply-15N.xml | 
+ |          name          | lonelyInit | locations | transitions | flowers | linear | single | 
+ | P                      | no         | 4         | 5           | 0       | no     | no     | 
+ | 
+fischerImply-20N.xml | 
+ |          name          | lonelyInit | locations | transitions | flowers | linear | single | 
+ | P                      | no         | 4         | 5           | 0       | no     | no     | 
+ | 
+fischerImply-25N.xml | 
+ |          name          | lonelyInit | locations | transitions | flowers | linear | single | 
+ | P                      | no         | 4         | 5           | 0       | no     | no     | 
+ | 
+fischerImply-50N.xml | 
+ |          name          | lonelyInit | locations | transitions | flowers | linear | single | 
+ | P                      | no         | 4         | 5           | 0       | no     | no     | 
+ | 
+goss-1.xml | 
+ |          name          | lonelyInit | locations | transitions | flowers | linear | single | 
+ | Person                 | no         | 7         | 11          | 0       | no     | no     | 
+ | 
+goss-10.xml | 
+ |          name          | lonelyInit | locations | transitions | flowers | linear | single | 
+ | GossipGirl             | yes        | 6         | 7           | 0       | no     | no     | 
+ | 
+goss-2.xml | 
+ |          name          | lonelyInit | locations | transitions | flowers | linear | single | 
+ | Person                 | yes        | 5         | 6           | 0       | no     | no     | 
+ | 
+goss-3.xml | 
+ |          name          | lonelyInit | locations | transitions | flowers | linear | single | 
+ | Person                 | yes        | 7         | 9           | 0       | no     | no     | 
+ | 
+goss-4.xml | 
+ |          name          | lonelyInit | locations | transitions | flowers | linear | single | 
+ | GossipGirl             | yes        | 3         | 4           | 2       | no     | no     | 
+ | ConsecutivePhone       | no         | 3         | 3           | 0       | no     | no     | 
+ | ConcurrentPhone        | no         | 3         | 3           | 0       | no     | no     | 
+ | 
+goss-5.xml | 
+ |          name          | lonelyInit | locations | transitions | flowers | linear | single | 
+ | GirlScenario2          | yes        | 4         | 7           | 1       | no     | no     | 
+ | GirlScenario1          | yes        | 4         | 7           | 1       | no     | no     | 
+ | 
+goss-6.xml | 
+ |          name          | lonelyInit | locations | transitions | flowers | linear | single | 
+ | Scenario1              | no         | 4         | 5           | 1       | no     | no     | 
+ | Scenario2              | no         | 4         | 5           | 1       | no     | no     | 
+ | Scenario3              | no         | 4         | 5           | 1       | no     | no     | 
+ | Scenario4              | no         | 4         | 5           | 1       | no     | no     | 
+ | 
+goss-7.xml | 
+ |          name          | lonelyInit | locations | transitions | flowers | linear | single | 
+ | Girl                   | yes        | 6         | 7           | 0       | no     | no     | 
+ | Central                | no         | 1         | 2           | 1       | no     | yes    | 
+ | 
+goss-8.xml | 
+ |          name          | lonelyInit | locations | transitions | flowers | linear | single | 
+ | GirlNeighbour          | no         | 6         | 7           | 0       | no     | no     | 
+ | GirlTotal              | no         | 6         | 7           | 0       | no     | no     | 
+ | GirlNeighbourTime      | no         | 6         | 7           | 0       | no     | no     | 
+ | GirlTotalTime          | no         | 6         | 7           | 0       | no     | no     | 
+ | 
+goss-9.xml | 
+ |          name          | lonelyInit | locations | transitions | flowers | linear | single | 
+ | Girl                   | yes        | 6         | 7           | 0       | no     | no     | 
+ | 
+goss-config-1.xml | 
+ |          name          | lonelyInit | locations | transitions | flowers | linear | single | 
+ | Person                 | no         | 7         | 11          | 0       | no     | no     | 
+ | 
+goss-config-10.xml | 
+ |          name          | lonelyInit | locations | transitions | flowers | linear | single | 
+ | GossipGirl             | yes        | 6         | 7           | 0       | no     | no     | 
+ | 
+goss-config-2.xml | 
+ |          name          | lonelyInit | locations | transitions | flowers | linear | single | 
+ | Person                 | yes        | 5         | 6           | 0       | no     | no     | 
+ | 
+goss-config-3.xml | 
+ |          name          | lonelyInit | locations | transitions | flowers | linear | single | 
+ | Person                 | yes        | 7         | 9           | 0       | no     | no     | 
+ | 
+goss-config-4.xml | 
+ |          name          | lonelyInit | locations | transitions | flowers | linear | single | 
+ | GossipGirl             | yes        | 3         | 4           | 2       | no     | no     | 
+ | ConsecutivePhone       | no         | 3         | 3           | 0       | no     | no     | 
+ | ConcurrentPhone        | no         | 3         | 3           | 0       | no     | no     | 
+ | 
+goss-config-5.xml | 
+ |          name          | lonelyInit | locations | transitions | flowers | linear | single | 
+ | GirlScenario2          | yes        | 4         | 7           | 1       | no     | no     | 
+ | GirlScenario1          | yes        | 4         | 7           | 1       | no     | no     | 
+ | 
+goss-config-6.xml | 
+ |          name          | lonelyInit | locations | transitions | flowers | linear | single | 
+ | Scenario1              | no         | 4         | 5           | 1       | no     | no     | 
+ | Scenario2              | no         | 4         | 5           | 1       | no     | no     | 
+ | Scenario3              | no         | 4         | 5           | 1       | no     | no     | 
+ | Scenario4              | no         | 4         | 5           | 1       | no     | no     | 
+ | 
+goss-config-7.xml | 
+ |          name          | lonelyInit | locations | transitions | flowers | linear | single | 
+ | Girl                   | yes        | 6         | 7           | 0       | no     | no     | 
+ | Central                | no         | 1         | 2           | 1       | no     | yes    | 
+ | 
+goss-config-8.xml | 
+ |          name          | lonelyInit | locations | transitions | flowers | linear | single | 
+ | GirlNeighbour          | no         | 6         | 7           | 0       | no     | no     | 
+ | GirlTotal              | no         | 6         | 7           | 0       | no     | no     | 
+ | GirlNeighbourTime      | no         | 6         | 7           | 0       | no     | no     | 
+ | GirlTotalTime          | no         | 6         | 7           | 0       | no     | no     | 
+ | 
+goss-config-9.xml | 
+ |          name          | lonelyInit | locations | transitions | flowers | linear | single | 
+ | Girl                   | yes        | 6         | 7           | 0       | no     | no     | 
+ | 
+Herschel-f68.xml | 
+ |          name          | lonelyInit | locations | transitions | flowers | linear | single | 
+ | Scheduler              | yes        | 4         | 6           | 1       | no     | no     | 
+ | IdleTask               | no         | 2         | 2           | 2       | no     | no     | 
+ | MainCycle              | yes        | 14        | 26          | 0       | no     | no     | 
+ | ASW                    | no         | 13        | 26          | 0       | no     | no     | 
+ | BSW                    | no         | 13        | 28          | 0       | no     | no     | 
+ | GlobalPlain            | yes        | 1         | 0           | 0       | yes    | yes    | 
+ | Global                 | no         | 1         | 2           | 1       | no     | yes    | 
+ | 
+Herschel-f69.xml | 
+ |          name          | lonelyInit | locations | transitions | flowers | linear | single | 
+ | Scheduler              | yes        | 4         | 6           | 1       | no     | no     | 
+ | IdleTask               | no         | 2         | 2           | 2       | no     | no     | 
+ | MainCycle              | yes        | 14        | 26          | 0       | no     | no     | 
+ | ASW                    | no         | 13        | 26          | 0       | no     | no     | 
+ | BSW                    | no         | 13        | 28          | 0       | no     | no     | 
+ | GlobalPlain            | yes        | 1         | 0           | 0       | yes    | yes    | 
+ | Global                 | no         | 1         | 2           | 1       | no     | yes    | 
+ | 
+Herschel-f70.xml | 
+ |          name          | lonelyInit | locations | transitions | flowers | linear | single | 
+ | Scheduler              | yes        | 4         | 6           | 1       | no     | no     | 
+ | IdleTask               | no         | 2         | 2           | 2       | no     | no     | 
+ | MainCycle              | yes        | 14        | 26          | 0       | no     | no     | 
+ | ASW                    | no         | 13        | 26          | 0       | no     | no     | 
+ | BSW                    | no         | 13        | 28          | 0       | no     | no     | 
+ | GlobalPlain            | yes        | 1         | 0           | 0       | yes    | yes    | 
+ | Global                 | no         | 1         | 2           | 1       | no     | yes    | 
+ | 
+Herschel-f71.xml | 
+ |          name          | lonelyInit | locations | transitions | flowers | linear | single | 
+ | Scheduler              | yes        | 4         | 6           | 1       | no     | no     | 
+ | IdleTask               | no         | 2         | 2           | 2       | no     | no     | 
+ | MainCycle              | yes        | 14        | 26          | 0       | no     | no     | 
+ | ASW                    | no         | 13        | 26          | 0       | no     | no     | 
+ | BSW                    | no         | 13        | 28          | 0       | no     | no     | 
+ | GlobalPlain            | yes        | 1         | 0           | 0       | yes    | yes    | 
+ | Global                 | no         | 1         | 2           | 1       | no     | yes    | 
+ | 
+Herschel-f72.xml | 
+ |          name          | lonelyInit | locations | transitions | flowers | linear | single | 
+ | Scheduler              | yes        | 4         | 6           | 1       | no     | no     | 
+ | IdleTask               | no         | 2         | 2           | 2       | no     | no     | 
+ | MainCycle              | yes        | 14        | 26          | 0       | no     | no     | 
+ | ASW                    | no         | 13        | 26          | 0       | no     | no     | 
+ | BSW                    | no         | 13        | 28          | 0       | no     | no     | 
+ | GlobalPlain            | yes        | 1         | 0           | 0       | yes    | yes    | 
+ | Global                 | no         | 1         | 2           | 1       | no     | yes    | 
+ | 
+Herschel-f73.xml | 
+ |          name          | lonelyInit | locations | transitions | flowers | linear | single | 
+ | Scheduler              | yes        | 4         | 6           | 1       | no     | no     | 
+ | IdleTask               | no         | 2         | 2           | 2       | no     | no     | 
+ | MainCycle              | yes        | 14        | 26          | 0       | no     | no     | 
+ | ASW                    | no         | 13        | 26          | 0       | no     | no     | 
+ | BSW                    | no         | 13        | 28          | 0       | no     | no     | 
+ | GlobalPlain            | yes        | 1         | 0           | 0       | yes    | yes    | 
+ | Global                 | no         | 1         | 2           | 1       | no     | yes    | 
+ | 
+Herschel-f74.xml | 
+ |          name          | lonelyInit | locations | transitions | flowers | linear | single | 
+ | Scheduler              | yes        | 4         | 6           | 1       | no     | no     | 
+ | IdleTask               | no         | 2         | 2           | 2       | no     | no     | 
+ | MainCycle              | yes        | 14        | 26          | 0       | no     | no     | 
+ | ASW                    | no         | 13        | 26          | 0       | no     | no     | 
+ | BSW                    | no         | 13        | 28          | 0       | no     | no     | 
+ | GlobalPlain            | yes        | 1         | 0           | 0       | yes    | yes    | 
+ | Global                 | no         | 1         | 2           | 1       | no     | yes    | 
+ | 
+Herschel-f75.xml | 
+ |          name          | lonelyInit | locations | transitions | flowers | linear | single | 
+ | Scheduler              | yes        | 4         | 6           | 1       | no     | no     | 
+ | IdleTask               | no         | 2         | 2           | 2       | no     | no     | 
+ | MainCycle              | yes        | 14        | 26          | 0       | no     | no     | 
+ | ASW                    | no         | 13        | 26          | 0       | no     | no     | 
+ | BSW                    | no         | 13        | 28          | 0       | no     | no     | 
+ | GlobalPlain            | yes        | 1         | 0           | 0       | yes    | yes    | 
+ | Global                 | no         | 1         | 2           | 1       | no     | yes    | 
+ | 
+Herschel-f76.xml | 
+ |          name          | lonelyInit | locations | transitions | flowers | linear | single | 
+ | Scheduler              | yes        | 4         | 6           | 1       | no     | no     | 
+ | IdleTask               | no         | 2         | 2           | 2       | no     | no     | 
+ | MainCycle              | yes        | 14        | 26          | 0       | no     | no     | 
+ | ASW                    | no         | 13        | 26          | 0       | no     | no     | 
+ | BSW                    | no         | 13        | 28          | 0       | no     | no     | 
+ | GlobalPlain            | yes        | 1         | 0           | 0       | yes    | yes    | 
+ | Global                 | no         | 1         | 2           | 1       | no     | yes    | 
+ | 
+Herschel-f77.xml | 
+ |          name          | lonelyInit | locations | transitions | flowers | linear | single | 
+ | Scheduler              | yes        | 4         | 6           | 1       | no     | no     | 
+ | IdleTask               | no         | 2         | 2           | 2       | no     | no     | 
+ | MainCycle              | yes        | 14        | 26          | 0       | no     | no     | 
+ | ASW                    | no         | 13        | 26          | 0       | no     | no     | 
+ | BSW                    | no         | 13        | 28          | 0       | no     | no     | 
+ | GlobalPlain            | yes        | 1         | 0           | 0       | yes    | yes    | 
+ | Global                 | no         | 1         | 2           | 1       | no     | yes    | 
+ | 
+Herschel-f78.xml | 
+ |          name          | lonelyInit | locations | transitions | flowers | linear | single | 
+ | Scheduler              | yes        | 4         | 6           | 1       | no     | no     | 
+ | IdleTask               | no         | 2         | 2           | 2       | no     | no     | 
+ | MainCycle              | yes        | 14        | 26          | 0       | no     | no     | 
+ | ASW                    | no         | 13        | 26          | 0       | no     | no     | 
+ | BSW                    | no         | 13        | 28          | 0       | no     | no     | 
+ | GlobalPlain            | yes        | 1         | 0           | 0       | yes    | yes    | 
+ | Global                 | no         | 1         | 2           | 1       | no     | yes    | 
+ | 
+Herschel-f79.xml | 
+ |          name          | lonelyInit | locations | transitions | flowers | linear | single | 
+ | Scheduler              | yes        | 4         | 6           | 1       | no     | no     | 
+ | IdleTask               | no         | 2         | 2           | 2       | no     | no     | 
+ | MainCycle              | yes        | 14        | 26          | 0       | no     | no     | 
+ | ASW                    | no         | 13        | 26          | 0       | no     | no     | 
+ | BSW                    | no         | 13        | 28          | 0       | no     | no     | 
+ | GlobalPlain            | yes        | 1         | 0           | 0       | yes    | yes    | 
+ | Global                 | no         | 1         | 2           | 1       | no     | yes    | 
+ | 
+Herschel-f80.xml | 
+ |          name          | lonelyInit | locations | transitions | flowers | linear | single | 
+ | Scheduler              | yes        | 4         | 6           | 1       | no     | no     | 
+ | IdleTask               | no         | 2         | 2           | 2       | no     | no     | 
+ | MainCycle              | yes        | 14        | 26          | 0       | no     | no     | 
+ | ASW                    | no         | 13        | 26          | 0       | no     | no     | 
+ | BSW                    | no         | 13        | 28          | 0       | no     | no     | 
+ | GlobalPlain            | yes        | 1         | 0           | 0       | yes    | yes    | 
+ | Global                 | no         | 1         | 2           | 1       | no     | yes    | 
+ | 
+Herschel-f81.xml | 
+ |          name          | lonelyInit | locations | transitions | flowers | linear | single | 
+ | Scheduler              | yes        | 4         | 6           | 1       | no     | no     | 
+ | IdleTask               | no         | 2         | 2           | 2       | no     | no     | 
+ | MainCycle              | yes        | 14        | 26          | 0       | no     | no     | 
+ | ASW                    | no         | 13        | 26          | 0       | no     | no     | 
+ | BSW                    | no         | 13        | 28          | 0       | no     | no     | 
+ | GlobalPlain            | yes        | 1         | 0           | 0       | yes    | yes    | 
+ | Global                 | no         | 1         | 2           | 1       | no     | yes    | 
+ | 
+0.xml | 
+ |          name          | lonelyInit | locations | transitions | flowers | linear | single | 
+ | PartitionScheduler     | no         | 3         | 6           | 0       | no     | no     | 
+ | TaskScheduler          | no         | 9         | 17          | 0       | no     | no     | 
+ | Task                   | yes        | 8         | 12          | 0       | no     | no     | 
+ | 
+1.xml | 
+ |          name          | lonelyInit | locations | transitions | flowers | linear | single | 
+ | PartitionScheduler     | no         | 3         | 6           | 0       | no     | no     | 
+ | TaskScheduler          | no         | 9         | 17          | 0       | no     | no     | 
+ | Task                   | yes        | 8         | 12          | 0       | no     | no     | 
+ | 
+10.xml | 
+ |          name          | lonelyInit | locations | transitions | flowers | linear | single | 
+ | PartitionScheduler     | no         | 3         | 6           | 0       | no     | no     | 
+ | TaskScheduler          | no         | 9         | 17          | 0       | no     | no     | 
+ | Task                   | yes        | 8         | 12          | 0       | no     | no     | 
+ | 
+11.xml | 
+ |          name          | lonelyInit | locations | transitions | flowers | linear | single | 
+ | PartitionScheduler     | no         | 3         | 6           | 0       | no     | no     | 
+ | TaskScheduler          | no         | 9         | 17          | 0       | no     | no     | 
+ | Task                   | yes        | 8         | 12          | 0       | no     | no     | 
+ | 
+12.xml | 
+ |          name          | lonelyInit | locations | transitions | flowers | linear | single | 
+ | PartitionScheduler     | no         | 3         | 6           | 0       | no     | no     | 
+ | TaskScheduler          | no         | 9         | 17          | 0       | no     | no     | 
+ | Task                   | yes        | 8         | 12          | 0       | no     | no     | 
+ | 
+13.xml | 
+ |          name          | lonelyInit | locations | transitions | flowers | linear | single | 
+ | PartitionScheduler     | no         | 3         | 6           | 0       | no     | no     | 
+ | TaskScheduler          | no         | 9         | 17          | 0       | no     | no     | 
+ | Task                   | yes        | 8         | 12          | 0       | no     | no     | 
+ | 
+14.xml | 
+ |          name          | lonelyInit | locations | transitions | flowers | linear | single | 
+ | PartitionScheduler     | no         | 3         | 6           | 0       | no     | no     | 
+ | TaskScheduler          | no         | 9         | 17          | 0       | no     | no     | 
+ | Task                   | yes        | 8         | 12          | 0       | no     | no     | 
+ | 
+15.xml | 
+ |          name          | lonelyInit | locations | transitions | flowers | linear | single | 
+ | PartitionScheduler     | no         | 3         | 6           | 0       | no     | no     | 
+ | TaskScheduler          | no         | 9         | 17          | 0       | no     | no     | 
+ | Task                   | yes        | 8         | 12          | 0       | no     | no     | 
+ | 
+16.xml | 
+ |          name          | lonelyInit | locations | transitions | flowers | linear | single | 
+ | PartitionScheduler     | no         | 3         | 6           | 0       | no     | no     | 
+ | TaskScheduler          | no         | 9         | 17          | 0       | no     | no     | 
+ | Task                   | yes        | 8         | 12          | 0       | no     | no     | 
+ | 
+17.xml | 
+ |          name          | lonelyInit | locations | transitions | flowers | linear | single | 
+ | PartitionScheduler     | no         | 3         | 6           | 0       | no     | no     | 
+ | TaskScheduler          | no         | 9         | 17          | 0       | no     | no     | 
+ | Task                   | yes        | 8         | 12          | 0       | no     | no     | 
+ | 
+18.xml | 
+ |          name          | lonelyInit | locations | transitions | flowers | linear | single | 
+ | PartitionScheduler     | no         | 3         | 6           | 0       | no     | no     | 
+ | TaskScheduler          | no         | 9         | 17          | 0       | no     | no     | 
+ | Task                   | yes        | 8         | 12          | 0       | no     | no     | 
+ | 
+19.xml | 
+ |          name          | lonelyInit | locations | transitions | flowers | linear | single | 
+ | PartitionScheduler     | no         | 3         | 6           | 0       | no     | no     | 
+ | TaskScheduler          | no         | 9         | 17          | 0       | no     | no     | 
+ | Task                   | yes        | 8         | 12          | 0       | no     | no     | 
+ | 
+2.xml | 
+ |          name          | lonelyInit | locations | transitions | flowers | linear | single | 
+ | PartitionScheduler     | no         | 3         | 6           | 0       | no     | no     | 
+ | TaskScheduler          | no         | 9         | 17          | 0       | no     | no     | 
+ | Task                   | yes        | 8         | 12          | 0       | no     | no     | 
+ | 
+3.xml | 
+ |          name          | lonelyInit | locations | transitions | flowers | linear | single | 
+ | PartitionScheduler     | no         | 3         | 6           | 0       | no     | no     | 
+ | TaskScheduler          | no         | 9         | 17          | 0       | no     | no     | 
+ | Task                   | yes        | 8         | 12          | 0       | no     | no     | 
+ | 
+4.xml | 
+ |          name          | lonelyInit | locations | transitions | flowers | linear | single | 
+ | PartitionScheduler     | no         | 3         | 6           | 0       | no     | no     | 
+ | TaskScheduler          | no         | 9         | 17          | 0       | no     | no     | 
+ | Task                   | yes        | 8         | 12          | 0       | no     | no     | 
+ | 
+5.xml | 
+ |          name          | lonelyInit | locations | transitions | flowers | linear | single | 
+ | PartitionScheduler     | no         | 3         | 6           | 0       | no     | no     | 
+ | TaskScheduler          | no         | 9         | 17          | 0       | no     | no     | 
+ | Task                   | yes        | 8         | 12          | 0       | no     | no     | 
+ | 
+6.xml | 
+ |          name          | lonelyInit | locations | transitions | flowers | linear | single | 
+ | PartitionScheduler     | no         | 3         | 6           | 0       | no     | no     | 
+ | TaskScheduler          | no         | 9         | 17          | 0       | no     | no     | 
+ | Task                   | yes        | 8         | 12          | 0       | no     | no     | 
+ | 
+7.xml | 
+ |          name          | lonelyInit | locations | transitions | flowers | linear | single | 
+ | PartitionScheduler     | no         | 3         | 6           | 0       | no     | no     | 
+ | TaskScheduler          | no         | 9         | 17          | 0       | no     | no     | 
+ | Task                   | yes        | 8         | 12          | 0       | no     | no     | 
+ | 
+8.xml | 
+ |          name          | lonelyInit | locations | transitions | flowers | linear | single | 
+ | PartitionScheduler     | no         | 3         | 6           | 0       | no     | no     | 
+ | TaskScheduler          | no         | 9         | 17          | 0       | no     | no     | 
+ | Task                   | yes        | 8         | 12          | 0       | no     | no     | 
+ | 
+9.xml | 
+ |          name          | lonelyInit | locations | transitions | flowers | linear | single | 
+ | PartitionScheduler     | no         | 3         | 6           | 0       | no     | no     | 
+ | TaskScheduler          | no         | 9         | 17          | 0       | no     | no     | 
+ | Task                   | yes        | 8         | 12          | 0       | no     | no     | 
+ | 
+LE-Chan-3N.xml | 
+ |          name          | lonelyInit | locations | transitions | flowers | linear | single | 
+ | Message                | no         | 2         | 2           | 2       | no     | no     | 
+ | Node                   | no         | 4         | 8           | 0       | no     | no     | 
+ | 
+LE-Chan-4N.xml | 
+ |          name          | lonelyInit | locations | transitions | flowers | linear | single | 
+ | Message                | no         | 2         | 2           | 2       | no     | no     | 
+ | Node                   | no         | 4         | 8           | 0       | no     | no     | 
+ | 
+LE-Chan-5N.xml | 
+ |          name          | lonelyInit | locations | transitions | flowers | linear | single | 
+ | Message                | no         | 2         | 2           | 2       | no     | no     | 
+ | Node                   | no         | 4         | 8           | 0       | no     | no     | 
+ | 
+LE-Hops-3N.xml | 
+ |          name          | lonelyInit | locations | transitions | flowers | linear | single | 
+ | Message                | no         | 2         | 2           | 2       | no     | no     | 
+ | Node                   | no         | 4         | 8           | 0       | no     | no     | 
+ | 
+LE-Hops-4N.xml | 
+ |          name          | lonelyInit | locations | transitions | flowers | linear | single | 
+ | Message                | no         | 2         | 2           | 2       | no     | no     | 
+ | Node                   | no         | 4         | 8           | 0       | no     | no     | 
+ | 
+LE-Hops-5N.xml | 
+ |          name          | lonelyInit | locations | transitions | flowers | linear | single | 
+ | Message                | no         | 2         | 2           | 2       | no     | no     | 
+ | Node                   | no         | 4         | 8           | 0       | no     | no     | 
+ | 
+Milner-N100-d4-v2.xml | 
+ |          name          | lonelyInit | locations | transitions | flowers | linear | single | 
+ | NodeAlt                | no         | 4         | 8           | 0       | no     | no     | 
+ | Node                   | no         | 4         | 8           | 0       | no     | no     | 
+ | Spec                   | no         | 1         | 3           | 1       | no     | yes    | 
+ | SpecComplement         | no         | 2         | 4           | 1       | no     | no     | 
+ | 
+Milner-N1000-d4-v2.xml | 
+ |          name          | lonelyInit | locations | transitions | flowers | linear | single | 
+ | NodeAlt                | no         | 4         | 8           | 0       | no     | no     | 
+ | Node                   | no         | 4         | 8           | 0       | no     | no     | 
+ | Spec                   | no         | 1         | 3           | 1       | no     | yes    | 
+ | SpecComplement         | no         | 2         | 4           | 1       | no     | no     | 
+ | 
+Milner-N500-d4-v2.xml | 
+ |          name          | lonelyInit | locations | transitions | flowers | linear | single | 
+ | NodeAlt                | no         | 4         | 8           | 0       | no     | no     | 
+ | Node                   | no         | 4         | 8           | 0       | no     | no     | 
+ | Spec                   | no         | 1         | 3           | 1       | no     | yes    | 
+ | SpecComplement         | no         | 2         | 4           | 1       | no     | no     | 
+ | 
+Milner-N100-d10-v2.xml | 
+ |          name          | lonelyInit | locations | transitions | flowers | linear | single | 
+ | NodeAlt                | no         | 4         | 8           | 0       | no     | no     | 
+ | Node                   | no         | 4         | 8           | 0       | no     | no     | 
+ | Spec                   | no         | 1         | 3           | 1       | no     | yes    | 
+ | SpecComplement         | no         | 2         | 4           | 1       | no     | no     | 
+ | 
+Milner-N100-d10-v4.xml | 
+ |          name          | lonelyInit | locations | transitions | flowers | linear | single | 
+ | NodeAlt                | no         | 4         | 8           | 0       | no     | no     | 
+ | Node                   | no         | 4         | 8           | 0       | no     | no     | 
+ | Spec                   | no         | 1         | 3           | 1       | no     | yes    | 
+ | SpecComplement         | no         | 2         | 4           | 1       | no     | no     | 
+ | 
+Milner-N100-d10-v6.xml | 
+ |          name          | lonelyInit | locations | transitions | flowers | linear | single | 
+ | NodeAlt                | no         | 4         | 8           | 0       | no     | no     | 
+ | Node                   | no         | 4         | 8           | 0       | no     | no     | 
+ | Spec                   | no         | 1         | 3           | 1       | no     | yes    | 
+ | SpecComplement         | no         | 2         | 4           | 1       | no     | no     | 
+ | 
+Milner-N100-d20-v2.xml | 
+ |          name          | lonelyInit | locations | transitions | flowers | linear | single | 
+ | NodeAlt                | no         | 4         | 8           | 0       | no     | no     | 
+ | Node                   | no         | 4         | 8           | 0       | no     | no     | 
+ | Spec                   | no         | 1         | 3           | 1       | no     | yes    | 
+ | SpecComplement         | no         | 2         | 4           | 1       | no     | no     | 
+ | 
+Milner-N100-d20-v4.xml | 
+ |          name          | lonelyInit | locations | transitions | flowers | linear | single | 
+ | NodeAlt                | no         | 4         | 8           | 0       | no     | no     | 
+ | Node                   | no         | 4         | 8           | 0       | no     | no     | 
+ | Spec                   | no         | 1         | 3           | 1       | no     | yes    | 
+ | SpecComplement         | no         | 2         | 4           | 1       | no     | no     | 
+ | 
+Milner-N100-d20-v6.xml | 
+ |          name          | lonelyInit | locations | transitions | flowers | linear | single | 
+ | NodeAlt                | no         | 4         | 8           | 0       | no     | no     | 
+ | Node                   | no         | 4         | 8           | 0       | no     | no     | 
+ | Spec                   | no         | 1         | 3           | 1       | no     | yes    | 
+ | SpecComplement         | no         | 2         | 4           | 1       | no     | no     | 
+ | 
+Milner-N100-d4-v4.xml | 
+ |          name          | lonelyInit | locations | transitions | flowers | linear | single | 
+ | NodeAlt                | no         | 4         | 8           | 0       | no     | no     | 
+ | Node                   | no         | 4         | 8           | 0       | no     | no     | 
+ | Spec                   | no         | 1         | 3           | 1       | no     | yes    | 
+ | SpecComplement         | no         | 2         | 4           | 1       | no     | no     | 
+ | 
+Milner-N100-d4-v6.xml | 
+ |          name          | lonelyInit | locations | transitions | flowers | linear | single | 
+ | NodeAlt                | no         | 4         | 8           | 0       | no     | no     | 
+ | Node                   | no         | 4         | 8           | 0       | no     | no     | 
+ | Spec                   | no         | 1         | 3           | 1       | no     | yes    | 
+ | SpecComplement         | no         | 2         | 4           | 1       | no     | no     | 
+ | 
+Milner-N1000-d10-v2.xml | 
+ |          name          | lonelyInit | locations | transitions | flowers | linear | single | 
+ | NodeAlt                | no         | 4         | 8           | 0       | no     | no     | 
+ | Node                   | no         | 4         | 8           | 0       | no     | no     | 
+ | Spec                   | no         | 1         | 3           | 1       | no     | yes    | 
+ | SpecComplement         | no         | 2         | 4           | 1       | no     | no     | 
+ | 
+Milner-N1000-d10-v4.xml | 
+ |          name          | lonelyInit | locations | transitions | flowers | linear | single | 
+ | NodeAlt                | no         | 4         | 8           | 0       | no     | no     | 
+ | Node                   | no         | 4         | 8           | 0       | no     | no     | 
+ | Spec                   | no         | 1         | 3           | 1       | no     | yes    | 
+ | SpecComplement         | no         | 2         | 4           | 1       | no     | no     | 
+ | 
+Milner-N1000-d10-v6.xml | 
+ |          name          | lonelyInit | locations | transitions | flowers | linear | single | 
+ | NodeAlt                | no         | 4         | 8           | 0       | no     | no     | 
+ | Node                   | no         | 4         | 8           | 0       | no     | no     | 
+ | Spec                   | no         | 1         | 3           | 1       | no     | yes    | 
+ | SpecComplement         | no         | 2         | 4           | 1       | no     | no     | 
+ | 
+Milner-N1000-d20-v2.xml | 
+ |          name          | lonelyInit | locations | transitions | flowers | linear | single | 
+ | NodeAlt                | no         | 4         | 8           | 0       | no     | no     | 
+ | Node                   | no         | 4         | 8           | 0       | no     | no     | 
+ | Spec                   | no         | 1         | 3           | 1       | no     | yes    | 
+ | SpecComplement         | no         | 2         | 4           | 1       | no     | no     | 
+ | 
+Milner-N1000-d20-v4.xml | 
+ |          name          | lonelyInit | locations | transitions | flowers | linear | single | 
+ | NodeAlt                | no         | 4         | 8           | 0       | no     | no     | 
+ | Node                   | no         | 4         | 8           | 0       | no     | no     | 
+ | Spec                   | no         | 1         | 3           | 1       | no     | yes    | 
+ | SpecComplement         | no         | 2         | 4           | 1       | no     | no     | 
+ | 
+Milner-N1000-d20-v6.xml | 
+ |          name          | lonelyInit | locations | transitions | flowers | linear | single | 
+ | NodeAlt                | no         | 4         | 8           | 0       | no     | no     | 
+ | Node                   | no         | 4         | 8           | 0       | no     | no     | 
+ | Spec                   | no         | 1         | 3           | 1       | no     | yes    | 
+ | SpecComplement         | no         | 2         | 4           | 1       | no     | no     | 
+ | 
+Milner-N1000-d4-v4.xml | 
+ |          name          | lonelyInit | locations | transitions | flowers | linear | single | 
+ | NodeAlt                | no         | 4         | 8           | 0       | no     | no     | 
+ | Node                   | no         | 4         | 8           | 0       | no     | no     | 
+ | Spec                   | no         | 1         | 3           | 1       | no     | yes    | 
+ | SpecComplement         | no         | 2         | 4           | 1       | no     | no     | 
+ | 
+Milner-N1000-d4-v6.xml | 
+ |          name          | lonelyInit | locations | transitions | flowers | linear | single | 
+ | NodeAlt                | no         | 4         | 8           | 0       | no     | no     | 
+ | Node                   | no         | 4         | 8           | 0       | no     | no     | 
+ | Spec                   | no         | 1         | 3           | 1       | no     | yes    | 
+ | SpecComplement         | no         | 2         | 4           | 1       | no     | no     | 
+ | 
+Milner-N500-d10-v2.xml | 
+ |          name          | lonelyInit | locations | transitions | flowers | linear | single | 
+ | NodeAlt                | no         | 4         | 8           | 0       | no     | no     | 
+ | Node                   | no         | 4         | 8           | 0       | no     | no     | 
+ | Spec                   | no         | 1         | 3           | 1       | no     | yes    | 
+ | SpecComplement         | no         | 2         | 4           | 1       | no     | no     | 
+ | 
+Milner-N500-d10-v4.xml | 
+ |          name          | lonelyInit | locations | transitions | flowers | linear | single | 
+ | NodeAlt                | no         | 4         | 8           | 0       | no     | no     | 
+ | Node                   | no         | 4         | 8           | 0       | no     | no     | 
+ | Spec                   | no         | 1         | 3           | 1       | no     | yes    | 
+ | SpecComplement         | no         | 2         | 4           | 1       | no     | no     | 
+ | 
+Milner-N500-d10-v6.xml | 
+ |          name          | lonelyInit | locations | transitions | flowers | linear | single | 
+ | NodeAlt                | no         | 4         | 8           | 0       | no     | no     | 
+ | Node                   | no         | 4         | 8           | 0       | no     | no     | 
+ | Spec                   | no         | 1         | 3           | 1       | no     | yes    | 
+ | SpecComplement         | no         | 2         | 4           | 1       | no     | no     | 
+ | 
+Milner-N500-d20-v2.xml | 
+ |          name          | lonelyInit | locations | transitions | flowers | linear | single | 
+ | NodeAlt                | no         | 4         | 8           | 0       | no     | no     | 
+ | Node                   | no         | 4         | 8           | 0       | no     | no     | 
+ | Spec                   | no         | 1         | 3           | 1       | no     | yes    | 
+ | SpecComplement         | no         | 2         | 4           | 1       | no     | no     | 
+ | 
+Milner-N500-d20-v4.xml | 
+ |          name          | lonelyInit | locations | transitions | flowers | linear | single | 
+ | NodeAlt                | no         | 4         | 8           | 0       | no     | no     | 
+ | Node                   | no         | 4         | 8           | 0       | no     | no     | 
+ | Spec                   | no         | 1         | 3           | 1       | no     | yes    | 
+ | SpecComplement         | no         | 2         | 4           | 1       | no     | no     | 
+ | 
+Milner-N500-d20-v6.xml | 
+ |          name          | lonelyInit | locations | transitions | flowers | linear | single | 
+ | NodeAlt                | no         | 4         | 8           | 0       | no     | no     | 
+ | Node                   | no         | 4         | 8           | 0       | no     | no     | 
+ | Spec                   | no         | 1         | 3           | 1       | no     | yes    | 
+ | SpecComplement         | no         | 2         | 4           | 1       | no     | no     | 
+ | 
+Milner-N500-d4-v4.xml | 
+ |          name          | lonelyInit | locations | transitions | flowers | linear | single | 
+ | NodeAlt                | no         | 4         | 8           | 0       | no     | no     | 
+ | Node                   | no         | 4         | 8           | 0       | no     | no     | 
+ | Spec                   | no         | 1         | 3           | 1       | no     | yes    | 
+ | SpecComplement         | no         | 2         | 4           | 1       | no     | no     | 
+ | 
+Milner-N500-d4-v6.xml | 
+ |          name          | lonelyInit | locations | transitions | flowers | linear | single | 
+ | NodeAlt                | no         | 4         | 8           | 0       | no     | no     | 
+ | Node                   | no         | 4         | 8           | 0       | no     | no     | 
+ | Spec                   | no         | 1         | 3           | 1       | no     | yes    | 
+ | SpecComplement         | no         | 2         | 4           | 1       | no     | no     | 
+ | 
+Herschel-SMC-f60.xml | 
+ |          name          | lonelyInit | locations | transitions | flowers | linear | single | 
+ | Scheduler              | yes        | 4         | 6           | 1       | no     | no     | 
+ | IdleTask               | no         | 2         | 2           | 2       | no     | no     | 
+ | MainCycle              | yes        | 14        | 26          | 0       | no     | no     | 
+ | ASW                    | no         | 13        | 26          | 0       | no     | no     | 
+ | BSW                    | no         | 13        | 28          | 0       | no     | no     | 
+ | GlobalPlain            | yes        | 1         | 0           | 0       | yes    | yes    | 
+ | Global                 | no         | 1         | 2           | 1       | no     | yes    | 
+ | 
+Herschel-SMC-f65.xml | 
+ |          name          | lonelyInit | locations | transitions | flowers | linear | single | 
+ | Scheduler              | yes        | 4         | 6           | 1       | no     | no     | 
+ | IdleTask               | no         | 2         | 2           | 2       | no     | no     | 
+ | MainCycle              | yes        | 14        | 26          | 0       | no     | no     | 
+ | ASW                    | no         | 13        | 26          | 0       | no     | no     | 
+ | BSW                    | no         | 13        | 28          | 0       | no     | no     | 
+ | GlobalPlain            | yes        | 1         | 0           | 0       | yes    | yes    | 
+ | Global                 | no         | 1         | 2           | 1       | no     | yes    | 
+ | 
+Herschel-SMC-f66.xml | 
+ |          name          | lonelyInit | locations | transitions | flowers | linear | single | 
+ | Scheduler              | yes        | 4         | 6           | 1       | no     | no     | 
+ | IdleTask               | no         | 2         | 2           | 2       | no     | no     | 
+ | MainCycle              | yes        | 14        | 26          | 0       | no     | no     | 
+ | ASW                    | no         | 13        | 26          | 0       | no     | no     | 
+ | BSW                    | no         | 13        | 28          | 0       | no     | no     | 
+ | GlobalPlain            | yes        | 1         | 0           | 0       | yes    | yes    | 
+ | Global                 | no         | 1         | 2           | 1       | no     | yes    | 
+ | 
+Herschel-SMC-f67.xml | 
+ |          name          | lonelyInit | locations | transitions | flowers | linear | single | 
+ | Scheduler              | yes        | 4         | 6           | 1       | no     | no     | 
+ | IdleTask               | no         | 2         | 2           | 2       | no     | no     | 
+ | MainCycle              | yes        | 14        | 26          | 0       | no     | no     | 
+ | ASW                    | no         | 13        | 26          | 0       | no     | no     | 
+ | BSW                    | no         | 13        | 28          | 0       | no     | no     | 
+ | GlobalPlain            | yes        | 1         | 0           | 0       | yes    | yes    | 
+ | Global                 | no         | 1         | 2           | 1       | no     | yes    | 
+ | 
+Herschel-SMC-f68.xml | 
+ |          name          | lonelyInit | locations | transitions | flowers | linear | single | 
+ | Scheduler              | yes        | 4         | 6           | 1       | no     | no     | 
+ | IdleTask               | no         | 2         | 2           | 2       | no     | no     | 
+ | MainCycle              | yes        | 14        | 26          | 0       | no     | no     | 
+ | ASW                    | no         | 13        | 26          | 0       | no     | no     | 
+ | BSW                    | no         | 13        | 28          | 0       | no     | no     | 
+ | GlobalPlain            | yes        | 1         | 0           | 0       | yes    | yes    | 
+ | Global                 | no         | 1         | 2           | 1       | no     | yes    | 
+ | 
+Herschel-SMC-f69.xml | 
+ |          name          | lonelyInit | locations | transitions | flowers | linear | single | 
+ | Scheduler              | yes        | 4         | 6           | 1       | no     | no     | 
+ | IdleTask               | no         | 2         | 2           | 2       | no     | no     | 
+ | MainCycle              | yes        | 14        | 26          | 0       | no     | no     | 
+ | ASW                    | no         | 13        | 26          | 0       | no     | no     | 
+ | BSW                    | no         | 13        | 28          | 0       | no     | no     | 
+ | GlobalPlain            | yes        | 1         | 0           | 0       | yes    | yes    | 
+ | Global                 | no         | 1         | 2           | 1       | no     | yes    | 
+ | 
+Herschel-SMC-f70.xml | 
+ |          name          | lonelyInit | locations | transitions | flowers | linear | single | 
+ | Scheduler              | yes        | 4         | 6           | 1       | no     | no     | 
+ | IdleTask               | no         | 2         | 2           | 2       | no     | no     | 
+ | MainCycle              | yes        | 14        | 26          | 0       | no     | no     | 
+ | ASW                    | no         | 13        | 26          | 0       | no     | no     | 
+ | BSW                    | no         | 13        | 28          | 0       | no     | no     | 
+ | GlobalPlain            | yes        | 1         | 0           | 0       | yes    | yes    | 
+ | Global                 | no         | 1         | 2           | 1       | no     | yes    | 
+ | 
+Herschel-SMC-f71.xml | 
+ |          name          | lonelyInit | locations | transitions | flowers | linear | single | 
+ | Scheduler              | yes        | 4         | 6           | 1       | no     | no     | 
+ | IdleTask               | no         | 2         | 2           | 2       | no     | no     | 
+ | MainCycle              | yes        | 14        | 26          | 0       | no     | no     | 
+ | ASW                    | no         | 13        | 26          | 0       | no     | no     | 
+ | BSW                    | no         | 13        | 28          | 0       | no     | no     | 
+ | GlobalPlain            | yes        | 1         | 0           | 0       | yes    | yes    | 
+ | Global                 | no         | 1         | 2           | 1       | no     | yes    | 
+ | 
+Herschel-SMC-f72.xml | 
+ |          name          | lonelyInit | locations | transitions | flowers | linear | single | 
+ | Scheduler              | yes        | 4         | 6           | 1       | no     | no     | 
+ | IdleTask               | no         | 2         | 2           | 2       | no     | no     | 
+ | MainCycle              | yes        | 14        | 26          | 0       | no     | no     | 
+ | ASW                    | no         | 13        | 26          | 0       | no     | no     | 
+ | BSW                    | no         | 13        | 28          | 0       | no     | no     | 
+ | GlobalPlain            | yes        | 1         | 0           | 0       | yes    | yes    | 
+ | Global                 | no         | 1         | 2           | 1       | no     | yes    | 
+ | 
+Herschel-SMC-f60.xml | 
+ |          name          | lonelyInit | locations | transitions | flowers | linear | single | 
+ | Scheduler              | yes        | 4         | 6           | 1       | no     | no     | 
+ | IdleTask               | no         | 2         | 2           | 2       | no     | no     | 
+ | MainCycle              | yes        | 14        | 26          | 0       | no     | no     | 
+ | ASW                    | no         | 13        | 26          | 0       | no     | no     | 
+ | BSW                    | no         | 13        | 28          | 0       | no     | no     | 
+ | GlobalPlain            | yes        | 1         | 0           | 0       | yes    | yes    | 
+ | Global                 | no         | 1         | 2           | 1       | no     | yes    | 
+ | 
+Herschel-SMC-f65.xml | 
+ |          name          | lonelyInit | locations | transitions | flowers | linear | single | 
+ | Scheduler              | yes        | 4         | 6           | 1       | no     | no     | 
+ | IdleTask               | no         | 2         | 2           | 2       | no     | no     | 
+ | MainCycle              | yes        | 14        | 26          | 0       | no     | no     | 
+ | ASW                    | no         | 13        | 26          | 0       | no     | no     | 
+ | BSW                    | no         | 13        | 28          | 0       | no     | no     | 
+ | GlobalPlain            | yes        | 1         | 0           | 0       | yes    | yes    | 
+ | Global                 | no         | 1         | 2           | 1       | no     | yes    | 
+ | 
+Herschel-SMC-f66.xml | 
+ |          name          | lonelyInit | locations | transitions | flowers | linear | single | 
+ | Scheduler              | yes        | 4         | 6           | 1       | no     | no     | 
+ | IdleTask               | no         | 2         | 2           | 2       | no     | no     | 
+ | MainCycle              | yes        | 14        | 26          | 0       | no     | no     | 
+ | ASW                    | no         | 13        | 26          | 0       | no     | no     | 
+ | BSW                    | no         | 13        | 28          | 0       | no     | no     | 
+ | GlobalPlain            | yes        | 1         | 0           | 0       | yes    | yes    | 
+ | Global                 | no         | 1         | 2           | 1       | no     | yes    | 
+ | 
+Herschel-SMC-f67.xml | 
+ |          name          | lonelyInit | locations | transitions | flowers | linear | single | 
+ | Scheduler              | yes        | 4         | 6           | 1       | no     | no     | 
+ | IdleTask               | no         | 2         | 2           | 2       | no     | no     | 
+ | MainCycle              | yes        | 14        | 26          | 0       | no     | no     | 
+ | ASW                    | no         | 13        | 26          | 0       | no     | no     | 
+ | BSW                    | no         | 13        | 28          | 0       | no     | no     | 
+ | GlobalPlain            | yes        | 1         | 0           | 0       | yes    | yes    | 
+ | Global                 | no         | 1         | 2           | 1       | no     | yes    | 
+ | 
+Herschel-SMC-f68.xml | 
+ |          name          | lonelyInit | locations | transitions | flowers | linear | single | 
+ | Scheduler              | yes        | 4         | 6           | 1       | no     | no     | 
+ | IdleTask               | no         | 2         | 2           | 2       | no     | no     | 
+ | MainCycle              | yes        | 14        | 26          | 0       | no     | no     | 
+ | ASW                    | no         | 13        | 26          | 0       | no     | no     | 
+ | BSW                    | no         | 13        | 28          | 0       | no     | no     | 
+ | GlobalPlain            | yes        | 1         | 0           | 0       | yes    | yes    | 
+ | Global                 | no         | 1         | 2           | 1       | no     | yes    | 
+ | 
+Herschel-SMC-f69.xml | 
+ |          name          | lonelyInit | locations | transitions | flowers | linear | single | 
+ | Scheduler              | yes        | 4         | 6           | 1       | no     | no     | 
+ | IdleTask               | no         | 2         | 2           | 2       | no     | no     | 
+ | MainCycle              | yes        | 14        | 26          | 0       | no     | no     | 
+ | ASW                    | no         | 13        | 26          | 0       | no     | no     | 
+ | BSW                    | no         | 13        | 28          | 0       | no     | no     | 
+ | GlobalPlain            | yes        | 1         | 0           | 0       | yes    | yes    | 
+ | Global                 | no         | 1         | 2           | 1       | no     | yes    | 
+ | 
+Herschel-SMC-f70.xml | 
+ |          name          | lonelyInit | locations | transitions | flowers | linear | single | 
+ | Scheduler              | yes        | 4         | 6           | 1       | no     | no     | 
+ | IdleTask               | no         | 2         | 2           | 2       | no     | no     | 
+ | MainCycle              | yes        | 14        | 26          | 0       | no     | no     | 
+ | ASW                    | no         | 13        | 26          | 0       | no     | no     | 
+ | BSW                    | no         | 13        | 28          | 0       | no     | no     | 
+ | GlobalPlain            | yes        | 1         | 0           | 0       | yes    | yes    | 
+ | Global                 | no         | 1         | 2           | 1       | no     | yes    | 
+ | 
+Herschel-SMC-f71.xml | 
+ |          name          | lonelyInit | locations | transitions | flowers | linear | single | 
+ | Scheduler              | yes        | 4         | 6           | 1       | no     | no     | 
+ | IdleTask               | no         | 2         | 2           | 2       | no     | no     | 
+ | MainCycle              | yes        | 14        | 26          | 0       | no     | no     | 
+ | ASW                    | no         | 13        | 26          | 0       | no     | no     | 
+ | BSW                    | no         | 13        | 28          | 0       | no     | no     | 
+ | GlobalPlain            | yes        | 1         | 0           | 0       | yes    | yes    | 
+ | Global                 | no         | 1         | 2           | 1       | no     | yes    | 
+ | 
+Herschel-SMC-f72.xml | 
+ |          name          | lonelyInit | locations | transitions | flowers | linear | single | 
+ | Scheduler              | yes        | 4         | 6           | 1       | no     | no     | 
+ | IdleTask               | no         | 2         | 2           | 2       | no     | no     | 
+ | MainCycle              | yes        | 14        | 26          | 0       | no     | no     | 
+ | ASW                    | no         | 13        | 26          | 0       | no     | no     | 
+ | BSW                    | no         | 13        | 28          | 0       | no     | no     | 
+ | GlobalPlain            | yes        | 1         | 0           | 0       | yes    | yes    | 
+ | Global                 | no         | 1         | 2           | 1       | no     | yes    | 
+ | 
+Herschel-SMC-f60.xml | 
+ |          name          | lonelyInit | locations | transitions | flowers | linear | single | 
+ | Scheduler              | yes        | 4         | 6           | 1       | no     | no     | 
+ | IdleTask               | no         | 2         | 2           | 2       | no     | no     | 
+ | MainCycle              | yes        | 14        | 26          | 0       | no     | no     | 
+ | ASW                    | no         | 13        | 26          | 0       | no     | no     | 
+ | BSW                    | no         | 13        | 28          | 0       | no     | no     | 
+ | GlobalPlain            | yes        | 1         | 0           | 0       | yes    | yes    | 
+ | Global                 | no         | 1         | 2           | 1       | no     | yes    | 
+ | 
+Herschel-SMC-f65.xml | 
+ |          name          | lonelyInit | locations | transitions | flowers | linear | single | 
+ | Scheduler              | yes        | 4         | 6           | 1       | no     | no     | 
+ | IdleTask               | no         | 2         | 2           | 2       | no     | no     | 
+ | MainCycle              | yes        | 14        | 26          | 0       | no     | no     | 
+ | ASW                    | no         | 13        | 26          | 0       | no     | no     | 
+ | BSW                    | no         | 13        | 28          | 0       | no     | no     | 
+ | GlobalPlain            | yes        | 1         | 0           | 0       | yes    | yes    | 
+ | Global                 | no         | 1         | 2           | 1       | no     | yes    | 
+ | 
+Herschel-SMC-f66.xml | 
+ |          name          | lonelyInit | locations | transitions | flowers | linear | single | 
+ | Scheduler              | yes        | 4         | 6           | 1       | no     | no     | 
+ | IdleTask               | no         | 2         | 2           | 2       | no     | no     | 
+ | MainCycle              | yes        | 14        | 26          | 0       | no     | no     | 
+ | ASW                    | no         | 13        | 26          | 0       | no     | no     | 
+ | BSW                    | no         | 13        | 28          | 0       | no     | no     | 
+ | GlobalPlain            | yes        | 1         | 0           | 0       | yes    | yes    | 
+ | Global                 | no         | 1         | 2           | 1       | no     | yes    | 
+ | 
+Herschel-SMC-f67.xml | 
+ |          name          | lonelyInit | locations | transitions | flowers | linear | single | 
+ | Scheduler              | yes        | 4         | 6           | 1       | no     | no     | 
+ | IdleTask               | no         | 2         | 2           | 2       | no     | no     | 
+ | MainCycle              | yes        | 14        | 26          | 0       | no     | no     | 
+ | ASW                    | no         | 13        | 26          | 0       | no     | no     | 
+ | BSW                    | no         | 13        | 28          | 0       | no     | no     | 
+ | GlobalPlain            | yes        | 1         | 0           | 0       | yes    | yes    | 
+ | Global                 | no         | 1         | 2           | 1       | no     | yes    | 
+ | 
+Herschel-SMC-f68.xml | 
+ |          name          | lonelyInit | locations | transitions | flowers | linear | single | 
+ | Scheduler              | yes        | 4         | 6           | 1       | no     | no     | 
+ | IdleTask               | no         | 2         | 2           | 2       | no     | no     | 
+ | MainCycle              | yes        | 14        | 26          | 0       | no     | no     | 
+ | ASW                    | no         | 13        | 26          | 0       | no     | no     | 
+ | BSW                    | no         | 13        | 28          | 0       | no     | no     | 
+ | GlobalPlain            | yes        | 1         | 0           | 0       | yes    | yes    | 
+ | Global                 | no         | 1         | 2           | 1       | no     | yes    | 
+ | 
+Herschel-SMC-f69.xml | 
+ |          name          | lonelyInit | locations | transitions | flowers | linear | single | 
+ | Scheduler              | yes        | 4         | 6           | 1       | no     | no     | 
+ | IdleTask               | no         | 2         | 2           | 2       | no     | no     | 
+ | MainCycle              | yes        | 14        | 26          | 0       | no     | no     | 
+ | ASW                    | no         | 13        | 26          | 0       | no     | no     | 
+ | BSW                    | no         | 13        | 28          | 0       | no     | no     | 
+ | GlobalPlain            | yes        | 1         | 0           | 0       | yes    | yes    | 
+ | Global                 | no         | 1         | 2           | 1       | no     | yes    | 
+ | 
+Herschel-SMC-f70.xml | 
+ |          name          | lonelyInit | locations | transitions | flowers | linear | single | 
+ | Scheduler              | yes        | 4         | 6           | 1       | no     | no     | 
+ | IdleTask               | no         | 2         | 2           | 2       | no     | no     | 
+ | MainCycle              | yes        | 14        | 26          | 0       | no     | no     | 
+ | ASW                    | no         | 13        | 26          | 0       | no     | no     | 
+ | BSW                    | no         | 13        | 28          | 0       | no     | no     | 
+ | GlobalPlain            | yes        | 1         | 0           | 0       | yes    | yes    | 
+ | Global                 | no         | 1         | 2           | 1       | no     | yes    | 
+ | 
+Herschel-SMC-f71.xml | 
+ |          name          | lonelyInit | locations | transitions | flowers | linear | single | 
+ | Scheduler              | yes        | 4         | 6           | 1       | no     | no     | 
+ | IdleTask               | no         | 2         | 2           | 2       | no     | no     | 
+ | MainCycle              | yes        | 14        | 26          | 0       | no     | no     | 
+ | ASW                    | no         | 13        | 26          | 0       | no     | no     | 
+ | BSW                    | no         | 13        | 28          | 0       | no     | no     | 
+ | GlobalPlain            | yes        | 1         | 0           | 0       | yes    | yes    | 
+ | Global                 | no         | 1         | 2           | 1       | no     | yes    | 
+ | 
+Herschel-SMC-f72.xml | 
+ |          name          | lonelyInit | locations | transitions | flowers | linear | single | 
+ | Scheduler              | yes        | 4         | 6           | 1       | no     | no     | 
+ | IdleTask               | no         | 2         | 2           | 2       | no     | no     | 
+ | MainCycle              | yes        | 14        | 26          | 0       | no     | no     | 
+ | ASW                    | no         | 13        | 26          | 0       | no     | no     | 
+ | BSW                    | no         | 13        | 28          | 0       | no     | no     | 
+ | GlobalPlain            | yes        | 1         | 0           | 0       | yes    | yes    | 
+ | Global                 | no         | 1         | 2           | 1       | no     | yes    | 
+ | 
+0.xml | 
+ |          name          | lonelyInit | locations | transitions | flowers | linear | single | 
+ | PartitionScheduler     | no         | 3         | 6           | 0       | no     | no     | 
+ | TaskScheduler          | no         | 9         | 17          | 0       | no     | no     | 
+ | Task                   | yes        | 8         | 12          | 0       | no     | no     | 
+ | 
+1.xml | 
+ |          name          | lonelyInit | locations | transitions | flowers | linear | single | 
+ | PartitionScheduler     | no         | 3         | 6           | 0       | no     | no     | 
+ | TaskScheduler          | no         | 9         | 17          | 0       | no     | no     | 
+ | Task                   | yes        | 8         | 12          | 0       | no     | no     | 
+ | 
+2.xml | 
+ |          name          | lonelyInit | locations | transitions | flowers | linear | single | 
+ | PartitionScheduler     | no         | 3         | 6           | 0       | no     | no     | 
+ | TaskScheduler          | no         | 9         | 17          | 0       | no     | no     | 
+ | Task                   | yes        | 8         | 12          | 0       | no     | no     | 
+ | 
+md5-hvmimp.xml | 
+ |          name          | lonelyInit | locations | transitions | flowers | linear | single | 
+ | FPS_scheduler          | yes        | 4         | 6           | 1       | no     | no     | 
+ | PeriodicThread         | yes        | 7         | 7           | 0       | no     | no     | 
+ | Template_0001          | no         | 8         | 8           | 0       | no     | no     | 
+ | Template_0002          | no         | 15        | 17          | 0       | no     | no     | 
+ | Template_0003          | no         | 8         | 8           | 0       | no     | no     | 
+ | Template_0004          | no         | 8         | 8           | 0       | no     | no     | 
+ | Template_0005          | no         | 4         | 4           | 0       | no     | no     | 
+ | Template_0006          | no         | 4         | 4           | 0       | no     | no     | 
+ | Template_0007          | no         | 52        | 59          | 0       | no     | no     | 
+ | Template_0008          | no         | 12        | 12          | 0       | no     | no     | 
+ | 
+md5-jop.xml | 
+ |          name          | lonelyInit | locations | transitions | flowers | linear | single | 
+ | FPS_scheduler          | yes        | 4         | 6           | 1       | no     | no     | 
+ | PeriodicThread         | yes        | 7         | 7           | 0       | no     | no     | 
+ | Template_0001          | no         | 8         | 8           | 0       | no     | no     | 
+ | Template_0002          | no         | 15        | 17          | 0       | no     | no     | 
+ | Template_0003          | no         | 8         | 8           | 0       | no     | no     | 
+ | Template_0004          | no         | 8         | 8           | 0       | no     | no     | 
+ | Template_0005          | no         | 4         | 4           | 0       | no     | no     | 
+ | Template_0006          | no         | 4         | 4           | 0       | no     | no     | 
+ | Template_0007          | no         | 52        | 59          | 0       | no     | no     | 
+ | Template_0008          | no         | 12        | 12          | 0       | no     | no     | 
+ | 
+minepump-hvmimp.xml | 
+ |          name          | lonelyInit | locations | transitions | flowers | linear | single | 
+ | FPS_scheduler          | yes        | 4         | 6           | 1       | no     | no     | 
+ | PeriodicThread         | yes        | 7         | 7           | 0       | no     | no     | 
+ | Template_0001          | no         | 4         | 4           | 0       | no     | no     | 
+ | Template_0002          | no         | 4         | 4           | 0       | no     | no     | 
+ | Template_0003          | no         | 46        | 51          | 0       | no     | no     | 
+ | Template_0004          | no         | 4         | 4           | 0       | no     | no     | 
+ | Template_0005          | no         | 10        | 12          | 0       | no     | no     | 
+ | Template_0006          | no         | 7         | 8           | 0       | no     | no     | 
+ | Template_0007          | no         | 10        | 12          | 0       | no     | no     | 
+ | Template_0008          | no         | 14        | 16          | 0       | no     | no     | 
+ | Template_0009          | no         | 4         | 4           | 0       | no     | no     | 
+ | Template_0010          | no         | 31        | 36          | 0       | no     | no     | 
+ | Template_0011          | no         | 4         | 4           | 0       | no     | no     | 
+ | Template_0012          | no         | 16        | 18          | 0       | no     | no     | 
+ | Template_0013          | no         | 20        | 21          | 0       | no     | no     | 
+ | Template_0014          | no         | 25        | 27          | 0       | no     | no     | 
+ | 
+minepump-jop.xml | 
+ |          name          | lonelyInit | locations | transitions | flowers | linear | single | 
+ | FPS_scheduler          | yes        | 4         | 6           | 1       | no     | no     | 
+ | PeriodicThread         | yes        | 7         | 7           | 0       | no     | no     | 
+ | Template_0001          | no         | 4         | 4           | 0       | no     | no     | 
+ | Template_0002          | no         | 4         | 4           | 0       | no     | no     | 
+ | Template_0003          | no         | 46        | 51          | 0       | no     | no     | 
+ | Template_0004          | no         | 4         | 4           | 0       | no     | no     | 
+ | Template_0005          | no         | 10        | 12          | 0       | no     | no     | 
+ | Template_0006          | no         | 7         | 8           | 0       | no     | no     | 
+ | Template_0007          | no         | 10        | 12          | 0       | no     | no     | 
+ | Template_0008          | no         | 14        | 16          | 0       | no     | no     | 
+ | Template_0009          | no         | 4         | 4           | 0       | no     | no     | 
+ | Template_0010          | no         | 31        | 36          | 0       | no     | no     | 
+ | Template_0011          | no         | 4         | 4           | 0       | no     | no     | 
+ | Template_0012          | no         | 16        | 18          | 0       | no     | no     | 
+ | Template_0013          | no         | 20        | 21          | 0       | no     | no     | 
+ | Template_0014          | no         | 25        | 27          | 0       | no     | no     | 
+ | 
+simplerts-opt.xml | 
+ |          name          | lonelyInit | locations | transitions | flowers | linear | single | 
+ | FPS_scheduler          | yes        | 4         | 6           | 1       | no     | no     | 
+ | PeriodicThread         | yes        | 7         | 7           | 0       | no     | no     | 
+ | Template_0001          | no         | 5         | 5           | 0       | no     | no     | 
+ | staticjvm              | no         | 289       | 292         | 0       | no     | no     | 
+ | hwinterface            | no         | 2         | 2           | 2       | no     | no     | 
+ | ExecuteStage           | no         | 2         | 2           | 2       | no     | no     | 
+ | FetchStage             | yes        | 4         | 4           | 1       | no     | no     | 
+ | 
+train-1000N.xml | 
+ |          name          | lonelyInit | locations | transitions | flowers | linear | single | 
+ | Train                  | no         | 5         | 6           | 0       | no     | no     | 
+ | Gate                   | no         | 3         | 5           | 1       | no     | no     | 
+ | 
+train-2000N.xml | 
+ |          name          | lonelyInit | locations | transitions | flowers | linear | single | 
+ | Train                  | no         | 5         | 6           | 0       | no     | no     | 
+ | Gate                   | no         | 3         | 5           | 1       | no     | no     | 
+ | 
+train-200N.xml | 
+ |          name          | lonelyInit | locations | transitions | flowers | linear | single | 
+ | Train                  | no         | 5         | 6           | 0       | no     | no     | 
+ | Gate                   | no         | 3         | 5           | 1       | no     | no     | 
+ | 
+train-300N.xml | 
+ |          name          | lonelyInit | locations | transitions | flowers | linear | single | 
+ | Train                  | no         | 5         | 6           | 0       | no     | no     | 
+ | Gate                   | no         | 3         | 5           | 1       | no     | no     | 
+ | 
+train-400N.xml | 
+ |          name          | lonelyInit | locations | transitions | flowers | linear | single | 
+ | Train                  | no         | 5         | 6           | 0       | no     | no     | 
+ | Gate                   | no         | 3         | 5           | 1       | no     | no     | 
+ | 
+train-500N.xml | 
+ |          name          | lonelyInit | locations | transitions | flowers | linear | single | 
+ | Train                  | no         | 5         | 6           | 0       | no     | no     | 
+ | Gate                   | no         | 3         | 5           | 1       | no     | no     | 
+ | 
+simpleHandshakeSystem.xml | 
+ |          name          | lonelyInit | locations | transitions | flowers | linear | single | 
+ | Template               | yes        | 2         | 1           | 2       | yes    | no     | 
+ | Template0              | yes        | 2         | 1           | 2       | yes    | no     | 
+ | 
+simpleSystem.xml | 
+ |          name          | lonelyInit | locations | transitions | flowers | linear | single | 
+ | Template               | no         | 3         | 3           | 0       | no     | no     | 
+ | 
+testxml01.xml | 
+ |          name          | lonelyInit | locations | transitions | flowers | linear | single | 
  | 

@@ -21,8 +21,9 @@ public class Identifier {
         excelWriter.writeRow(excelWriter.titles);
         for (int i = 0; i < templateProperties.size(); i++) {
             TemplateProperty currentTemplateProperty = templateProperties.get(i);
-
+            
             int numOfPoplarLocations = currentTemplateProperty.numOfPoplarLocations;
+            
 
             String isLinear = "no";
             String hasLonelyInit = "no";
@@ -32,7 +33,7 @@ public class Identifier {
             // System.out.println();
             // System.out.println();
             // System.out.println(currentTemplateProperty.template.name);
-            
+
             // Navigator.indent(1);
             // System.out.println("Has " + numOfPoplarLocations + " popular locations (75-100% degree presences)");
 
@@ -95,11 +96,14 @@ public class Identifier {
         }
 
         Navigator.indent(indent);
+        
         int popularLocations = getNumOfPopularLocations(locations, transitions);
         System.out.println("Template has " + popularLocations + " popular locations (75-100% degree presences)");
         tempTemplateProperty.numOfPoplarLocations = popularLocations;
+        
 
         int singleLocationState = isSingleLocation(locations);
+        tempTemplateProperty.singleLocation = true;
         if (singleLocationState == 1) {
             System.out.println();
             Navigator.indent(indent);
@@ -108,6 +112,8 @@ public class Identifier {
             System.out.println();
             Navigator.indent(indent);
             System.out.println("Template has a single location with transitions");
+        } else {
+            tempTemplateProperty.singleLocation = false;
         }
 
 

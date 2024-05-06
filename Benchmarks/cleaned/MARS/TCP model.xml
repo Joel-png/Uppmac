@@ -1,0 +1,378 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE nta PUBLIC '-//Uppaal Team//DTD Flat System 1.1//EN' 'http://www.it.uu.se/research/group/darts/uppaal/flat-1_2.dtd'>
+<nta>
+	<declaration>const int E = 3; 
+
+const int RESOURCES = (E-1);
+
+const int CLOSED = 0;
+const int LISTEN = 1;
+const int SYN_SENT = 2;
+const int SYN_RECEIVED = 3;
+const int ESTABLISHED = 4;
+
+typedef scalar[E] ids;
+
+broadcast chan syn[ids];
+broadcast chan syn_ack[ids];
+broadcast chan ack[ids];
+
+broadcast chan end_conn[ids];
+
+broadcast chan reset_syn[ids];
+broadcast chan reset_syn_ack[ids];</declaration>
+	<template>
+		<name>Server</name>
+		<declaration>typedef struct {
+	ids peer;
+	int [CLOSED, ESTABLISHED]cur_state;
+} TCB;
+
+TCB tcb[RESOURCES];
+
+ids temp;
+ids t;
+
+void reset() {
+	temp = t;
+}
+
+bool resources_available() {
+	bool available = false;
+	int i;
+	
+	for (i = 0; (i &lt; RESOURCES) &amp;&amp; (available == false); i++) {
+		if (tcb[i].cur_state == LISTEN) {
+			available = true;
+		}
+	}
+	
+	return available;
+}
+
+void create_TCB() {
+	int i;
+	
+	for (i = 0; (i &lt; RESOURCES); i++) {
+		tcb[i].cur_state = LISTEN;
+	}	
+}
+
+void update_TCB(int tcb_for, ids id) {
+	bool found = false;
+	int i;
+	
+	for (i = 0; (i &lt; RESOURCES) &amp;&amp; (found == false); i++) {
+		if ((tcb[i].cur_state == LISTEN) &amp;&amp; (tcb_for == SYN_RECEIVED)) {
+			found = true;
+			tcb[i].peer = id;
+			tcb[i].cur_state = tcb_for;
+		}
+		else if ((tcb[i].cur_state == SYN_RECEIVED) &amp;&amp; (tcb_for == LISTEN) &amp;&amp; (tcb[i].peer == id)) {
+			found = true;
+			tcb[i].peer = t;
+			tcb[i].cur_state = tcb_for;
+		}
+		else if ((tcb[i].cur_state == SYN_RECEIVED) &amp;&amp; (tcb_for == ESTABLISHED) &amp;&amp; (tcb[i].peer == id)) {
+			found = true;
+			tcb[i].cur_state = tcb_for;
+		}
+	}	
+}
+
+bool valid_TCB(ids id) {
+	bool found = false;
+	int i;
+	
+	for (i = 0; (i &lt; RESOURCES) &amp;&amp; (found == false); i++) {
+		if ((tcb[i].cur_state == SYN_RECEIVED) &amp;&amp; (tcb[i].peer == id)) {
+			found = true;
+		}
+	}
+
+	return found;	
+}
+
+bool remove_TCB(ids id) {
+	bool found = false;
+	int i;
+	
+	for (i = 0; (i &lt; RESOURCES) &amp;&amp; (found == false); i++) {
+		if ((tcb[i].cur_state == ESTABLISHED) &amp;&amp; (tcb[i].peer == id)) {
+			found = true;
+		}
+	}
+
+	return found;	
+}
+
+void timeout_TCB(ids id) {
+	bool found = false;
+	int i;
+	
+	for (i = 0; (i &lt; RESOURCES) &amp;&amp; (found == false); i++) {
+		if ((tcb[i].cur_state == SYN_RECEIVED) &amp;&amp; (tcb[i].peer == id)) {
+			found = true;
+			tcb[i].peer = t;
+			tcb[i].cur_state = LISTEN;
+		}
+	}	
+}
+
+void reset_TCB(ids id) {
+	bool found = false;
+	int i;
+	
+	for (i = 0; (i &lt; RESOURCES) &amp;&amp; (found == false); i++) {
+		if ((tcb[i].cur_state == ESTABLISHED) &amp;&amp; (tcb[i].peer == id)) {
+			found = true;
+			tcb[i].peer = t;
+			tcb[i].cur_state = LISTEN;
+		}
+	}	
+}</declaration>
+		<location id="id0" x="-96" y="120">
+			<name x="-80" y="120">S2</name>
+			<committed/>
+		</location>
+		<location id="id1" x="240" y="-216">
+			<name x="208" y="-240">S1</name>
+		</location>
+		<location id="id2" x="-96" y="-216">
+			<name x="-80" y="-240">S0</name>
+			<committed/>
+		</location>
+		<init ref="id2"/>
+		<transition color="#ff00ff">
+			<source ref="id1"/>
+			<target ref="id1"/>
+			<label kind="select" x="288" y="16">id: ids</label>
+			<label kind="guard" x="288" y="32">valid_TCB(id)</label>
+			<label kind="assignment" x="288" y="48">timeout_TCB(id)</label>
+			<nail x="280" y="-56"/>
+			<nail x="280" y="72"/>
+			<nail x="392" y="72"/>
+			<nail x="392" y="-56"/>
+		</transition>
+		<transition color="#ff00ff">
+			<source ref="id0"/>
+			<target ref="id1"/>
+			<label kind="assignment" x="16" y="-32">reset()</label>
+			<nail x="8" y="-32"/>
+			<nail x="160" y="-32"/>
+		</transition>
+		<transition color="#ffa500">
+			<source ref="id1"/>
+			<target ref="id1"/>
+			<label kind="select" x="512" y="-152">id: ids</label>
+			<label kind="guard" x="464" y="-136">valid_TCB(id)</label>
+			<label kind="synchronisation" x="432" y="-120">reset_syn_ack[id]?</label>
+			<label kind="assignment" x="392" y="-104">update_TCB(LISTEN, id)</label>
+			<nail x="392" y="-176"/>
+			<nail x="552" y="-176"/>
+			<nail x="552" y="-80"/>
+			<nail x="392" y="-80"/>
+		</transition>
+		<transition color="#ffa500">
+			<source ref="id0"/>
+			<target ref="id1"/>
+			<label kind="synchronisation" x="-16" y="-80">reset_syn[temp]!</label>
+			<label kind="assignment" x="-16" y="-64">reset()</label>
+			<nail x="-24" y="-80"/>
+			<nail x="128" y="-80"/>
+		</transition>
+		<transition color="#00ffff">
+			<source ref="id1"/>
+			<target ref="id1"/>
+			<label kind="select" x="288" y="-296">id: ids</label>
+			<label kind="guard" x="288" y="-280">remove_TCB(id)</label>
+			<label kind="synchronisation" x="288" y="-264">end_conn[id]?</label>
+			<label kind="assignment" x="288" y="-248">reset_TCB(id)</label>
+			<nail x="240" y="-288"/>
+			<nail x="280" y="-288"/>
+			<nail x="280" y="-248"/>
+		</transition>
+		<transition color="#0000ff">
+			<source ref="id1"/>
+			<target ref="id1"/>
+			<label kind="select" x="552" y="48">id: ids</label>
+			<label kind="guard" x="504" y="64">valid_TCB(id)</label>
+			<label kind="synchronisation" x="544" y="80">ack[id]?</label>
+			<label kind="assignment" x="392" y="96">update_TCB(ESTABLISHED, id)</label>
+			<nail x="248" y="120"/>
+			<nail x="600" y="120"/>
+			<nail x="600" y="-216"/>
+		</transition>
+		<transition color="#0000ff">
+			<source ref="id0"/>
+			<target ref="id1"/>
+			<label kind="guard" x="88" y="48">resources_available()</label>
+			<label kind="synchronisation" x="128" y="64">syn_ack[temp]!</label>
+			<label kind="assignment" x="-16" y="80">update_TCB(SYN_RECEIVED, temp),
+reset()</label>
+			<nail x="232" y="120"/>
+		</transition>
+		<transition color="#0000ff">
+			<source ref="id1"/>
+			<target ref="id0"/>
+			<label kind="select" x="-88" y="-176">id: ids</label>
+			<label kind="synchronisation" x="-88" y="-160">syn[id]?</label>
+			<label kind="assignment" x="-88" y="-144">temp = id</label>
+			<nail x="-96" y="-176"/>
+		</transition>
+		<transition color="#a9a9a9">
+			<source ref="id2"/>
+			<target ref="id1"/>
+			<label kind="assignment" x="-80" y="-216">create_TCB()</label>
+		</transition>
+	</template>
+	<template>
+		<name>Legit_Client</name>
+		<parameter>const ids id</parameter>
+		<declaration>const int T = 60;
+const int MAX = 4;
+
+int [CLOSED, ESTABLISHED]cur_state;
+int [0, MAX]counter;
+clock timer;
+
+void reset() {
+	cur_state = CLOSED;
+	timer = 0;
+	counter = 0;
+}</declaration>
+		<location id="id3" x="600" y="-568">
+			<name x="560" y="-592">LC2</name>
+		</location>
+		<location id="id4" x="-96" y="-568">
+			<name x="-80" y="-592">LC1</name>
+			<label kind="invariant" x="-56" y="-568">timer &lt;= T</label>
+		</location>
+		<location id="id5" x="240" y="-216">
+			<name x="200" y="-216">LC0</name>
+		</location>
+		<init ref="id5"/>
+		<transition color="#ff00ff">
+			<source ref="id3"/>
+			<target ref="id5"/>
+			<label kind="assignment" x="448" y="-376">reset()</label>
+			<nail x="496" y="-376"/>
+			<nail x="336" y="-376"/>
+		</transition>
+		<transition color="#ff00ff">
+			<source ref="id4"/>
+			<target ref="id5"/>
+			<label kind="guard" x="-32" y="-376">timer &gt;= T
+&amp;&amp; counter == MAX</label>
+			<label kind="assignment" x="-32" y="-344">reset()</label>
+			<nail x="-32" y="-376"/>
+			<nail x="128" y="-376"/>
+		</transition>
+		<transition color="#ffc0cb">
+			<source ref="id4"/>
+			<target ref="id4"/>
+			<label kind="guard" x="24" y="-520">timer &gt;= T
+&amp;&amp; counter &lt; MAX</label>
+			<label kind="synchronisation" x="24" y="-488">syn[id]!</label>
+			<label kind="assignment" x="24" y="-472">timer = 0,
+counter++</label>
+			<nail x="16" y="-440"/>
+			<nail x="144" y="-440"/>
+			<nail x="144" y="-520"/>
+			<nail x="16" y="-520"/>
+		</transition>
+		<transition color="#ffa500">
+			<source ref="id4"/>
+			<target ref="id5"/>
+			<label kind="synchronisation" x="72" y="-424">reset_syn[id]?</label>
+			<label kind="assignment" x="72" y="-408">reset()</label>
+			<nail x="8" y="-424"/>
+			<nail x="168" y="-424"/>
+		</transition>
+		<transition color="#ffa500">
+			<source ref="id3"/>
+			<target ref="id5"/>
+			<label kind="synchronisation" x="296" y="-424">reset_syn_ack[id]!</label>
+			<label kind="assignment" x="296" y="-408">reset()</label>
+			<nail x="448" y="-424"/>
+			<nail x="288" y="-424"/>
+		</transition>
+		<transition color="#00ff00">
+			<source ref="id5"/>
+			<target ref="id4"/>
+			<label kind="guard" x="-88" y="-304">cur_state == CLOSED</label>
+			<label kind="synchronisation" x="-88" y="-288">syn[id]!</label>
+			<label kind="assignment" x="-88" y="-272">cur_state = SYN_SENT,
+timer = 0,
+counter = 0</label>
+			<nail x="-96" y="-216"/>
+		</transition>
+		<transition color="#00ffff">
+			<source ref="id5"/>
+			<target ref="id5"/>
+			<label kind="guard" x="288" y="-192">cur_state == ESTABLISHED</label>
+			<label kind="synchronisation" x="288" y="-176">end_conn[id]!</label>
+			<label kind="assignment" x="288" y="-160">reset()</label>
+			<nail x="240" y="-144"/>
+			<nail x="280" y="-144"/>
+			<nail x="280" y="-192"/>
+		</transition>
+		<transition color="#00ff00">
+			<source ref="id3"/>
+			<target ref="id5"/>
+			<label kind="synchronisation" x="552" y="-256">ack[id]!</label>
+			<label kind="assignment" x="424" y="-240">cur_state = ESTABLISHED</label>
+			<nail x="600" y="-216"/>
+		</transition>
+		<transition color="#00ff00">
+			<source ref="id4"/>
+			<target ref="id3"/>
+			<label kind="guard" x="240" y="-568">counter &lt;= MAX</label>
+			<label kind="synchronisation" x="240" y="-552">syn_ack[id]?</label>
+			<label kind="assignment" x="240" y="-536">cur_state = SYN_RECEIVED,
+timer = 0,
+counter = 0</label>
+		</transition>
+	</template>
+	<template>
+		<name>Illegit_Client</name>
+		<parameter>const ids id</parameter>
+		<declaration>bool sent = false;</declaration>
+		<location id="id6" x="240" y="-216">
+			<name x="208" y="-216">IL0</name>
+		</location>
+		<init ref="id6"/>
+		<transition color="#00ff00">
+			<source ref="id6"/>
+			<target ref="id6"/>
+			<label kind="synchronisation" x="112" y="-256">syn[id]!</label>
+			<label kind="assignment" x="112" y="-240">sent = true</label>
+			<nail x="40" y="-216"/>
+			<nail x="136" y="-320"/>
+		</transition>
+	</template>
+	<system>system Legit_Client, Illegit_Client, Server;</system>
+	<queries>
+		<query>
+			<formula>A[] forall (i:ids) (
+       Legit_Client(i).cur_state == ESTABLISHED imply
+          exists (j: int[0,(RESOURCES-1)])(
+            Server.tcb[j].peer == i and Server.tcb[j].cur_state == ESTABLISHED
+          )
+    )
+			</formula>
+			<comment>
+			</comment>
+		</query>
+		<query>
+			<formula>E&lt;&gt; exists (i:ids) (
+       forall (j: int[0,(RESOURCES-1)])(
+          Server.tcb[j].peer == i and  Server.tcb[j].cur_state == SYN_RECEIVED
+       )
+    )
+			</formula>
+			<comment>
+			</comment>
+		</query>
+	</queries>
+</nta>

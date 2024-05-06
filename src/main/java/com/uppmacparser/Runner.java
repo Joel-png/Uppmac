@@ -9,7 +9,7 @@ import java.io.IOException;
 public class Runner {
 
     Navigator navigator;
-    
+    ExcelWriter excelWriter;
     public Runner () {
 
     }
@@ -23,7 +23,7 @@ public class Runner {
             System.exit(1);
         }
         
-        ExcelWriter excelWriter = new ExcelWriter();
+        excelWriter = new ExcelWriter();
         // excel column names
         excelWriter.writeRow(new String[] {"NTA name", "Template Name", "numPopularLocations", "isLinear", "hasLonelyInit", "isSingleLocation"});
 
@@ -65,27 +65,28 @@ public class Runner {
                 //File tempFile = new File("temp.xml");
                 String contents[] = inputDirectory.list();
 
-                for (int j = 0; j < contents.length; j++) {
-                    System.out.println("Analysing file: " + contents[j]);
+                traverseFolder(inputDirectory.getAbsolutePath(), "");
+                // for (int j = 0; j < contents.length; j++) {
+                //     System.out.println("Analysing file: " + contents[j]);
                     
-                    // pass file if .xml
-                    String extension = "";
-                    int i = contents[j].lastIndexOf('.');
-                    if (i >= 0) { extension = contents[j].substring(i+1); }
-                        //System.out.println(extension);
-                    if (new String("xml").equals(extension)) {
-                        File inputFile = new File(inputDirectory.getAbsolutePath() + "\\" + contents[j]);
+                //     // pass file if .xml
+                //     String extension = "";
+                //     int i = contents[j].lastIndexOf('.');
+                //     if (i >= 0) { extension = contents[j].substring(i+1); }
+                //         //System.out.println(extension);
+                //     if (new String("xml").equals(extension)) {
+                //         File inputFile = new File(inputDirectory.getAbsolutePath() + "\\" + contents[j]);
                         
-                        // all the computing of file is done here
-                        DefaultParser parser = new DefaultParser(formatXML(inputFile), contents[j]);
-                        navigator = new Navigator(parser.parse(), args[0], excelWriter);
-                        navigator.getProperties();
+                //         // all the computing of file is done here
+                //         DefaultParser parser = new DefaultParser(formatXML(inputFile), contents[j]);
+                //         navigator = new Navigator(parser.parse(), args[0], excelWriter);
+                //         navigator.getProperties();
                         
                         
-                    } else {
-                        System.out.println("Specified file is of type '" + extension + "', please use a file with type 'xml'");
-                    }
-                }
+                //     } else {
+                //         System.out.println("Specified file is of type '" + extension + "', please use a file with type 'xml'");
+                //     }
+                // }
                 excelWriter.finish();
 
             // file -p
@@ -122,6 +123,40 @@ public class Runner {
         return navigator;
     }
 
+    public void traverseFolder(String absolutePath, String name) throws Exception {
+        System.out.println(absolutePath);
+        File file = new File(absolutePath);
+        if (file.isDirectory()) {
+            String directoryContents[] = file.list();
+            for (int i = 0; i < directoryContents.length; i++) {
+                traverseFolder(absolutePath + "\\" + directoryContents[i], directoryContents[i]);
+            }
+        } else {
+            analyze(absolutePath, name);
+        }
+    }
+
+    public void analyze(String path, String name) throws Exception {
+        System.out.println("Analysing file: " + name);
+                    
+                    // pass file if .xml
+                    String extension = "";
+                    int i = name.lastIndexOf('.');
+                    if (i >= 0) { extension = name.substring(i+1); }
+                        //System.out.println(extension);
+                    if (new String("xml").equals(extension)) {
+                        File inputFile = new File(path);
+                        
+                        // all the computing of file is done here
+                        DefaultParser parser = new DefaultParser(formatXML(inputFile), name);
+                        navigator = new Navigator(parser.parse(), name, excelWriter);
+                        navigator.getProperties();
+                        
+                    } else {
+                        System.out.println("Specified file is of type '" + extension + "', please use a file with type 'xml'");
+                    }
+    }
+
     public File formatXML(File inputFile) throws IOException {
         File tempFile = new File("temp.xml");
 
@@ -135,11 +170,13 @@ public class Runner {
                 String trimmedLine = currentLine.trim().substring(0, lineToRemove.length());
                 if(trimmedLine.equals(lineToRemove)) continue;
             }
+            currentLine = currentLine.replaceAll("[^\\x00-\\x7F]", "");
             writer.write(currentLine + System.getProperty("line.separator"));
         }
         writer.close();
         reader.close();
 
+        
         return tempFile;
     }
 

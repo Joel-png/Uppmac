@@ -1,0 +1,2730 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE nta PUBLIC '-//Uppaal Team//DTD Flat System 1.1//EN' 'http://www.it.uu.se/research/group/darts/uppaal/flat-1_2.dtd'>
+<nta>
+	<declaration>/* Global declarations */
+/* Time */
+const int[0, 200000] MaxTime = 200000;
+typedef int[0, MaxTime] time_t;
+
+const int INFINITY = 0;    // Infinite time constant
+const int INVAL = 0;    // Invalid time constant
+
+const time_t MajorFrame = 25000;    // Major Time Frame in μs
+
+clock t;    // Global clock
+
+bool error = false;
+
+/* Resource */
+const int Resources = 26;                 // Number of resources
+typedef int[0,Resources - 1] rid_t;
+
+const int CPUs = 3;    // Number of CPU
+const int RQs = 5;    // Number of RQ
+const int MUXs = 3;    // Number of MUX
+const int MSGs = 4;    // Number of MSG
+const int PORTs = 11;    // Number of PORT
+
+// Resource constants
+const rid_t NONE = 0;
+// CPU resource
+const rid_t CPU = 0;
+const rid_t CPU1 = CPU;
+const rid_t CPU2 = CPU + 1;
+const rid_t CPU3 = CPU + 2;
+// RQ resource
+const rid_t CPU_RQ = CPUs;
+const rid_t CPU1_Q1 = CPU_RQ;
+const rid_t CPU1_Q2 = CPU_RQ + 1;
+const rid_t CPU2_Q1 = CPU_RQ + 2;
+const rid_t CPU2_Q2 = CPU_RQ + 3;
+const rid_t CPU3_Q1 = CPU_RQ + 4;
+// Mutex resource
+const rid_t MUX = CPUs + RQs;
+const rid_t MUX1 = MUX;
+const rid_t MUX2 = MUX + 1;
+const rid_t MUX3 = MUX + 2;
+// Message resource
+const rid_t MSG = CPUs + RQs + MUXs;
+const rid_t MSG1 = MSG;
+const rid_t MSG2 = MSG + 1;
+const rid_t MSG3 = MSG + 2;
+const rid_t MSG4 = MSG + 3;
+// Port resource
+const rid_t PORT = CPUs + RQs + MUXs + MSGs;
+const rid_t PORT1_1Ss = PORT;
+const rid_t PORT2_2Ss = PORT + 1;
+const rid_t PORT3_1Ds = PORT + 2;
+const rid_t PORT3_2Ds = PORT + 3;
+const rid_t PORT3_3Dq = PORT + 4;
+const rid_t PORT4_1Ds = PORT + 5;
+const rid_t PORT4_3Sq = PORT + 6;
+const rid_t PORT4_4Dq = PORT + 7;
+const rid_t PORT5_1Ds = PORT + 8;
+const rid_t PORT5_2Ds = PORT + 9;
+const rid_t PORT5_4Sq = PORT + 10;
+
+/* Partition */
+const int Partitions = 5;    // Number of partitions
+typedef int[0, Partitions - 1] pid_t;
+
+// Constants of partition ID
+const pid_t P1 = 0;
+const pid_t P2 = 1;
+const pid_t P3 = 2;
+const pid_t P4 = 3;
+const pid_t P5 = 4;
+
+// Type of partition
+typedef struct {
+    rid_t cpu_id;
+    rid_t rq_id;
+    time_t period;
+    int wind_num;
+    int wind_idx;
+} partition_t;
+
+// Type of partition window
+typedef struct {
+    time_t offset;
+    time_t duration;
+} partition_window_t;
+
+const int TotalWindowsNum = 5;    // Tatal number of partition windows within one major time frame
+const partition_window_t partition_windows[TotalWindowsNum] = {
+    // Partition 1
+    {0, 5000},
+    // Partition 2
+    {5000, 5000},
+    // Partition 3
+    {10000, 5000},
+    // Partition 4
+    {15000, 5000},
+    // Partition 5
+    {20000, 5000}
+};
+
+// Partition list
+const partition_t partition[Partitions] = {
+    {CPU1, CPU1_Q1, 25000, 1, 0},
+    {CPU1, CPU1_Q2, 25000, 1, 1},
+    {CPU2, CPU2_Q1, 25000, 1, 2},
+    {CPU3, CPU3_Q1, 25000, 1, 3},
+    {CPU2, CPU2_Q2, 25000, 1, 4}
+};
+
+bool in_partition[pid_t];    // Flag set after entering current partition
+bool perror[pid_t];    // Error flags for each partition
+
+const int MaxLockLevel = MUXs;    // Maximal number of locks locked at the same time
+int[0, MaxLockLevel] lock_level[Partitions];    // Preemption is disabled with corresponding LOCK_LEVEL &gt;= 0
+
+/* Task */
+const int Tasks = 22;    // Number of tasks
+typedef int[0, Tasks - 1] tid_t;
+
+const int MaxTasks = 5;    // Maximal Number of tasks in a partition
+
+// Type code of task
+typedef int tsktype_t;
+const tsktype_t Periodic = 0;
+const tsktype_t Sporadic = 1;
+
+// Priority type of task
+const int MaxPrio = 0;
+const int MinPrio = 10;
+typedef int[MaxPrio, MinPrio] prio_t;
+
+// Command code of task operation
+typedef int cmd_t;    // Type of command code
+const cmd_t COMPUTE = 0;
+const cmd_t LOCK = 1;
+const cmd_t UNLOCK = 2;
+const cmd_t DELAY = 3;
+const cmd_t SEND = 4;
+const cmd_t RECEIVE = 5;
+const cmd_t END = 6;
+
+// Type of task operation
+typedef struct {
+    cmd_t cmd;
+    rid_t res;
+    time_t bcet;
+    time_t wcet;
+} operation_t;
+
+// Type of task
+typedef struct {
+    tsktype_t type;
+    time_t initial_offset;
+    time_t min_period;
+    time_t max_period;
+    time_t offset;
+    time_t jitter;
+    time_t deadline;
+    pid_t pid;
+    int prio;
+    int pc_start;
+} task_t;
+
+// Operation table
+const int OperationTableLength = 73;
+const operation_t op[OperationTableLength] = {
+    // Task11 (0-)
+    {COMPUTE, CPU, 800, 1300},
+    {COMPUTE, CPU, 100, 200},
+    {END, NONE, 0, 0},
+    // Task12 (3-)
+    {COMPUTE, CPU, 200, 400},
+    {SEND, MSG1, 0, 0},
+    {END, NONE, 0, 0},
+    // Task13 (6-)
+    {COMPUTE, CPU, 2700, 4200},
+    {END, NONE, 0, 0},
+    // Task14 (8-)
+    {LOCK, MUX1, 0, 0},
+    {COMPUTE, CPU, 100, 200},
+    {UNLOCK, MUX1, 0, 0},
+    {END, NONE, 0, 0},
+    // Task15 (12-)
+    {COMPUTE, CPU, 600, 900},
+    {LOCK, MUX1, 0, 0},
+    {COMPUTE, CPU, 100, 200},
+    {UNLOCK, MUX1, 0, 0},
+    {END, NONE, 0, 0},
+    // Task21 (17-)
+    {COMPUTE, CPU, 1900, 3000},
+    {END, NONE, 0, 0},
+    // Task22 (19-)
+    {COMPUTE, CPU, 700, 1100},
+    {SEND, MSG2, 0, 0},
+    {END, NONE, 0, 0},
+    // Task23 (22-)
+    {LOCK, MUX2, 0, 0},
+    {COMPUTE, CPU, 100, 200},
+    {UNLOCK, MUX2, 0, 0},
+    {END, NONE, 0, 0},
+    // Task24 (26-)
+    {COMPUTE, CPU, 800, 1300},
+    {LOCK, MUX2, 0, 0},
+    {COMPUTE, CPU, 200, 300},
+    {UNLOCK, MUX2, 0, 0},
+    {END, NONE, 0, 0},
+    // Task31 (31-)
+    {RECEIVE, PORT3_1Ds, 0, 0},
+    {COMPUTE, CPU, 500, 800},
+    {END, NONE, 0, 0},
+    // Task32 (34-)
+    {RECEIVE, PORT3_2Ds, 0, 0},
+    {COMPUTE, CPU, 700, 1100},
+    {END, NONE, 0, 0},
+    // Task33 (37-)
+    {RECEIVE, PORT3_3Dq, 0, 0},
+    {COMPUTE, CPU, 1000, 1600},
+    {END, NONE, 0, 0},
+    // Task34 (40-)
+    {COMPUTE, CPU, 700, 1000},
+    {COMPUTE, CPU, 100, 300},
+    {END, NONE, 0, 0},
+    // Task41 (43-)
+    {COMPUTE, CPU, 700, 1200},
+    {END, NONE, 0, 0},
+    // Task42 (45-)
+    {RECEIVE, PORT4_1Ds, 0, 0},
+    {COMPUTE, CPU, 1200, 1900},
+    {SEND, MSG3, 0, 0},
+    {END, NONE, 0, 0},
+    // Task43 (49-)
+    {RECEIVE, PORT4_4Dq, 0, 0},
+    {COMPUTE, CPU, 100, 200},
+    {END, NONE, 0, 0},
+    // Task44 (52-)
+    {COMPUTE, CPU, 700, 1100},
+    {END, NONE, 0, 0},
+    // Task45 (54-)
+    {COMPUTE, CPU, 3700, 5800},
+    {END, NONE, 0, 0},
+    // Task51 (56-)
+    {RECEIVE, PORT5_1Ds, 0, 0},
+    {COMPUTE, CPU, 700, 1100},
+    {END, NONE, 0, 0},
+    // Task52 (59-)
+    {RECEIVE, PORT5_2Ds, 0, 0},
+    {COMPUTE, CPU, 1200, 1900},
+    {SEND, MSG4, 0, 0},
+    {END, NONE, 0, 0},
+    //Task53 (63-)
+    {COMPUTE, CPU, 400, 600},
+    {LOCK, MUX3, 0, 0},
+    {COMPUTE, CPU, 200, 300},
+    {UNLOCK, MUX3, 0, 0},
+    {END, NONE, 0, 0},
+    //Task54 (68-)
+    {COMPUTE, CPU, 1400, 2200},
+    {LOCK, MUX3, 0, 0},
+    {COMPUTE, CPU, 100, 200},
+    {UNLOCK, MUX3, 0, 0},
+    {END, NONE, 0, 0}
+};
+
+// Task list
+const task_t task[Tasks] = {
+    // Task11
+    {Periodic, 0, 25000, 25000, 2000, 0, 25000, P1, 2, 0},
+    // Task12
+    {Periodic, 0, 50000, 50000, 3000, 0, 50000, P1, 3, 3},
+    // Task13
+    {Periodic, 0, 50000, 50000, 3000, 0, 50000, P1, 4, 6},
+    // Task14
+    {Periodic, 0, 50000, 50000, 0, 0, 50000, P1, 5, 8},
+    // Task15
+    {Sporadic, 0, 120000, INFINITY, 0, 0, 120000, P1, 6, 12},
+    // Task21
+    {Periodic, 0, 50000, 50000, 0, 500, 50000, P2, 2, 17},
+    // Task22
+    {Periodic, 0, 50000, 50000, 2000, 0, 50000, P2, 3, 19},
+    // Task23
+    {Periodic, 0, 100000, 100000, 0, 0, 100000, P2, 4, 22},
+    // Task24
+    {Sporadic, 0, 100000, INFINITY, 10000, 0, 100000, P2, 5, 26},
+    // Task31
+    {Periodic, 0, 25000, 25000, 0, 500, 25000, P3, 2, 31},
+    // Task32
+    {Periodic, 0, 50000, 50000, 0, 0, 50000, P3, 3, 34},
+    // Task33
+    {Periodic, 50000, 50000, 50000, 0, 0, 50000, P3, 4, 37},
+    // Task34
+    {Sporadic, 0, 100000, INFINITY, 11000, 0, 100000, P3, 5, 40},
+    // Task41
+    {Periodic, 0, 25000, 25000, 3000, 200, 25000, P4, 2, 43},
+    // Task42
+    {Periodic, 0, 50000, 50000, 5000, 0, 50000, P4, 3, 45},
+    // Task43
+    {Periodic, 0, 50000, 50000, 25000, 0, 50000, P4, 4, 49},
+    // Task44
+    {Periodic, 0, 100000, 100000, 11000, 0, 100000, P4, 5, 52},
+    // Task45
+    {Periodic, 0, 200000, 200000, 13000, 0, 200000, P4, 6, 54},
+    // Task51
+    {Periodic, 0, 50000, 50000, 0, 300, 50000, P5, 1, 56},
+    // Task52
+    {Periodic, 0, 50000, 50000, 2000, 0, 50000, P5, 2, 59},
+    //Task53
+    {Periodic, 0, 200000, 200000, 0, 0, 200000, P5, 3, 63},
+    //Task54
+    {Sporadic, 0, 200000, INFINITY, 14000, 0, 200000, P5, 4, 68}
+};
+
+// Type of task queue
+typedef struct {
+  int[0, MaxTasks + 1] len;
+  tid_t list[MaxTasks + 1];
+} queue_t;
+
+queue_t rq[CPUs + RQs + MUXs];    // Request queue of ready or blocked tasks
+
+typedef int[0, 1] policy_t;    // Scheduling policy
+const policy_t FIFO = 0;    // First in first out
+const policy_t FP = 1;    // Fixed priority
+
+// Resource status
+typedef struct {
+    int[0, 1] occupied;
+    tid_t owner;
+    int[0, MaxTasks] waiting;
+} resstat_t;
+resstat_t resstat[MUXs];
+
+// Highest priority of all tasks that may lock a MUX
+const prio_t Ceiling[MUXs] = {5, 4, 3};
+
+// Partition ID of MUXs
+const pid_t MuxPtn[MUXs] = {P1, P2, P5};
+
+// Current priority of tasks
+prio_t cprio[Tasks];
+
+/* Ports */
+// Type of port
+typedef int[0, 1] pmode_t;
+const pmode_t SAMPLING = 0;
+const pmode_t QUEUING = 1;
+typedef int[0, 1] dir_t;
+const dir_t SRC = 0;
+const dir_t DEST = 1;
+typedef int[0, PORTs - 1] portid_t;
+typedef struct {
+    rid_t rid;
+    pmode_t mode;
+    dir_t dir;
+    int max_nb;
+    time_t refresh_rate;
+} port_t;
+
+// Port list
+const port_t port[PORTs] = {
+    {PORT1_1Ss, SAMPLING, SRC, 1, INVAL},
+    {PORT2_2Ss, SAMPLING, SRC, 1, INVAL},
+    {PORT3_1Ds, SAMPLING, DEST, 1, 50000},
+    {PORT3_2Ds, SAMPLING, DEST, 1, 50000},
+    {PORT3_3Dq, QUEUING, DEST, 1, INVAL},
+    {PORT4_1Ds, SAMPLING, DEST, 1, 50000},
+    {PORT4_3Sq, QUEUING, SRC, 1, INVAL},
+    {PORT4_4Dq, QUEUING, DEST, 1, INVAL},
+    {PORT5_1Ds, SAMPLING, DEST, 1, 50000},
+    {PORT5_2Ds, SAMPLING, DEST, 1, 50000},
+    {PORT5_4Sq, QUEUING, SRC, 1, INVAL}
+};
+
+clock port_clock[PORTs];    // Clocks used to check for the refresh rate of sampling ports
+
+const int PortCnt = 1;    // Port count vlaue used to calculate the end-to-end delay
+
+/* Virtual links and End systems*/
+// Type of virtual link ID
+const int VLs = 4;
+typedef int[0, VLs - 1] vlid_t;
+
+const vlid_t NVL = 0;
+const vlid_t VL1 = 0;
+const vlid_t VL2 = 1;
+const vlid_t VL3 = 2;
+const vlid_t VL4 = 3;
+
+// Type of end system id
+const int ESs = 3;
+typedef int[0, ESs - 1] esid_t;
+
+const esid_t ES1 = 0;
+const esid_t ES2 = 1;
+const esid_t ES3 = 2;
+
+// Constants of FIFOs used by virtual links
+const int FIFOs = 11;
+typedef int[0, FIFOs] fifoid_t;
+
+const fifoid_t NO_LINK = 0;
+const fifoid_t FIFO_1t = 1;
+const fifoid_t FIFO_1r_1 = 2;
+const fifoid_t FIFO_1r_2 = 3;
+const fifoid_t FIFO_1r_3 = 4;
+const fifoid_t FIFO_2t = 5;
+const fifoid_t FIFO_2r_1 = 6;
+const fifoid_t FIFO_2r_2 = 7;
+const fifoid_t FIFO_3t = 8;
+const fifoid_t FIFO_3r_1 = 9;
+const fifoid_t FIFO_4t = 10;
+const fifoid_t FIFO_4r_1 = 11;
+
+// Type of virtual link
+typedef struct {
+    time_t BAG;
+    time_t TxDelay;
+    esid_t es;
+    fifoid_t src;
+    fifoid_t dst[Partitions];
+} vl_t;
+
+const vl_t vlink[VLs] = {
+    // VL 1
+    {8000, 16, ES1, FIFO_1t, {NO_LINK, NO_LINK, FIFO_1r_1, FIFO_1r_2, FIFO_1r_3}},
+    // VL 2
+    {16000, 80, ES1, FIFO_2t, {NO_LINK, NO_LINK, FIFO_2r_1, NO_LINK, FIFO_2r_2}},
+    // VL 3
+    {32000, 40, ES2, FIFO_3t, {NO_LINK, NO_LINK, FIFO_3r_1, NO_LINK, NO_LINK}},
+    // VL 4
+    {32000, 16, ES3, FIFO_4t, {NO_LINK, NO_LINK, NO_LINK, FIFO_4r_1, NO_LINK}}
+};
+
+// Type of end systems
+typedef struct {
+    int tx_cnt;
+    vlid_t tx_vl[VLs];
+    int rx_cnt;
+    vlid_t rx_vl[VLs];
+} es_t;
+
+const es_t es[ESs] = {
+    // End system 1
+    {2, {VL1, VL2, NVL, NVL}, 0, {NVL, NVL, NVL, NVL}},
+    // End system 2
+    {1, {VL3, NVL, NVL, NVL}, 4, {VL1, VL2, VL3, VL4}},
+    // End system 3
+    {1, {VL4, NVL, NVL, NVL}, 2, {VL1, VL4, NVL, NVL}}
+};
+
+time_t txjitter[ESs];    // The upper bound of the jitter for busy VLs in each end system
+
+/* Message */
+// Type of message
+typedef struct {
+    rid_t rid;
+    time_t initial_offset;
+    time_t min_period;
+    time_t max_period;
+    time_t offset;
+    time_t jitter;
+    rid_t port;
+    //int buf_len;
+    //int cnt_timeout;        // Limitation on the number of no message
+} msg_t;
+
+typedef int[0, MSGs - 1] msgid_t;    // Type of message id
+
+// Message list
+const msg_t msg[MSGs] = {
+    {MSG1, 0, 50000, 50000, 3199, 701, PORT1_1Ss},
+    {MSG2, 5000, 50000, 50000, 2699, 1901, PORT2_2Ss},
+    {MSG3, 15000, 50000, 50000, 26199, 701, PORT4_3Sq},
+    {MSG4, 20000, 50000, 50000, 3199, 701, PORT5_4Sq}
+};
+
+const int MaxMsg = 10;    // Upper bound of message buffer
+
+// Type of message buffer
+typedef struct {
+    bool err;    // Error state of Messages
+    int[0, PortCnt] cnt;    // Message counter used for latency calculation
+    int[0, MaxMsg] buf;    // Message buffer
+} msgbuf_t;
+
+// Message buffers
+msgbuf_t msgbuf[MSGs];
+msgbuf_t portbuf[PORTs];
+msgbuf_t fifo[FIFOs + 1];
+
+bool msgErr = false;        // Error state of messages (Overflow or violation of refresh rates)
+
+/* Channel */
+broadcast chan enter_partition[pid_t];
+broadcast chan exit_partition[pid_t];
+broadcast chan ready[tid_t];
+broadcast chan sched[tid_t];
+broadcast chan stop[tid_t];
+broadcast chan wakeup[rid_t];
+broadcast chan release[pid_t];
+broadcast chan ipinp, ipoutp;
+broadcast chan vl[vlid_t];
+broadcast chan pmsg[msgid_t];
+
+/* Global functions */
+void _enque(rid_t rid, tid_t tid, int start, policy_t policy){
+    if(policy == FIFO)
+        rq[rid].list[rq[rid].len++] = tid;
+    if(policy == FP){
+        tid_t tmp;
+        rq[rid].list[rq[rid].len++] = tid;
+        if (rq[rid].len &gt; 1){
+            int i = rq[rid].len - 1;
+            while(i &gt; start &amp;&amp; cprio[rq[rid].list[i]] &lt; cprio[rq[rid].list[i - 1]]){
+                tmp = rq[rid].list[i - 1];
+                rq[rid].list[i - 1] = rq[rid].list[i];
+                rq[rid].list[i] = tmp;
+                i--;
+            }
+        }
+    }
+}
+
+void _deque(rid_t rid){
+    int[1, Tasks] i;
+
+    for(i = 1; i &lt; rq[rid].len; i++) {
+      rq[rid].list[i - 1] = rq[rid].list[i];
+    }
+
+    rq[rid].list[rq[rid].len - 1] = 0;
+    rq[rid].len--;
+}
+
+tid_t _front(rid_t rid){
+    return rq[rid].list[0];
+}
+
+void sortQueue(rid_t rid, int start) {
+    int[0, MaxTasks] i, j;
+    tid_t target;
+
+    for(i = start + 1; i &lt; rq[rid].len; i++) {
+        j = i;
+        target = rq[rid].list[i];
+        while(j &gt; start &amp;&amp; cprio[target] &lt; cprio[rq[rid].list[j -1]]) {
+            rq[rid].list[j] = rq[rid].list[j -1];
+            j--;
+        }
+        rq[rid].list[j] = target;
+    }
+}
+
+int muxid(rid_t rid) { return (rid - MUX); }
+rid_t mux2rid(int[0, MUXs - 1] muxid) { return (muxid + MUX); }
+
+msgid_t msgid(rid_t rid) { return (rid - MSG); }
+bool _getMsgErr(rid_t rid) { return msgbuf[msgid(rid)].err; }
+void _setMsgErr(rid_t rid) { msgbuf[msgid(rid)].err = true; }
+
+portid_t portid(rid_t rid) { return (rid - PORT); }
+rid_t txPort(rid_t rid) { return msg[msgid(rid)].port; }
+
+bool _getPortErr(rid_t rid) { return portbuf[portid(rid)].err; }
+void _setPortErr(rid_t rid) { portbuf[portid(rid)].err = true; }
+
+void setError(pid_t pid) { error = true; perror[pid] = true; }</declaration>
+	<template>
+		<name>PartitionSupply</name>
+		<parameter>pid_t pid</parameter>
+		<declaration>clock x;
+
+int[0, TotalWindowsNum] wind;
+
+time_t windStart(int[0, TotalWindowsNum] win){
+    if(win &lt; partition[pid].wind_num)
+        return partition_windows[partition[pid].wind_idx + win].offset;
+    else
+        return MajorFrame + 1;
+}
+
+time_t windEnd(int[0, TotalWindowsNum - 1] win){
+    return partition_windows[partition[pid].wind_idx + win].offset
+                + partition_windows[partition[pid].wind_idx + win].duration;
+}</declaration>
+		<location id="id0" x="-255" y="-425">
+			<name x="-265" y="-459">Init</name>
+			<committed/>
+		</location>
+		<location id="id1" x="-255" y="-323">
+			<name x="-265" y="-357">OutOfPartition</name>
+			<label kind="invariant" x="-314" y="-306">x &lt;= windStart(wind)
+&amp;&amp; x &lt;= MajorFrame</label>
+		</location>
+		<location id="id2" x="59" y="-323">
+			<name x="49" y="-357">InPartition</name>
+			<label kind="invariant" x="76" y="-340">x &lt;= windEnd(wind)
+&amp;&amp; x &lt;= MajorFrame</label>
+		</location>
+		<init ref="id0"/>
+		<transition>
+			<source ref="id2"/>
+			<target ref="id0"/>
+			<label kind="guard" x="59" y="-425">x &gt;= MajorFrame</label>
+			<label kind="synchronisation" x="59" y="-408">exit_partition[pid]!</label>
+			<label kind="assignment" x="59" y="-391">in_partition[pid] = false,
+x = 0, wind = 0</label>
+			<nail x="59" y="-425"/>
+		</transition>
+		<transition>
+			<source ref="id1"/>
+			<target ref="id0"/>
+			<label kind="guard" x="-382" y="-340">x &gt;= MajorFrame</label>
+			<label kind="assignment" x="-382" y="-323">x = 0, wind = 0</label>
+			<nail x="-399" y="-323"/>
+			<nail x="-399" y="-425"/>
+		</transition>
+		<transition>
+			<source ref="id2"/>
+			<target ref="id1"/>
+			<label kind="guard" x="-161" y="-273">x &gt;= windEnd(wind)
+&amp;&amp; x &lt; MajorFrame</label>
+			<label kind="synchronisation" x="-161" y="-239">exit_partition[pid]!</label>
+			<label kind="assignment" x="-161" y="-222">in_partition[pid] = false, wind++</label>
+			<nail x="59" y="-222"/>
+			<nail x="-255" y="-222"/>
+		</transition>
+		<transition>
+			<source ref="id1"/>
+			<target ref="id2"/>
+			<label kind="guard" x="-161" y="-340">x &gt;= windStart(wind)</label>
+			<label kind="synchronisation" x="-161" y="-323">enter_partition[pid]!</label>
+			<label kind="assignment" x="-161" y="-306">in_partition[pid] = true</label>
+		</transition>
+		<transition>
+			<source ref="id0"/>
+			<target ref="id2"/>
+			<label kind="guard" x="-161" y="-408">x &gt;= windStart(wind)</label>
+			<label kind="synchronisation" x="-161" y="-391">enter_partition[pid]!</label>
+			<label kind="assignment" x="-161" y="-374">in_partition[pid] = true</label>
+		</transition>
+		<transition>
+			<source ref="id0"/>
+			<target ref="id1"/>
+			<label kind="guard" x="-297" y="-391">x &lt; windStart(wind)</label>
+		</transition>
+	</template>
+	<template>
+		<name x="5" y="5">TaskScheduler</name>
+		<parameter>pid_t pid</parameter>
+		<declaration>tid_t running;    // Running task
+
+void resetRunning() { running = 0; }
+
+void enque(tid_t tid){
+    _enque(partition[pid].rq_id, tid, 0, FP);
+}
+
+void deque(){
+    _deque(partition[pid].rq_id);
+}
+
+tid_t front(){
+    return _front(partition[pid].rq_id);
+}
+
+int[0, MaxTasks] rqLen() { return rq[partition[pid].rq_id].len; }
+
+pid_t partition(tid_t tid) { return task[tid].pid; }</declaration>
+		<location id="id3" x="-391" y="-476">
+			<name x="-450" y="-501">NoTask</name>
+		</location>
+		<location id="id4" x="306" y="-323">
+			<name x="296" y="-357">Release</name>
+			<committed/>
+		</location>
+		<location id="id5" x="-391" y="-153">
+			<name x="-476" y="-187">WaitPartition</name>
+		</location>
+		<location id="id6" x="-221" y="-153">
+			<committed/>
+		</location>
+		<location id="id7" x="-51" y="-323">
+			<name x="-61" y="-357">Preempt</name>
+			<committed/>
+		</location>
+		<location id="id8" x="144" y="-153">
+			<name x="136" y="-187">Occupied</name>
+		</location>
+		<location id="id9" x="144" y="-323">
+			<name x="134" y="-357">Schedule</name>
+			<committed/>
+		</location>
+		<location id="id10" x="144" y="-476">
+			<name x="134" y="-510">Idle</name>
+		</location>
+		<init ref="id3"/>
+		<transition>
+			<source ref="id3"/>
+			<target ref="id5"/>
+			<label kind="select" x="-391" y="-398">n:tid_t</label>
+			<label kind="guard" x="-391" y="-382">partition(n) == pid</label>
+			<label kind="synchronisation" x="-391" y="-365">ready[n]?</label>
+			<label kind="assignment" x="-391" y="-348">enque(n)</label>
+		</transition>
+		<transition>
+			<source ref="id3"/>
+			<target ref="id10"/>
+			<label kind="synchronisation" x="-178" y="-493">enter_partition[pid]?</label>
+		</transition>
+		<transition>
+			<source ref="id10"/>
+			<target ref="id3"/>
+			<label kind="synchronisation" x="-178" y="-442">exit_partition[pid]?</label>
+			<nail x="76" y="-425"/>
+			<nail x="-331" y="-425"/>
+		</transition>
+		<transition>
+			<source ref="id4"/>
+			<target ref="id10"/>
+			<label kind="guard" x="195" y="-493">rqLen() == 0</label>
+			<nail x="306" y="-476"/>
+		</transition>
+		<transition>
+			<source ref="id5"/>
+			<target ref="id5"/>
+			<label kind="select" x="-416" y="-127">n:tid_t</label>
+			<label kind="guard" x="-416" y="-110">partition(n) == pid</label>
+			<label kind="synchronisation" x="-416" y="-93">ready[n]?</label>
+			<label kind="assignment" x="-416" y="-76">enque(n)</label>
+			<nail x="-459" y="-59"/>
+			<nail x="-323" y="-59"/>
+		</transition>
+		<transition>
+			<source ref="id6"/>
+			<target ref="id5"/>
+			<label kind="synchronisation" x="-348" y="-170">stop[running]!</label>
+			<label kind="assignment" x="-348" y="-153">resetRunning()</label>
+		</transition>
+		<transition>
+			<source ref="id5"/>
+			<target ref="id9"/>
+			<label kind="synchronisation" x="-179" y="-400">enter_partition[pid]?</label>
+			<nail x="-213" y="-383"/>
+			<nail x="76" y="-382"/>
+		</transition>
+		<transition>
+			<source ref="id8"/>
+			<target ref="id6"/>
+			<label kind="synchronisation" x="-178" y="-76">exit_partition[pid]?</label>
+			<nail x="144" y="-59"/>
+			<nail x="-221" y="-59"/>
+		</transition>
+		<transition>
+			<source ref="id4"/>
+			<target ref="id9"/>
+			<label kind="guard" x="195" y="-340">rqLen() != 0</label>
+		</transition>
+		<transition>
+			<source ref="id8"/>
+			<target ref="id4"/>
+			<label kind="synchronisation" x="195" y="-170">release[pid]?</label>
+			<label kind="assignment" x="195" y="-153">deque(),
+resetRunning()</label>
+			<nail x="306" y="-153"/>
+		</transition>
+		<transition>
+			<source ref="id8"/>
+			<target ref="id7"/>
+			<label kind="select" x="-8" y="-272">n:tid_t</label>
+			<label kind="guard" x="-8" y="-255">partition(n) == pid</label>
+			<label kind="synchronisation" x="-8" y="-238">ready[n]?</label>
+			<label kind="assignment" x="-8" y="-221">enque(n)</label>
+		</transition>
+		<transition>
+			<source ref="id7"/>
+			<target ref="id8"/>
+			<label kind="guard" x="-8" y="-170">running == front()</label>
+			<nail x="-51" y="-153"/>
+		</transition>
+		<transition>
+			<source ref="id7"/>
+			<target ref="id9"/>
+			<label kind="guard" x="-8" y="-340">running != front()</label>
+			<label kind="synchronisation" x="-8" y="-323">stop[running]!</label>
+			<label kind="assignment" x="-8" y="-306">resetRunning()</label>
+		</transition>
+		<transition>
+			<source ref="id9"/>
+			<target ref="id8"/>
+			<label kind="synchronisation" x="144" y="-255">sched[front()]!</label>
+			<label kind="assignment" x="144" y="-238">running = front()</label>
+		</transition>
+		<transition>
+			<source ref="id10"/>
+			<target ref="id9"/>
+			<label kind="select" x="144" y="-451">n:tid_t</label>
+			<label kind="guard" x="144" y="-434">partition(n) == pid</label>
+			<label kind="synchronisation" x="144" y="-416">ready[n]?</label>
+			<label kind="assignment" x="144" y="-399">enque(n)</label>
+		</transition>
+	</template>
+	<template>
+		<name>PeriodicTask</name>
+		<parameter>tid_t tid</parameter>
+		<declaration>clock x, curTime, exeTime;
+
+int[0, OperationTableLength] pc;    // Program counter
+
+rid_t blkRes;
+
+bool isPeriodic() { return task[tid].type == Periodic; }
+bool isSporadic() { return task[tid].type == Sporadic; }
+pid_t pid() { return task[tid].pid; }
+time_t initialOffset() { return task[tid].initial_offset; }
+time_t minPeriod() { return task[tid].min_period; }
+time_t maxPeriod() { return task[tid].max_period; }
+time_t offset() { return task[tid].offset; }
+time_t jitter() { return task[tid].jitter; }
+time_t deadline() { return task[tid].deadline; }
+prio_t defPrio() { return task[tid].prio; }
+int pcStart() { return task[tid].pc_start; }
+//rid_t cpuID() { return partition[pid()].cpu_id; }
+rid_t rqID() { return partition[pid()].rq_id; }
+time_t pprd() { return partition[pid()].period; }
+
+void enque(rid_t rid, tid_t id, int start, policy_t policy){
+    _enque(rid, id, start, policy);
+}
+
+void deque(rid_t rid){
+    _deque(rid);
+}
+
+tid_t front(rid_t rid){
+    return _front(rid);
+}
+
+bool avail(rid_t rid) { return resstat[rid - MUX].occupied == 0; }
+bool iswaiting(rid_t rid) { return resstat[rid - MUX].waiting &gt; 0; }
+
+bool availCeil(rid_t rid) {
+    int[0, MUXs] i;
+
+    // Direct blocking
+    if(!avail(rid))
+        return false;
+
+    // Ceiling blocking
+    for(i = 0; i &lt; MUXs; i++)
+        if(MuxPtn[i] == pid() &amp;&amp; resstat[i].occupied &amp;&amp; resstat[i].owner != tid &amp;&amp; Ceiling[i] &lt;= cprio[tid])
+            return false;
+
+    return true;
+}
+
+void lock(rid_t rid) {
+    resstat[rid - MUX].occupied = 1;
+    resstat[rid - MUX].owner = tid;
+}
+
+void unlock(rid_t rid) {
+    resstat[rid - MUX].occupied = 0;
+    resstat[rid - MUX].owner = 0;
+}
+
+rid_t waitCeil(rid_t rid) {
+    tid_t blkTsk;    // The task who blocks me
+    int[0, MUXs - 1] blkMux;    // The mux who blocks me
+
+    if(!avail(rid)) {
+        // Direct blocking
+        blkTsk = resstat[muxid(rid)].owner;
+        blkMux = muxid(rid);
+    }else{
+        // Ceiling blocking
+        int[0, MUXs] i;
+        for(i = 0; i &lt; MUXs; i++)
+            if(MuxPtn[i] == pid() &amp;&amp; resstat[i].occupied &amp;&amp; resstat[i].owner != tid &amp;&amp; Ceiling[i] &lt;= cprio[tid]) {
+                blkTsk = resstat[i].owner;
+                blkMux = i;
+            }
+    }
+
+    //Add to waiting queue
+    resstat[blkMux].waiting++;
+    enque(mux2rid(blkMux), tid, 0, FP);
+
+    // Inherits priority
+    if(cprio[blkTsk] &gt; cprio[tid]) {
+        cprio[blkTsk] = cprio[tid];
+        sortQueue(rqID(), 1);
+    }
+
+    return mux2rid(blkMux);
+}
+
+void signal(rid_t rid) {
+    int[0, MUXs] i;
+
+    // All tasks so far blocked on rid are resumed
+    while(resstat[muxid(rid)].waiting &gt; 0) {
+        enque(rqID(), front(rid), 1, FP);
+        deque(rid);
+        resstat[muxid(rid)].waiting--;
+    }
+
+    // Decrease priority
+    cprio[tid] = defPrio();
+    for(i = 0; i &lt; MUXs; i++)
+        if(MuxPtn[i] == pid() &amp;&amp; resstat[i].occupied &amp;&amp; resstat[i].owner == tid &amp;&amp; resstat[i].waiting &amp;&amp; cprio[front(mux2rid(i))] &lt; cprio[tid])
+            cprio[tid] = cprio[front(mux2rid(i))];
+}
+
+bool getMsgErr(rid_t rid) { return _getMsgErr(rid); }
+bool getPortErr(rid_t rid) { return _getPortErr(rid); }
+void setPortErr(rid_t rid) { _setPortErr(rid); msgErr = true; }
+pmode_t portMode(rid_t rid) { return port[portid(rid)].mode; }
+time_t refreshRate(rid_t rid) { return port[portid(rid)].refresh_rate; }
+
+void rcvMsg(rid_t rid) {
+    portid_t ptid = portid(rid);
+
+    if(!getPortErr(rid))
+        if(portMode(rid) == SAMPLING){
+            //if(portbuf[ptid].buf != 1)
+                //setPortErr(rid);
+        }else{
+            if(portbuf[ptid].buf &gt; 0)
+                portbuf[ptid].buf--;
+        }
+}</declaration>
+		<location id="id11" x="-10294" y="-11636">
+			<committed/>
+		</location>
+		<location id="id12" x="-10286" y="-11831">
+			<committed/>
+		</location>
+		<location id="id13" x="-11722" y="-11449">
+			<name x="-11732" y="-11483">Signal</name>
+			<committed/>
+		</location>
+		<location id="id14" x="-11526" y="-11321">
+			<name x="-11536" y="-11355">Unlock</name>
+			<committed/>
+		</location>
+		<location id="id15" x="-10388" y="-11831">
+			<name x="-10398" y="-11865">MissDeadline1</name>
+		</location>
+		<location id="id16" x="-11118" y="-11440">
+			<name x="-11128" y="-11474">MissDeadline2</name>
+		</location>
+		<location id="id17" x="-10388" y="-11440">
+			<name x="-10398" y="-11474">MsgErr</name>
+		</location>
+		<location id="id18" x="-10481" y="-11636">
+			<name x="-10491" y="-11670">Receiving</name>
+			<committed/>
+		</location>
+		<location id="id19" x="-10388" y="-11177">
+			<name x="-10398" y="-11211">Sending</name>
+			<committed/>
+		</location>
+		<location id="id20" x="-11118" y="-11576">
+			<name x="-11128" y="-11610">WaitDelay</name>
+			<label kind="invariant" x="-11127" y="-11568">x &lt;= op[pc].wcet
+&amp;&amp; curTime &lt;= deadline()</label>
+		</location>
+		<location id="id21" x="-11322" y="-11440">
+			<name x="-11332" y="-11474">WaitResource</name>
+			<label kind="invariant" x="-11332" y="-11423">curTime &lt;= deadline()</label>
+		</location>
+		<location id="id22" x="-10915" y="-11321">
+			<name x="-10925" y="-11355">TryLock</name>
+			<committed/>
+		</location>
+		<location id="id23" x="-11722" y="-11177">
+			<name x="-11739" y="-11211">WaitNextRelease</name>
+			<label kind="invariant" x="-11739" y="-11169">curTime &lt;= maxPeriod()</label>
+		</location>
+		<location id="id24" x="-10906" y="-12044">
+			<name x="-10915" y="-12078">WaitForFirstWind</name>
+		</location>
+		<location id="id25" x="-10693" y="-11831">
+			<name x="-10703" y="-11865">Running</name>
+			<label kind="invariant" x="-10762" y="-11814">exeTime &lt;= op[pc].wcet
+&amp;&amp; curTime &lt;= deadline()</label>
+		</location>
+		<location id="id26" x="-11722" y="-11882">
+			<name x="-11748" y="-11916">WaitOffset</name>
+			<label kind="invariant" x="-11748" y="-11865">x &lt;= offset()</label>
+		</location>
+		<location id="id27" x="-11118" y="-12044">
+			<committed/>
+		</location>
+		<location id="id28" x="-11526" y="-11636">
+			<name x="-11536" y="-11670">Ready</name>
+			<label kind="invariant" x="-11536" y="-11619">exeTime' == 0
+&amp;&amp; curTime &lt;= deadline()</label>
+		</location>
+		<location id="id29" x="-11518" y="-12044">
+			<name x="-11528" y="-12078">WaitForPhase</name>
+			<label kind="invariant" x="-11527" y="-12035">x &lt;= pprd() - initialOffset() % pprd()</label>
+		</location>
+		<location id="id30" x="-11722" y="-11636">
+			<name x="-11747" y="-11670">WaitJitter</name>
+			<label kind="invariant" x="-11756" y="-11627">x &lt;= jitter()</label>
+		</location>
+		<location id="id31" x="-11892" y="-12044">
+			<name x="-11902" y="-12078">WaitInitialOffset</name>
+			<label kind="invariant" x="-11900" y="-12010">x &lt;= initialOffset()</label>
+		</location>
+		<location id="id32" x="-10693" y="-11636">
+			<name x="-10703" y="-11670">ReadOp</name>
+			<committed/>
+		</location>
+		<location id="id33" x="-11722" y="-12044">
+			<committed/>
+		</location>
+		<init ref="id31"/>
+		<transition>
+			<source ref="id14"/>
+			<target ref="id28"/>
+			<label kind="guard" x="-11526" y="-11457">!iswaiting(op[pc].res)
+&amp;&amp; op[pc + 1].cmd != END</label>
+			<label kind="synchronisation" x="-11526" y="-11423">release[pid()]!</label>
+			<label kind="assignment" x="-11526" y="-11406">unlock(op[pc].res),
+enque(rqID(), tid, 1, FP),
+pc++</label>
+		</transition>
+		<transition>
+			<source ref="id13"/>
+			<target ref="id28"/>
+			<label kind="guard" x="-11722" y="-11593">op[pc + 1].cmd != END</label>
+			<label kind="synchronisation" x="-11722" y="-11576">release[pid()]!</label>
+			<label kind="assignment" x="-11722" y="-11559">unlock(op[pc].res),
+signal(op[pc].res),
+enque(rqID(), tid, 1, FP),
+pc++</label>
+		</transition>
+		<transition>
+			<source ref="id11"/>
+			<target ref="id32"/>
+			<label kind="guard" x="-10651" y="-11772">portMode(op[pc].res) == SAMPLING &amp;&amp;
+port_clock[portid(op[pc].res)] &lt;= refreshRate(op[pc].res)</label>
+			<label kind="assignment" x="-10651" y="-11738">pc++</label>
+			<nail x="-10294" y="-11755"/>
+			<nail x="-10660" y="-11755"/>
+		</transition>
+		<transition>
+			<source ref="id11"/>
+			<target ref="id32"/>
+			<label kind="guard" x="-10651" y="-11704">portMode(op[pc].res) == QUEUING</label>
+			<label kind="assignment" x="-10651" y="-11687">pc++</label>
+			<nail x="-10320" y="-11687"/>
+			<nail x="-10660" y="-11687"/>
+		</transition>
+		<transition>
+			<source ref="id11"/>
+			<target ref="id17"/>
+			<label kind="guard" x="-10430" y="-11610">portMode(op[pc].res) == SAMPLING
+&amp;&amp; port_clock[portid(op[pc].res)]
+&gt; refreshRate(op[pc].res)</label>
+			<label kind="synchronisation" x="-10430" y="-11551">release[pid()]!</label>
+			<label kind="assignment" x="-10430" y="-11534">setPortErr(op[pc].res),
+setError(pid())</label>
+			<nail x="-10293" y="-11491"/>
+		</transition>
+		<transition>
+			<source ref="id12"/>
+			<target ref="id15"/>
+			<label kind="synchronisation" x="-10378" y="-11900">release[pid()]!</label>
+			<nail x="-10311" y="-11882"/>
+			<nail x="-10362" y="-11882"/>
+		</transition>
+		<transition>
+			<source ref="id15"/>
+			<target ref="id12"/>
+			<label kind="synchronisation" x="-10371" y="-11831">sched[tid]?</label>
+		</transition>
+		<transition>
+			<source ref="id19"/>
+			<target ref="id17"/>
+			<label kind="guard" x="-10447" y="-11330">getMsgErr(op[pc].res)</label>
+			<label kind="synchronisation" x="-10447" y="-11313">release[pid()]!</label>
+			<label kind="assignment" x="-10446" y="-11296">setError(pid())</label>
+		</transition>
+		<transition>
+			<source ref="id13"/>
+			<target ref="id23"/>
+			<label kind="guard" x="-11841" y="-11347">op[pc + 1].cmd == END</label>
+			<label kind="synchronisation" x="-11841" y="-11330">release[pid()]!</label>
+			<label kind="assignment" x="-11841" y="-11313">unlock(op[pc].res),
+signal(op[pc].res)</label>
+		</transition>
+		<transition>
+			<source ref="id14"/>
+			<target ref="id13"/>
+			<label kind="guard" x="-11705" y="-11415">iswaiting(op[pc].res)</label>
+			<label kind="synchronisation" x="-11705" y="-11398">wakeup[op[pc].res]!</label>
+		</transition>
+		<transition>
+			<source ref="id14"/>
+			<target ref="id23"/>
+			<label kind="guard" x="-11705" y="-11288">!iswaiting(op[pc].res)
+&amp;&amp; op[pc + 1].cmd == END</label>
+			<label kind="synchronisation" x="-11705" y="-11253">release[pid()]!</label>
+			<label kind="assignment" x="-11705" y="-11235">unlock(op[pc].res)</label>
+		</transition>
+		<transition>
+			<source ref="id28"/>
+			<target ref="id15"/>
+			<label kind="guard" x="-11127" y="-11899">curTime &gt;= deadline()</label>
+			<label kind="assignment" x="-11127" y="-11882">setError(pid())</label>
+			<nail x="-11526" y="-11882"/>
+			<nail x="-10388" y="-11882"/>
+		</transition>
+		<transition>
+			<source ref="id25"/>
+			<target ref="id15"/>
+			<label kind="guard" x="-10609" y="-11848">curTime &gt;= deadline()</label>
+			<label kind="synchronisation" x="-10609" y="-11831">release[pid()]!</label>
+			<label kind="assignment" x="-10609" y="-11814">setError(pid())</label>
+		</transition>
+		<transition>
+			<source ref="id21"/>
+			<target ref="id16"/>
+			<label kind="guard" x="-11288" y="-11457">curTime &gt;= deadline()</label>
+			<label kind="assignment" x="-11289" y="-11440">setError(pid())</label>
+		</transition>
+		<transition>
+			<source ref="id20"/>
+			<target ref="id16"/>
+			<label kind="guard" x="-11169" y="-11525">curTime &gt;= deadline()</label>
+			<label kind="assignment" x="-11169" y="-11508">setError(pid())</label>
+		</transition>
+		<transition>
+			<source ref="id18"/>
+			<target ref="id17"/>
+			<label kind="guard" x="-10592" y="-11610">getPortErr(op[pc].res)</label>
+			<label kind="synchronisation" x="-10592" y="-11593">release[pid()]!</label>
+			<label kind="assignment" x="-10591" y="-11577">setError(pid())</label>
+			<nail x="-10481" y="-11491"/>
+		</transition>
+		<transition>
+			<source ref="id32"/>
+			<target ref="id14"/>
+			<label kind="guard" x="-11169" y="-11270">op[pc].cmd == UNLOCK</label>
+			<nail x="-10779" y="-11253"/>
+			<nail x="-11526" y="-11253"/>
+		</transition>
+		<transition>
+			<source ref="id18"/>
+			<target ref="id11"/>
+			<label kind="guard" x="-10464" y="-11653">!getPortErr(op[pc].res)</label>
+		</transition>
+		<transition>
+			<source ref="id19"/>
+			<target ref="id32"/>
+			<label kind="guard" x="-10591" y="-11449">!getMsgErr(op[pc].res)</label>
+			<label kind="assignment" x="-10591" y="-11432">pc++</label>
+		</transition>
+		<transition>
+			<source ref="id32"/>
+			<target ref="id18"/>
+			<label kind="guard" x="-10660" y="-11653">op[pc].cmd == RECEIVE</label>
+			<label kind="assignment" x="-10660" y="-11636">rcvMsg(op[pc].res)</label>
+		</transition>
+		<transition>
+			<source ref="id32"/>
+			<target ref="id19"/>
+			<label kind="guard" x="-10583" y="-11194">op[pc].cmd == SEND</label>
+			<label kind="synchronisation" x="-10583" y="-11177">pmsg[msgid(op[pc].res)]!</label>
+			<nail x="-10600" y="-11177"/>
+		</transition>
+		<transition>
+			<source ref="id20"/>
+			<target ref="id28"/>
+			<label kind="guard" x="-11288" y="-11610">x &gt;= op[pc].bcet</label>
+			<label kind="synchronisation" x="-11288" y="-11593">ready[tid]!</label>
+			<label kind="assignment" x="-11288" y="-11576">pc++, x = 0, exeTime = 0</label>
+			<nail x="-11331" y="-11576"/>
+		</transition>
+		<transition>
+			<source ref="id32"/>
+			<target ref="id20"/>
+			<label kind="guard" x="-10982" y="-11610">op[pc].cmd == DELAY</label>
+			<label kind="synchronisation" x="-10982" y="-11593">release[pid()]!</label>
+			<label kind="assignment" x="-10982" y="-11576">x = 0</label>
+			<nail x="-10813" y="-11576"/>
+		</transition>
+		<transition>
+			<source ref="id21"/>
+			<target ref="id28"/>
+			<label kind="synchronisation" x="-11475" y="-11551">wakeup[blkRes]?</label>
+			<label kind="assignment" x="-11475" y="-11534">exeTime = 0,
+blkRes = 0</label>
+		</transition>
+		<transition>
+			<source ref="id22"/>
+			<target ref="id32"/>
+			<label kind="guard" x="-10982" y="-11517">availCeil(op[pc].res)</label>
+			<label kind="assignment" x="-10982" y="-11500">lock(op[pc].res),
+pc++</label>
+			<nail x="-10915" y="-11449"/>
+		</transition>
+		<transition>
+			<source ref="id22"/>
+			<target ref="id21"/>
+			<label kind="guard" x="-11169" y="-11372">!availCeil(op[pc].res)</label>
+			<label kind="synchronisation" x="-11169" y="-11355">release[pid()]!</label>
+			<label kind="assignment" x="-11169" y="-11338">blkRes = waitCeil(op[pc].res)</label>
+			<nail x="-11322" y="-11321"/>
+		</transition>
+		<transition>
+			<source ref="id32"/>
+			<target ref="id22"/>
+			<label kind="guard" x="-10889" y="-11449">op[pc].cmd == LOCK</label>
+		</transition>
+		<transition>
+			<source ref="id25"/>
+			<target ref="id28"/>
+			<label kind="synchronisation" x="-11126" y="-11848">stop[tid]?</label>
+			<nail x="-11314" y="-11831"/>
+		</transition>
+		<transition>
+			<source ref="id23"/>
+			<target ref="id26"/>
+			<label kind="guard" x="-11892" y="-11593">curTime &gt;= minPeriod()</label>
+			<label kind="assignment" x="-11892" y="-11576">pc = pcStart(),
+x = 0, curTime = 0</label>
+			<nail x="-11892" y="-11177"/>
+			<nail x="-11892" y="-11738"/>
+		</transition>
+		<transition>
+			<source ref="id32"/>
+			<target ref="id23"/>
+			<label kind="guard" x="-11169" y="-11194">op[pc].cmd == END</label>
+			<label kind="synchronisation" x="-11169" y="-11177">release[pid()]!</label>
+			<nail x="-10694" y="-11177"/>
+		</transition>
+		<transition>
+			<source ref="id25"/>
+			<target ref="id32"/>
+			<label kind="guard" x="-11127" y="-11755">exeTime &gt;= op[pc].bcet</label>
+			<label kind="assignment" x="-11127" y="-11738">exeTime = 0, pc++</label>
+			<nail x="-10829" y="-11789"/>
+			<nail x="-11127" y="-11789"/>
+			<nail x="-11127" y="-11678"/>
+			<nail x="-10829" y="-11678"/>
+		</transition>
+		<transition>
+			<source ref="id32"/>
+			<target ref="id25"/>
+			<label kind="guard" x="-10855" y="-11746">op[pc].cmd == COMPUTE</label>
+		</transition>
+		<transition>
+			<source ref="id28"/>
+			<target ref="id32"/>
+			<label kind="synchronisation" x="-11126" y="-11653">sched[tid]?</label>
+		</transition>
+		<transition>
+			<source ref="id30"/>
+			<target ref="id28"/>
+			<label kind="guard" x="-11679" y="-11670">x &gt;= 0</label>
+			<label kind="synchronisation" x="-11679" y="-11653">ready[tid]!</label>
+			<label kind="assignment" x="-11679" y="-11636">x = 0, exeTime = 0</label>
+		</transition>
+		<transition>
+			<source ref="id26"/>
+			<target ref="id30"/>
+			<label kind="guard" x="-11722" y="-11780">x == offset()</label>
+			<label kind="assignment" x="-11723" y="-11763">x = 0</label>
+		</transition>
+		<transition>
+			<source ref="id24"/>
+			<target ref="id26"/>
+			<label kind="synchronisation" x="-11271" y="-11950">enter_partition[pid()]?</label>
+			<label kind="assignment" x="-11271" y="-11933">x = 0, curTime = 0</label>
+			<nail x="-10907" y="-11933"/>
+			<nail x="-11662" y="-11933"/>
+		</transition>
+		<transition>
+			<source ref="id27"/>
+			<target ref="id24"/>
+			<label kind="guard" x="-11092" y="-12061">in_partition[pid()] == false</label>
+		</transition>
+		<transition>
+			<source ref="id27"/>
+			<target ref="id26"/>
+			<label kind="guard" x="-11679" y="-12001">in_partition[pid()] == true</label>
+			<label kind="assignment" x="-11679" y="-11984">x = 0, curTime = 0</label>
+			<nail x="-11119" y="-11984"/>
+			<nail x="-11723" y="-11984"/>
+		</transition>
+		<transition>
+			<source ref="id29"/>
+			<target ref="id27"/>
+			<label kind="guard" x="-11433" y="-12061">x == pprd() - initialOffset() % pprd()</label>
+		</transition>
+		<transition>
+			<source ref="id33"/>
+			<target ref="id29"/>
+			<label kind="guard" x="-11705" y="-12061">initialOffset() % pprd() != 0</label>
+			<label kind="assignment" x="-11704" y="-12044">x = 0</label>
+		</transition>
+		<transition>
+			<source ref="id33"/>
+			<target ref="id27"/>
+			<label kind="guard" x="-11705" y="-12112">initialOffset() % pprd() == 0</label>
+			<nail x="-11722" y="-12095"/>
+			<nail x="-11119" y="-12095"/>
+		</transition>
+		<transition>
+			<source ref="id31"/>
+			<target ref="id33"/>
+			<label kind="guard" x="-11866" y="-12061">x == initialOffset()</label>
+			<label kind="assignment" x="-11866" y="-12044">pc = pcStart(),
+cprio[tid] = defPrio()</label>
+		</transition>
+	</template>
+	<template>
+		<name>SporadicTask</name>
+		<parameter>tid_t tid</parameter>
+		<declaration>clock x, curTime, exeTime;
+
+int[0, OperationTableLength] pc;    // Program counter
+
+rid_t blkRes;
+
+bool isPeriodic() { return task[tid].type == Periodic; }
+bool isSporadic() { return task[tid].type == Sporadic; }
+pid_t pid() { return task[tid].pid; }
+//rid_t cpuID() { return partition[pid()].cpu_id; }
+rid_t rqID() { return partition[pid()].rq_id; }
+time_t initialOffset() { return task[tid].initial_offset; }
+time_t minPeriod() { return task[tid].min_period; }
+time_t maxPeriod() { return task[tid].max_period; }
+time_t offset() { return task[tid].offset; }
+time_t jitter() { return task[tid].jitter; }
+time_t deadline() { return task[tid].deadline; }
+prio_t defPrio() { return task[tid].prio; }
+int pcStart() { return task[tid].pc_start; }
+
+void enque(rid_t rid, tid_t id, int start, policy_t policy){
+    _enque(rid, id, start, policy);
+}
+
+void deque(rid_t rid){
+    _deque(rid);
+}
+
+tid_t front(rid_t rid){
+    return _front(rid);
+}
+
+bool avail(rid_t rid) { return resstat[rid - MUX].occupied == 0; }
+bool iswaiting(rid_t rid) { return resstat[rid - MUX].waiting &gt; 0; }
+
+bool availCeil(rid_t rid) {
+    int[0, MUXs] i;
+
+    // Direct blocking
+    if(!avail(rid))
+        return false;
+
+    // Ceiling blocking
+    for(i = 0; i &lt; MUXs; i++)
+        if(MuxPtn[i] == pid() &amp;&amp; resstat[i].occupied &amp;&amp; resstat[i].owner != tid &amp;&amp; Ceiling[i] &lt;= cprio[tid])
+            return false;
+
+    return true;
+}
+
+void lock(rid_t rid) {
+    resstat[rid - MUX].occupied = 1;
+    resstat[rid - MUX].owner = tid;
+}
+
+void unlock(rid_t rid) {
+    resstat[rid - MUX].occupied = 0;
+    resstat[rid - MUX].owner = 0;
+}
+
+rid_t waitCeil(rid_t rid) {
+    tid_t blkTsk;    // The task who blocks me
+    int[0, MUXs - 1] blkMux;    // The mux who blocks me
+
+    if(!avail(rid)) {
+        // Direct blocking
+        blkTsk = resstat[muxid(rid)].owner;
+        blkMux = muxid(rid);
+    }else{
+        // Ceiling blocking
+        int[0, MUXs] i;
+        for(i = 0; i &lt; MUXs; i++)
+            if(MuxPtn[i] == pid() &amp;&amp; resstat[i].occupied &amp;&amp; resstat[i].owner != tid &amp;&amp; Ceiling[i] &lt;= cprio[tid]) {
+                blkTsk = resstat[i].owner;
+                blkMux = i;
+            }
+    }
+
+    //Add to waiting queue
+    resstat[blkMux].waiting++;
+    enque(mux2rid(blkMux), tid, 0, FP);
+
+    // Inherits priority
+    if(cprio[blkTsk] &gt; cprio[tid]) {
+        cprio[blkTsk] = cprio[tid];
+        sortQueue(rqID(), 1);
+    }
+
+    return mux2rid(blkMux);
+}
+
+void signal(rid_t rid) {
+    int[0, MUXs] i;
+
+    // All tasks so far blocked on rid are resumed
+    while(resstat[muxid(rid)].waiting &gt; 0) {
+        enque(rqID(), front(rid), 1, FP);
+        deque(rid);
+        resstat[muxid(rid)].waiting--;
+    }
+
+    // Decrease priority
+    cprio[tid] = defPrio();
+    for(i = 0; i &lt; MUXs; i++)
+        if(MuxPtn[i] == pid() &amp;&amp; resstat[i].occupied &amp;&amp; resstat[i].owner == tid &amp;&amp; resstat[i].waiting &amp;&amp; cprio[front(mux2rid(i))] &lt; cprio[tid])
+            cprio[tid] = cprio[front(mux2rid(i))];
+}
+
+bool getMsgErr(rid_t rid) { return _getMsgErr(rid); }
+bool getPortErr(rid_t rid) { return _getPortErr(rid); }
+void setPortErr(rid_t rid) { _setPortErr(rid); msgErr = true; }
+pmode_t portMode(rid_t rid) { return port[portid(rid)].mode; }
+time_t refreshRate(rid_t rid) { return port[portid(rid)].refresh_rate; }
+
+void rcvMsg(rid_t rid) {
+    portid_t ptid = portid(rid);
+
+    if(!getPortErr(rid))
+        if(portMode(rid) == SAMPLING){
+            //if(portbuf[ptid].buf != 1)
+                //setPortErr(rid);
+        }else{
+            if(portbuf[ptid].buf &gt; 0)
+                portbuf[ptid].buf--;
+        }
+}</declaration>
+		<location id="id34" x="-10973" y="-11815">
+			<committed/>
+		</location>
+		<location id="id35" x="-10973" y="-12011">
+			<committed/>
+		</location>
+		<location id="id36" x="-12393" y="-11628">
+			<name x="-12403" y="-11662">Signal2</name>
+			<committed/>
+		</location>
+		<location id="id37" x="-12189" y="-11500">
+			<name x="-12199" y="-11534">Unlock2</name>
+			<committed/>
+		</location>
+		<location id="id38" x="-11076" y="-12010">
+			<name x="-11086" y="-12044">MissDeadline1</name>
+		</location>
+		<location id="id39" x="-11781" y="-11628">
+			<name x="-11791" y="-11662">MissDeadline2</name>
+		</location>
+		<location id="id40" x="-11075" y="-11620">
+			<name x="-11085" y="-11654">MsgErr</name>
+		</location>
+		<location id="id41" x="-11169" y="-11815">
+			<name x="-11179" y="-11849">Receiving</name>
+			<committed/>
+		</location>
+		<location id="id42" x="-11075" y="-11356">
+			<name x="-11085" y="-11390">Sending</name>
+			<committed/>
+		</location>
+		<location id="id43" x="-11781" y="-11756">
+			<name x="-11791" y="-11790">WaitDelay</name>
+			<label kind="invariant" x="-11789" y="-11748">x &lt;= op[pc].wcet
+&amp;&amp; curTime &lt;= deadline()</label>
+		</location>
+		<location id="id44" x="-11985" y="-11628">
+			<name x="-11995" y="-11662">WaitResource</name>
+			<label kind="invariant" x="-11995" y="-11611">curTime &lt;= deadline()</label>
+		</location>
+		<location id="id45" x="-11611" y="-11500">
+			<name x="-11621" y="-11534">TryLock</name>
+			<committed/>
+		</location>
+		<location id="id46" x="-12393" y="-11356">
+			<name x="-12410" y="-11390">WaitNextRelease</name>
+			<label kind="exponentialrate" x="-12384" y="-11347">1:2</label>
+		</location>
+		<location id="id47" x="-11381" y="-12010">
+			<name x="-11391" y="-12044">Running</name>
+			<label kind="invariant" x="-11449" y="-11994">exeTime &lt;= op[pc].wcet
+&amp;&amp; curTime &lt;= deadline()</label>
+		</location>
+		<location id="id48" x="-12384" y="-11943">
+			<name x="-12410" y="-11977">WaitOffset</name>
+			<label kind="invariant" x="-12410" y="-11926">x &lt;= offset()</label>
+		</location>
+		<location id="id49" x="-12189" y="-11815">
+			<name x="-12199" y="-11849">Ready</name>
+			<label kind="invariant" x="-12199" y="-11798">exeTime' == 0
+&amp;&amp; curTime &lt;= deadline()</label>
+		</location>
+		<location id="id50" x="-12385" y="-11815">
+			<name x="-12410" y="-11849">WaitJitter</name>
+			<label kind="invariant" x="-12419" y="-11806">x &lt;= jitter()</label>
+		</location>
+		<location id="id51" x="-12384" y="-12062">
+			<name x="-12394" y="-12096">WaitInitialOffset</name>
+			<label kind="exponentialrate" x="-12367" y="-12070">2</label>
+		</location>
+		<location id="id52" x="-11381" y="-11815">
+			<name x="-11391" y="-11849">ReadOp</name>
+			<committed/>
+		</location>
+		<init ref="id51"/>
+		<transition>
+			<source ref="id37"/>
+			<target ref="id49"/>
+			<label kind="guard" x="-12189" y="-11645">!iswaiting(op[pc].res)
+&amp;&amp; op[pc + 1].cmd != END</label>
+			<label kind="synchronisation" x="-12189" y="-11611">release[pid()]!</label>
+			<label kind="assignment" x="-12189" y="-11594">unlock(op[pc].res),
+enque(rqID(), tid, 1, FP),
+pc++</label>
+		</transition>
+		<transition>
+			<source ref="id36"/>
+			<target ref="id49"/>
+			<label kind="guard" x="-12384" y="-11781">op[pc + 1].cmd != END</label>
+			<label kind="synchronisation" x="-12384" y="-11764">release[pid()]!</label>
+			<label kind="assignment" x="-12384" y="-11747">unlock(op[pc].res),
+signal(op[pc].res),
+enque(rqID(), tid, 1, FP),
+pc++</label>
+		</transition>
+		<transition>
+			<source ref="id34"/>
+			<target ref="id52"/>
+			<label kind="guard" x="-11330" y="-11951">portMode(op[pc].res) == SAMPLING &amp;&amp;
+port_clock[portid(op[pc].res)] &lt;= refreshRate(op[pc].res)</label>
+			<label kind="assignment" x="-11330" y="-11917">pc++</label>
+			<nail x="-10973" y="-11934"/>
+			<nail x="-11339" y="-11934"/>
+		</transition>
+		<transition>
+			<source ref="id34"/>
+			<target ref="id40"/>
+			<label kind="guard" x="-11109" y="-11781">portMode(op[pc].res) == SAMPLING
+&amp;&amp; port_clock[portid(op[pc].res)]
+&gt; refreshRate(op[pc].res)</label>
+			<label kind="synchronisation" x="-11109" y="-11721">release[pid()]!</label>
+			<label kind="assignment" x="-11109" y="-11705">setPortErr(op[pc].res),
+setError(pid())</label>
+			<nail x="-10973" y="-11662"/>
+		</transition>
+		<transition>
+			<source ref="id41"/>
+			<target ref="id34"/>
+			<label kind="guard" x="-11152" y="-11832">!getPortErr(op[pc].res)</label>
+		</transition>
+		<transition>
+			<source ref="id35"/>
+			<target ref="id38"/>
+			<label kind="synchronisation" x="-11067" y="-12078">release[pid()]!</label>
+			<nail x="-10999" y="-12062"/>
+			<nail x="-11050" y="-12062"/>
+		</transition>
+		<transition>
+			<source ref="id38"/>
+			<target ref="id35"/>
+			<label kind="synchronisation" x="-11058" y="-12011">sched[tid]?</label>
+		</transition>
+		<transition>
+			<source ref="id42"/>
+			<target ref="id40"/>
+			<label kind="guard" x="-11135" y="-11577">getMsgErr(op[pc].res)</label>
+			<label kind="synchronisation" x="-11135" y="-11560">release[pid()]!</label>
+			<label kind="assignment" x="-11135" y="-11543">setError(pid())</label>
+		</transition>
+		<transition>
+			<source ref="id36"/>
+			<target ref="id46"/>
+			<label kind="guard" x="-12512" y="-11534">op[pc + 1].cmd == END</label>
+			<label kind="synchronisation" x="-12512" y="-11517">release[pid()]!</label>
+			<label kind="assignment" x="-12512" y="-11500">unlock(op[pc].res),
+signal(op[pc].res)</label>
+		</transition>
+		<transition>
+			<source ref="id37"/>
+			<target ref="id36"/>
+			<label kind="guard" x="-12367" y="-11594">iswaiting(op[pc].res)</label>
+			<label kind="synchronisation" x="-12367" y="-11577">wakeup[op[pc].res]!</label>
+		</transition>
+		<transition>
+			<source ref="id37"/>
+			<target ref="id46"/>
+			<label kind="guard" x="-12367" y="-11483">!iswaiting(op[pc].res)
+&amp;&amp; op[pc + 1].cmd == END</label>
+			<label kind="synchronisation" x="-12367" y="-11449">release[pid()]!</label>
+			<label kind="assignment" x="-12367" y="-11432">unlock(op[pc].res)</label>
+		</transition>
+		<transition>
+			<source ref="id49"/>
+			<target ref="id38"/>
+			<label kind="guard" x="-11789" y="-12079">curTime &gt;= deadline()</label>
+			<label kind="assignment" x="-11789" y="-12062">setError(pid())</label>
+			<nail x="-12189" y="-12061"/>
+			<nail x="-11076" y="-12061"/>
+		</transition>
+		<transition>
+			<source ref="id47"/>
+			<target ref="id38"/>
+			<label kind="guard" x="-11297" y="-12027">curTime &gt;= deadline()</label>
+			<label kind="synchronisation" x="-11296" y="-12011">release[pid()]!</label>
+			<label kind="assignment" x="-11296" y="-11994">setError(pid())</label>
+		</transition>
+		<transition>
+			<source ref="id44"/>
+			<target ref="id39"/>
+			<label kind="guard" x="-11951" y="-11645">curTime &gt;= deadline()</label>
+			<label kind="assignment" x="-11951" y="-11628">setError(pid())</label>
+		</transition>
+		<transition>
+			<source ref="id43"/>
+			<target ref="id39"/>
+			<label kind="guard" x="-11823" y="-11705">curTime &gt;= deadline()</label>
+			<label kind="assignment" x="-11823" y="-11688">setError(pid())</label>
+		</transition>
+		<transition>
+			<source ref="id41"/>
+			<target ref="id40"/>
+			<label kind="guard" x="-11288" y="-11781">getPortErr(op[pc].res)</label>
+			<label kind="synchronisation" x="-11288" y="-11764">release[pid()]!</label>
+			<label kind="assignment" x="-11288" y="-11747">setError(pid())</label>
+			<nail x="-11169" y="-11662"/>
+		</transition>
+		<transition>
+			<source ref="id52"/>
+			<target ref="id37"/>
+			<label kind="guard" x="-11823" y="-11441">op[pc].cmd == UNLOCK</label>
+			<nail x="-11466" y="-11424"/>
+			<nail x="-12189" y="-11424"/>
+		</transition>
+		<transition>
+			<source ref="id34"/>
+			<target ref="id52"/>
+			<label kind="guard" x="-11330" y="-11892">portMode(op[pc].res) == QUEUING</label>
+			<label kind="assignment" x="-11330" y="-11875">pc++</label>
+			<nail x="-11033" y="-11875"/>
+			<nail x="-11330" y="-11875"/>
+		</transition>
+		<transition>
+			<source ref="id42"/>
+			<target ref="id52"/>
+			<label kind="guard" x="-11288" y="-11628">!getMsgErr(op[pc].res)</label>
+			<label kind="assignment" x="-11288" y="-11611">pc++</label>
+		</transition>
+		<transition>
+			<source ref="id52"/>
+			<target ref="id41"/>
+			<label kind="guard" x="-11347" y="-11832">op[pc].cmd == RECEIVE</label>
+			<label kind="assignment" x="-11347" y="-11815">rcvMsg(op[pc].res)</label>
+		</transition>
+		<transition>
+			<source ref="id52"/>
+			<target ref="id42"/>
+			<label kind="guard" x="-11279" y="-11373">op[pc].cmd == SEND</label>
+			<label kind="synchronisation" x="-11279" y="-11356">pmsg[msgid(op[pc].res)]!</label>
+			<nail x="-11288" y="-11356"/>
+		</transition>
+		<transition>
+			<source ref="id43"/>
+			<target ref="id49"/>
+			<label kind="guard" x="-11976" y="-11790">x &gt;= op[pc].bcet</label>
+			<label kind="synchronisation" x="-11976" y="-11773">ready[tid]!</label>
+			<label kind="assignment" x="-11976" y="-11756">pc++, x = 0, exeTime = 0</label>
+			<nail x="-11993" y="-11756"/>
+		</transition>
+		<transition>
+			<source ref="id52"/>
+			<target ref="id43"/>
+			<label kind="guard" x="-11662" y="-11790">op[pc].cmd == DELAY</label>
+			<label kind="synchronisation" x="-11662" y="-11773">release[pid()]!</label>
+			<label kind="assignment" x="-11662" y="-11756">x = 0</label>
+			<nail x="-11585" y="-11756"/>
+		</transition>
+		<transition>
+			<source ref="id44"/>
+			<target ref="id49"/>
+			<label kind="synchronisation" x="-12121" y="-11730">wakeup[blkRes]?</label>
+			<label kind="assignment" x="-12121" y="-11713">exeTime = 0,
+blkRes = 0</label>
+		</transition>
+		<transition>
+			<source ref="id45"/>
+			<target ref="id52"/>
+			<label kind="guard" x="-11662" y="-11705">availCeil(op[pc].res)</label>
+			<label kind="assignment" x="-11662" y="-11688">lock(op[pc].res),
+pc++</label>
+			<nail x="-11611" y="-11637"/>
+		</transition>
+		<transition>
+			<source ref="id45"/>
+			<target ref="id44"/>
+			<label kind="guard" x="-11823" y="-11551">!availCeil(op[pc].res)</label>
+			<label kind="synchronisation" x="-11823" y="-11534">release[pid()]!</label>
+			<label kind="assignment" x="-11822" y="-11517">blkRes = waitCeil(op[pc].res)</label>
+			<nail x="-11985" y="-11500"/>
+		</transition>
+		<transition>
+			<source ref="id52"/>
+			<target ref="id45"/>
+			<label kind="guard" x="-11594" y="-11628">op[pc].cmd == LOCK</label>
+		</transition>
+		<transition>
+			<source ref="id47"/>
+			<target ref="id49"/>
+			<label kind="synchronisation" x="-11789" y="-12027">stop[tid]?</label>
+			<nail x="-11976" y="-12011"/>
+		</transition>
+		<transition>
+			<source ref="id46"/>
+			<target ref="id48"/>
+			<label kind="guard" x="-12554" y="-11781">curTime &gt;= minPeriod()</label>
+			<label kind="assignment" x="-12554" y="-11764">pc = pcStart(),
+x = 0, curTime = 0</label>
+			<nail x="-12554" y="-11356"/>
+			<nail x="-12554" y="-11781"/>
+		</transition>
+		<transition>
+			<source ref="id52"/>
+			<target ref="id46"/>
+			<label kind="guard" x="-11823" y="-11373">op[pc].cmd == END</label>
+			<label kind="synchronisation" x="-11823" y="-11356">release[pid()]!</label>
+			<nail x="-11381" y="-11356"/>
+		</transition>
+		<transition>
+			<source ref="id47"/>
+			<target ref="id52"/>
+			<label kind="guard" x="-11789" y="-11934">exeTime &gt;= op[pc].bcet</label>
+			<label kind="assignment" x="-11789" y="-11917">exeTime = 0, pc++</label>
+			<nail x="-11517" y="-11968"/>
+			<nail x="-11789" y="-11968"/>
+			<nail x="-11789" y="-11857"/>
+			<nail x="-11517" y="-11857"/>
+		</transition>
+		<transition>
+			<source ref="id52"/>
+			<target ref="id47"/>
+			<label kind="guard" x="-11543" y="-11925">op[pc].cmd == COMPUTE</label>
+		</transition>
+		<transition>
+			<source ref="id49"/>
+			<target ref="id52"/>
+			<label kind="synchronisation" x="-11789" y="-11832">sched[tid]?</label>
+		</transition>
+		<transition>
+			<source ref="id50"/>
+			<target ref="id49"/>
+			<label kind="guard" x="-12342" y="-11849">x &gt;= 0</label>
+			<label kind="synchronisation" x="-12342" y="-11832">ready[tid]!</label>
+			<label kind="assignment" x="-12342" y="-11815">x = 0, exeTime = 0</label>
+		</transition>
+		<transition>
+			<source ref="id48"/>
+			<target ref="id50"/>
+			<label kind="guard" x="-12384" y="-11900">x == offset()</label>
+			<label kind="assignment" x="-12385" y="-11883">x = 0</label>
+		</transition>
+		<transition>
+			<source ref="id51"/>
+			<target ref="id48"/>
+			<label kind="guard" x="-12384" y="-12053">x &gt;= initialOffset()</label>
+			<label kind="assignment" x="-12384" y="-12036">pc = pcStart(),
+cprio[tid] = defPrio(),
+x = 0, curTime = 0</label>
+		</transition>
+	</template>
+	<template>
+		<name>PMsgSender</name>
+		<parameter>rid_t rid</parameter>
+		<declaration>clock x, curTime;
+
+time_t initialOffset() { return msg[rid - MSG].initial_offset; }
+time_t minPeriod() { return msg[rid - MSG].min_period; }
+time_t maxPeriod() { return msg[rid - MSG].max_period; }
+time_t offset() { return msg[rid - MSG].offset; }
+time_t jitter() { return msg[rid - MSG].jitter; }
+
+bool getPortErr() { return _getPortErr(txPort(rid)); }</declaration>
+		<location id="id53" x="-187" y="399">
+			<name x="-197" y="365">WaitNextPeriod</name>
+			<label kind="invariant" x="-197" y="416">curTime &lt;= maxPeriod()</label>
+		</location>
+		<location id="id54" x="178" y="399">
+			<name x="153" y="365">Overflow</name>
+		</location>
+		<location id="id55" x="0" y="289">
+			<name x="-10" y="255">WaitJitter</name>
+			<label kind="invariant" x="17" y="272">x &lt;= jitter()</label>
+		</location>
+		<location id="id56" x="0" y="399">
+			<name x="-10" y="365">Sending</name>
+			<committed/>
+		</location>
+		<location id="id57" x="0" y="178">
+			<name x="-10" y="144">WaitOffset</name>
+			<label kind="invariant" x="-8" y="187">x &lt;= offset()</label>
+		</location>
+		<location id="id58" x="0" y="76">
+			<name x="-10" y="42">WaitInitialOffset</name>
+			<label kind="invariant" x="17" y="59">x &lt;= initialOffset()</label>
+		</location>
+		<init ref="id58"/>
+		<transition>
+			<source ref="id53"/>
+			<target ref="id57"/>
+			<label kind="guard" x="-170" y="161">curTime &gt;= minPeriod()</label>
+			<label kind="assignment" x="-170" y="178">x = 0, curTime = 0</label>
+			<nail x="-187" y="178"/>
+		</transition>
+		<transition>
+			<source ref="id56"/>
+			<target ref="id54"/>
+			<label kind="guard" x="42" y="382">getPortErr()</label>
+		</transition>
+		<transition>
+			<source ref="id56"/>
+			<target ref="id53"/>
+			<label kind="guard" x="-136" y="382">!getPortErr()</label>
+		</transition>
+		<transition>
+			<source ref="id55"/>
+			<target ref="id56"/>
+			<label kind="synchronisation" x="0" y="323">pmsg[msgid(rid)]!</label>
+			<label kind="assignment" x="0" y="340">x = 0</label>
+		</transition>
+		<transition>
+			<source ref="id57"/>
+			<target ref="id55"/>
+			<label kind="guard" x="0" y="212">x == offset()</label>
+			<label kind="assignment" x="0" y="229">x = 0</label>
+		</transition>
+		<transition>
+			<source ref="id58"/>
+			<target ref="id57"/>
+			<label kind="guard" x="0" y="102">x == initialOffset()</label>
+			<label kind="assignment" x="0" y="119">x = 0, curTime = 0</label>
+		</transition>
+	</template>
+	<template>
+		<name>PMsgReceiver</name>
+		<parameter>rid_t rid</parameter>
+		<declaration>clock x, curTime;
+
+time_t initialOffset() { return msg[rid - MSG].initial_offset; }
+time_t minPeriod() { return msg[rid - MSG].min_period; }
+time_t maxPeriod() { return msg[rid - MSG].max_period; }
+time_t offset() { return msg[rid - MSG].offset; }
+time_t jitter() { return msg[rid - MSG].jitter; }
+
+void setMsgErr() { _setMsgErr(rid); msgErr = true; }</declaration>
+		<location id="id59" x="-289" y="-340">
+			<name x="-299" y="-374">OverSpeed</name>
+		</location>
+		<location id="id60" x="162" y="-153">
+			<name x="119" y="-187">WaitNextPeriod</name>
+			<label kind="invariant" x="76" y="-136">curTime &lt;= maxPeriod()</label>
+		</location>
+		<location id="id61" x="-289" y="-153">
+			<name x="-315" y="-187">WaitOffset</name>
+			<label kind="invariant" x="-315" y="-144">x &lt;= offset()</label>
+		</location>
+		<location id="id62" x="-68" y="-17">
+			<name x="-78" y="-51">UnderSpeed</name>
+		</location>
+		<location id="id63" x="-67" y="-153">
+			<name x="-93" y="-187">WaitJitter</name>
+		</location>
+		<location id="id64" x="-501" y="-153">
+			<name x="-518" y="-187">WaitInitialOffset</name>
+			<label kind="invariant" x="-518" y="-136">x &lt;= initialOffset()</label>
+		</location>
+		<init ref="id64"/>
+		<transition>
+			<source ref="id60"/>
+			<target ref="id59"/>
+			<label kind="synchronisation" x="-110" y="-357">pmsg[msgid(rid)]?</label>
+			<label kind="assignment" x="-110" y="-340">setMsgErr()</label>
+			<nail x="162" y="-340"/>
+		</transition>
+		<transition>
+			<source ref="id64"/>
+			<target ref="id59"/>
+			<label kind="synchronisation" x="-467" y="-357">pmsg[msgid(rid)]?</label>
+			<label kind="assignment" x="-467" y="-340">setMsgErr()</label>
+			<nail x="-501" y="-340"/>
+		</transition>
+		<transition>
+			<source ref="id61"/>
+			<target ref="id59"/>
+			<label kind="synchronisation" x="-289" y="-263">pmsg[msgid(rid)]?</label>
+			<label kind="assignment" x="-289" y="-246">setMsgErr()</label>
+		</transition>
+		<transition>
+			<source ref="id60"/>
+			<target ref="id61"/>
+			<label kind="guard" x="-144" y="17">curTime &gt;= minPeriod()</label>
+			<label kind="assignment" x="-143" y="34">x = 0, curTime = 0</label>
+			<nail x="163" y="34"/>
+			<nail x="-288" y="34"/>
+		</transition>
+		<transition>
+			<source ref="id63"/>
+			<target ref="id62"/>
+			<label kind="guard" x="-144" y="-110">x &gt; jitter()</label>
+			<label kind="assignment" x="-144" y="-93">setMsgErr()</label>
+		</transition>
+		<transition>
+			<source ref="id63"/>
+			<target ref="id60"/>
+			<label kind="synchronisation" x="-25" y="-170">pmsg[msgid(rid)]?</label>
+			<label kind="assignment" x="-25" y="-153">x = 0</label>
+		</transition>
+		<transition>
+			<source ref="id61"/>
+			<target ref="id63"/>
+			<label kind="guard" x="-230" y="-170">x == offset()</label>
+			<label kind="assignment" x="-230" y="-153">x = 0</label>
+		</transition>
+		<transition>
+			<source ref="id64"/>
+			<target ref="id61"/>
+			<label kind="guard" x="-467" y="-170">x == initialOffset()</label>
+			<label kind="assignment" x="-467" y="-153">x = 0, curTime = 0</label>
+		</transition>
+	</template>
+	<template>
+		<name>SMsgSender</name>
+		<parameter>rid_t rid</parameter>
+		<declaration>clock x;
+
+time_t initialOffset() { return msg[rid - MSG].initial_offset; }
+time_t minPeriod() { return msg[rid - MSG].min_period; }
+time_t maxPeriod() { return msg[rid - MSG].max_period; }
+time_t offset() { return msg[rid - MSG].offset; }
+time_t jitter() { return msg[rid - MSG].jitter; }
+
+bool getPortErr() { return _getPortErr(txPort(rid)); }</declaration>
+		<location id="id65" x="-365" y="110">
+			<name x="-375" y="76">WaitNextRelease</name>
+			<label kind="invariant" x="-375" y="127">x &lt;= minPeriod() - jitter()</label>
+		</location>
+		<location id="id66" x="8" y="110">
+			<name x="-17" y="76">Overflow</name>
+		</location>
+		<location id="id67" x="-170" y="1">
+			<name x="-180" y="-33">MsgWind</name>
+		</location>
+		<location id="id68" x="-170" y="111">
+			<name x="-187" y="76">Sending</name>
+			<committed/>
+		</location>
+		<location id="id69" x="-170" y="-110">
+			<name x="-180" y="-144">WaitOffset</name>
+			<label kind="invariant" x="-178" y="-102">x &lt;= offset()</label>
+		</location>
+		<location id="id70" x="-170" y="-212">
+			<name x="-180" y="-246">WaitInitialOffset</name>
+		</location>
+		<init ref="id70"/>
+		<transition>
+			<source ref="id65"/>
+			<target ref="id67"/>
+			<label kind="guard" x="-348" y="-17">x &gt;= minPeriod() - jitter()</label>
+			<label kind="assignment" x="-348" y="0">x = 0</label>
+			<nail x="-365" y="0"/>
+		</transition>
+		<transition>
+			<source ref="id68"/>
+			<target ref="id66"/>
+			<label kind="guard" x="-127" y="93">getPortErr()</label>
+		</transition>
+		<transition>
+			<source ref="id68"/>
+			<target ref="id65"/>
+			<label kind="guard" x="-306" y="93">!getPortErr()</label>
+		</transition>
+		<transition>
+			<source ref="id67"/>
+			<target ref="id68"/>
+			<label kind="synchronisation" x="-170" y="34">pmsg[msgid(rid)]!</label>
+			<label kind="assignment" x="-170" y="51">x = 0</label>
+		</transition>
+		<transition>
+			<source ref="id69"/>
+			<target ref="id67"/>
+			<label kind="guard" x="-170" y="-76">x == offset()</label>
+			<label kind="assignment" x="-170" y="-59">x = 0</label>
+		</transition>
+		<transition>
+			<source ref="id70"/>
+			<target ref="id69"/>
+			<label kind="guard" x="-170" y="-186">x &gt;= initialOffset()</label>
+			<label kind="assignment" x="-170" y="-169">x = 0</label>
+		</transition>
+	</template>
+	<template>
+		<name>SMsgReceiver</name>
+		<parameter>rid_t rid</parameter>
+		<declaration>clock x;
+
+time_t initialOffset() { return msg[rid - MSG].initial_offset; }
+time_t minPeriod() { return msg[rid - MSG].min_period; }
+time_t maxPeriod() { return msg[rid - MSG].max_period; }
+time_t offset() { return msg[rid - MSG].offset; }
+time_t jitter() { return msg[rid - MSG].jitter; }
+
+void setMsgErr() { _setMsgErr(rid); msgErr = true; }</declaration>
+		<location id="id71" x="-289" y="-314">
+			<name x="-299" y="-348">OverSpeed</name>
+		</location>
+		<location id="id72" x="144" y="-153">
+			<name x="93" y="-187">WaitNextRelease</name>
+			<label kind="invariant" x="76" y="-144">x &lt;= minPeriod() - jitter()</label>
+		</location>
+		<location id="id73" x="-289" y="-153">
+			<name x="-315" y="-187">WaitOffset</name>
+			<label kind="invariant" x="-315" y="-144">x &lt;= offset()</label>
+		</location>
+		<location id="id74" x="-85" y="-153">
+			<name x="-111" y="-187">MsgWind</name>
+		</location>
+		<location id="id75" x="-501" y="-153">
+			<name x="-518" y="-187">WaitInitialOffset</name>
+			<label kind="invariant" x="-518" y="-136">x &lt;= initialOffset()</label>
+		</location>
+		<init ref="id75"/>
+		<transition>
+			<source ref="id74"/>
+			<target ref="id72"/>
+			<label kind="synchronisation" x="-42" y="-170">pmsg[msgid(rid)]?</label>
+			<label kind="assignment" x="-42" y="-153">x = 0</label>
+		</transition>
+		<transition>
+			<source ref="id72"/>
+			<target ref="id74"/>
+			<label kind="guard" x="-42" y="-17">x == minPeriod() - jitter()</label>
+			<label kind="assignment" x="-42" y="0">x = 0</label>
+			<nail x="144" y="0"/>
+			<nail x="-85" y="0"/>
+		</transition>
+		<transition>
+			<source ref="id72"/>
+			<target ref="id71"/>
+			<label kind="synchronisation" x="-127" y="-331">pmsg[msgid(rid)]?</label>
+			<label kind="assignment" x="-127" y="-314">setMsgErr()</label>
+			<nail x="144" y="-314"/>
+		</transition>
+		<transition>
+			<source ref="id75"/>
+			<target ref="id71"/>
+			<label kind="synchronisation" x="-467" y="-331">pmsg[msgid(rid)]?</label>
+			<label kind="assignment" x="-467" y="-314">setMsgErr()</label>
+			<nail x="-501" y="-314"/>
+		</transition>
+		<transition>
+			<source ref="id73"/>
+			<target ref="id71"/>
+			<label kind="synchronisation" x="-289" y="-255">pmsg[msgid(rid)]?</label>
+			<label kind="assignment" x="-289" y="-238">setMsgErr()</label>
+		</transition>
+		<transition>
+			<source ref="id73"/>
+			<target ref="id74"/>
+			<label kind="guard" x="-230" y="-170">x == offset()</label>
+			<label kind="assignment" x="-230" y="-153">x = 0</label>
+		</transition>
+		<transition>
+			<source ref="id75"/>
+			<target ref="id73"/>
+			<label kind="guard" x="-467" y="-170">x == initialOffset()</label>
+			<label kind="assignment" x="-467" y="-153">x = 0</label>
+		</transition>
+	</template>
+	<template>
+		<name>IPTx</name>
+		<parameter>msgbuf_t &amp;src, msgbuf_t &amp;dst, int frag, rid_t rid</parameter>
+		<declaration>clock t;
+
+const int IpFwdMax = 10;
+const int IpFwdMin = 0;
+
+bool getErr(msgbuf_t buf) { return buf.err; }
+
+void setPortErr() { _setPortErr(txPort(rid)); msgErr = true; }
+pmode_t portMode() { return port[portid(txPort(rid))].mode; }
+
+void sndMsg() {
+    if(src.cnt &lt; PortCnt)
+        src.cnt++;
+
+    if(portMode() == SAMPLING) {
+        // Sampling mode
+        src.buf = 1;
+    }else{
+        // Queuing mode
+        if(src.buf &lt; port[portid(txPort(rid))].max_nb)
+            src.buf++;
+        else
+            setPortErr();
+    }
+}</declaration>
+		<location id="id76" x="510" y="178">
+			<name x="510" y="144">VlError</name>
+		</location>
+		<location id="id77" x="-17" y="102">
+			<committed/>
+		</location>
+		<location id="id78" x="510" y="-8">
+			<committed/>
+		</location>
+		<location id="id79" x="246" y="-8">
+			<name x="236" y="-42">Forwarding</name>
+			<label kind="invariant" x="236" y="9">t &lt;= IpFwdMax</label>
+		</location>
+		<location id="id80" x="-17" y="-8">
+			<name x="-27" y="-42">Waiting</name>
+		</location>
+		<init ref="id80"/>
+		<transition>
+			<source ref="id79"/>
+			<target ref="id79"/>
+			<label kind="synchronisation" x="-8" y="-144">pmsg[msgid(rid)]?</label>
+			<label kind="assignment" x="-8" y="-127">sndMsg()</label>
+			<nail x="-17" y="-76"/>
+			<nail x="-17" y="-127"/>
+			<nail x="110" y="-127"/>
+		</transition>
+		<transition>
+			<source ref="id79"/>
+			<target ref="id76"/>
+			<label kind="guard" x="272" y="85">t &gt;= IpFwdMin &amp;&amp;
+dst.buf &gt; MaxMsg - frag</label>
+		</transition>
+		<transition>
+			<source ref="id78"/>
+			<target ref="id76"/>
+			<label kind="guard" x="467" y="85">getErr(dst)</label>
+		</transition>
+		<transition>
+			<source ref="id77"/>
+			<target ref="id76"/>
+			<label kind="guard" x="212" y="161">getErr(dst)</label>
+			<nail x="-17" y="178"/>
+		</transition>
+		<transition>
+			<source ref="id77"/>
+			<target ref="id80"/>
+			<label kind="guard" x="-17" y="25">!getErr(dst)</label>
+			<label kind="synchronisation" x="-17" y="42">ipoutp!</label>
+		</transition>
+		<transition>
+			<source ref="id78"/>
+			<target ref="id79"/>
+			<label kind="guard" x="340" y="-25">!getErr(dst)</label>
+			<label kind="synchronisation" x="340" y="-8">ipoutp!</label>
+		</transition>
+		<transition>
+			<source ref="id79"/>
+			<target ref="id77"/>
+			<label kind="guard" x="8" y="85">t &gt;= IpFwdMin &amp;&amp; src.buf == 1 &amp;&amp; 
+dst.buf &lt;= MaxMsg - frag</label>
+			<label kind="assignment" x="8" y="119">src.buf--, dst.buf += frag</label>
+			<nail x="246" y="102"/>
+		</transition>
+		<transition>
+			<source ref="id79"/>
+			<target ref="id78"/>
+			<label kind="guard" x="272" y="-144">t &gt;= IpFwdMin &amp;&amp; src.buf &gt; 1 &amp;&amp; 
+dst.buf &lt;= MaxMsg - frag</label>
+			<label kind="assignment" x="272" y="-110">src.buf--, dst.buf += frag, t = 0</label>
+			<nail x="246" y="-127"/>
+			<nail x="510" y="-127"/>
+		</transition>
+		<transition>
+			<source ref="id80"/>
+			<target ref="id79"/>
+			<label kind="synchronisation" x="51" y="-25">pmsg[msgid(rid)]?</label>
+			<label kind="assignment" x="51" y="-8">sndMsg(), t = 0</label>
+		</transition>
+	</template>
+	<template>
+		<name>IPRx</name>
+		<parameter>msgbuf_t &amp;src, msgbuf_t &amp;dst, int reass, rid_t dstid</parameter>
+		<declaration>clock t, r;
+
+const int IpReassMax = 5;
+const int IpReassMin = 0;
+
+const int IpFwdMax = 5;
+const int IpFwdMin = 0;
+
+int cnt = 0;
+
+pmode_t portMode() { return port[portid(dstid)].mode; }
+int pcapacity() { return port[portid(dstid)].max_nb; }
+
+bool getPortErr() { return dst.err; }
+void setErr() {
+    src.err = true;
+    dst.err = true;
+    msgErr = true;
+}
+
+void setPortCnt() {
+    if(portbuf[portid(dstid)].cnt &lt; PortCnt)
+        portbuf[portid(dstid)].cnt++;
+}</declaration>
+		<location id="id81" x="-93" y="-502">
+			<name x="-103" y="-536">InvalidMsg</name>
+		</location>
+		<location id="id82" x="-254" y="-502">
+			<committed/>
+		</location>
+		<location id="id83" x="-416" y="-332">
+			<committed/>
+		</location>
+		<location id="id84" x="-781" y="-502">
+			<name x="-791" y="-536">Overflow</name>
+		</location>
+		<location id="id85" x="-586" y="-502">
+			<committed/>
+		</location>
+		<location id="id86" x="-416" y="-671">
+			<name x="-426" y="-705">Forwarding</name>
+			<label kind="invariant" x="-426" y="-654">t &lt;= IpFwdMax</label>
+		</location>
+		<location id="id87" x="-416" y="-799">
+			<name x="-426" y="-833">Reassembly</name>
+			<label kind="invariant" x="-426" y="-782">t &lt;= IpReassMax</label>
+		</location>
+		<location id="id88" x="-416" y="-918">
+			<name x="-426" y="-952">Waiting</name>
+		</location>
+		<init ref="id88"/>
+		<transition>
+			<source ref="id82"/>
+			<target ref="id83"/>
+			<label kind="guard" x="-399" y="-459">!getPortErr()</label>
+			<label kind="assignment" x="-399" y="-442">dst.buf = 1, setPortCnt(), port_clock[portid(dstid)] = 0</label>
+		</transition>
+		<transition>
+			<source ref="id82"/>
+			<target ref="id81"/>
+			<label kind="guard" x="-220" y="-519">getPortErr()</label>
+			<label kind="assignment" x="-220" y="-502">setErr()</label>
+		</transition>
+		<transition>
+			<source ref="id85"/>
+			<target ref="id83"/>
+			<label kind="guard" x="-586" y="-460">dst.buf &lt; pcapacity()</label>
+			<label kind="assignment" x="-586" y="-443">dst.buf++, setPortCnt()</label>
+		</transition>
+		<transition>
+			<source ref="id85"/>
+			<target ref="id84"/>
+			<label kind="guard" x="-747" y="-519">dst.buf &gt;= pcapacity()</label>
+			<label kind="assignment" x="-747" y="-502">setErr()</label>
+		</transition>
+		<transition>
+			<source ref="id86"/>
+			<target ref="id85"/>
+			<label kind="guard" x="-747" y="-595">t &gt;= IpFwdMin &amp;&amp; portMode() == QUEUING</label>
+			<label kind="assignment" x="-747" y="-578">t = 0</label>
+		</transition>
+		<transition>
+			<source ref="id86"/>
+			<target ref="id82"/>
+			<label kind="guard" x="-399" y="-595">t &gt;= IpFwdMin &amp;&amp; portMode() == SAMPLING</label>
+			<label kind="assignment" x="-399" y="-578">t = 0</label>
+		</transition>
+		<transition>
+			<source ref="id83"/>
+			<target ref="id88"/>
+			<label kind="guard" x="-212" y="-349">src.buf == 0</label>
+			<label kind="synchronisation" x="-212" y="-332">ipoutp!</label>
+			<nail x="9" y="-332"/>
+			<nail x="9" y="-918"/>
+		</transition>
+		<transition>
+			<source ref="id83"/>
+			<target ref="id87"/>
+			<label kind="guard" x="-747" y="-349">src.buf &gt; 0</label>
+			<label kind="synchronisation" x="-747" y="-332">ipoutp!</label>
+			<nail x="-832" y="-332"/>
+			<nail x="-832" y="-799"/>
+		</transition>
+		<transition>
+			<source ref="id87"/>
+			<target ref="id86"/>
+			<label kind="guard" x="-416" y="-748">t &gt;= IpReassMin &amp;&amp; cnt == reass - 1</label>
+			<label kind="assignment" x="-416" y="-731">src.buf--, cnt = 0, t = 0</label>
+		</transition>
+		<transition>
+			<source ref="id87"/>
+			<target ref="id88"/>
+			<label kind="guard" x="-390" y="-816">t &gt;= IpReassMin &amp;&amp; cnt &lt; reass - 1 &amp;&amp; src.buf == 1</label>
+			<label kind="assignment" x="-390" y="-799">src.buf--, cnt++, t = 0</label>
+			<nail x="-17" y="-799"/>
+			<nail x="-17" y="-867"/>
+			<nail x="-220" y="-867"/>
+		</transition>
+		<transition>
+			<source ref="id87"/>
+			<target ref="id87"/>
+			<label kind="guard" x="-824" y="-935">t &gt;= IpReassMin &amp;&amp; cnt &lt; reass - 1 &amp;&amp; src.buf &gt; 1</label>
+			<label kind="assignment" x="-824" y="-918">src.buf--, cnt++, t = 0</label>
+			<nail x="-475" y="-918"/>
+			<nail x="-832" y="-918"/>
+			<nail x="-832" y="-850"/>
+			<nail x="-569" y="-850"/>
+		</transition>
+		<transition>
+			<source ref="id88"/>
+			<target ref="id87"/>
+			<label kind="guard" x="-416" y="-892">src.buf &gt; 0</label>
+			<label kind="synchronisation" x="-416" y="-875">ipinp?</label>
+			<label kind="assignment" x="-416" y="-858">t = 0</label>
+		</transition>
+	</template>
+	<template>
+		<name>VLinkTx</name>
+		<parameter>vlid_t vlid</parameter>
+		<declaration>const int MaxJitter = 500;    // Jitter is bounded at 500µs
+
+const int TechMin = 40;    // Minimum technological delay
+const int TechMax = 70;    // Maximum technological delay
+
+clock t;
+
+void setVlErr() { fifo[vlink[vlid].src].err = true; msgErr = true; }
+bool getVlErr() { return fifo[vlink[vlid].src].err; }
+
+int[0, MaxMsg] getSrcFifo() { return fifo[vlink[vlid].src].buf; }
+
+void vlSend() { fifo[vlink[vlid].src].buf--; }</declaration>
+		<location id="id89" x="-306" y="-144">
+			<committed/>
+		</location>
+		<location id="id90" x="-59" y="0">
+			<committed/>
+		</location>
+		<location id="id91" x="-476" y="144">
+			<name x="-486" y="110">LinkError</name>
+		</location>
+		<location id="id92" x="-59" y="-221">
+			<name x="-69" y="-255">Init</name>
+		</location>
+		<location id="id93" x="110" y="144">
+			<committed/>
+		</location>
+		<location id="id94" x="450" y="0">
+			<name x="416" y="-34">Sending</name>
+			<label kind="invariant" x="255" y="17">t &lt;= txjitter[vlink[vlid].es] + TechMax</label>
+		</location>
+		<location id="id95" x="110" y="0">
+			<name x="100" y="-34">WaitBAG</name>
+			<label kind="invariant" x="51" y="17">t &lt;= vlink[vlid].BAG</label>
+		</location>
+		<location id="id96" x="-306" y="0">
+			<name x="-316" y="-34">Idle</name>
+		</location>
+		<init ref="id92"/>
+		<transition>
+			<source ref="id89"/>
+			<target ref="id91"/>
+			<label kind="guard" x="-416" y="-17">getVlErr()</label>
+		</transition>
+		<transition>
+			<source ref="id93"/>
+			<target ref="id91"/>
+			<label kind="guard" x="-280" y="59">getVlErr()</label>
+			<nail x="-59" y="76"/>
+			<nail x="-306" y="76"/>
+		</transition>
+		<transition>
+			<source ref="id89"/>
+			<target ref="id91"/>
+			<label kind="guard" x="-459" y="-161">t &gt; vlink[vlid].TxDelay
+ + MaxJitter</label>
+			<label kind="assignment" x="-459" y="-118">setVlErr()</label>
+			<nail x="-476" y="-144"/>
+		</transition>
+		<transition>
+			<source ref="id89"/>
+			<target ref="id96"/>
+			<label kind="guard" x="-306" y="-102">t &lt;= vlink[vlid].TxDelay + MaxJitter
+&amp;&amp; !getVlErr()</label>
+			<label kind="synchronisation" x="-306" y="-63">vl[vlid]!</label>
+		</transition>
+		<transition>
+			<source ref="id90"/>
+			<target ref="id95"/>
+			<label kind="guard" x="-34" y="-17">t &lt; vlink[vlid].BAG</label>
+		</transition>
+		<transition>
+			<source ref="id93"/>
+			<target ref="id91"/>
+			<label kind="guard" x="-280" y="127">t &gt; vlink[vlid].TxDelay + MaxJitter</label>
+			<label kind="assignment" x="-280" y="144">setVlErr()</label>
+		</transition>
+		<transition>
+			<source ref="id92"/>
+			<target ref="id94"/>
+			<label kind="guard" x="-34" y="-238">getSrcFifo() &gt; 0</label>
+			<label kind="synchronisation" x="-34" y="-221">ipoutp?</label>
+			<label kind="assignment" x="-34" y="-204">txjitter[vlink[vlid].es] += vlink[vlid].TxDelay, t = 0</label>
+			<nail x="450" y="-221"/>
+		</transition>
+		<transition>
+			<source ref="id93"/>
+			<target ref="id95"/>
+			<label kind="guard" x="76" y="51">t &lt;= vlink[vlid].TxDelay + MaxJitter
+&amp;&amp; !getVlErr()</label>
+			<label kind="synchronisation" x="76" y="93">vl[vlid]!</label>
+		</transition>
+		<transition>
+			<source ref="id90"/>
+			<target ref="id94"/>
+			<label kind="guard" x="-34" y="-93">t &gt;= vlink[vlid].BAG</label>
+			<label kind="assignment" x="-34" y="-76">txjitter[vlink[vlid].es] += vlink[vlid].TxDelay, t = 0</label>
+			<nail x="-59" y="-76"/>
+			<nail x="339" y="-76"/>
+		</transition>
+		<transition>
+			<source ref="id94"/>
+			<target ref="id89"/>
+			<label kind="guard" x="-34" y="-161">t &gt;= vlink[vlid].TxDelay + TechMin &amp;&amp; getSrcFifo() == 1</label>
+			<label kind="assignment" x="-34" y="-144">txjitter[vlink[vlid].es] -= vlink[vlid].TxDelay, vlSend()</label>
+			<nail x="374" y="-144"/>
+		</transition>
+		<transition>
+			<source ref="id94"/>
+			<target ref="id93"/>
+			<label kind="guard" x="136" y="127">t &gt;= vlink[vlid].TxDelay + TechMin
+&amp;&amp; getSrcFifo() &gt; 1</label>
+			<label kind="assignment" x="136" y="161">txjitter[vlink[vlid].es] -= vlink[vlid].TxDelay, vlSend()</label>
+			<nail x="450" y="144"/>
+		</transition>
+		<transition>
+			<source ref="id95"/>
+			<target ref="id94"/>
+			<label kind="guard" x="136" y="-17">t &gt;= vlink[vlid].BAG</label>
+			<label kind="assignment" x="136" y="0">txjitter[vlink[vlid].es] += vlink[vlid].TxDelay, t = 0</label>
+		</transition>
+		<transition>
+			<source ref="id96"/>
+			<target ref="id90"/>
+			<label kind="guard" x="-280" y="-17">getSrcFifo() &gt; 0</label>
+			<label kind="synchronisation" x="-280" y="0">ipoutp?</label>
+		</transition>
+	</template>
+	<template>
+		<name>VLinkRx</name>
+		<parameter>vlid_t vlid</parameter>
+		<declaration>const int Links = 2;    // the number of links along the route of each packet
+const int Switches = 2;    // the number of switches along the route of each packet
+
+const int SwTechMax = 100;    // Maximum technological latency of a switch
+const int SwTechMin = 70;    // Minimum technological latency of a switch
+
+const int RxTechMax = 70;    // Maximum technological latency of a receiving ES
+const int RxTechMin = 40;    // Minimum technological latency of a receiving ES
+
+// Maximum number of the packets in the network simultaneously
+const int MaxPackets = 10;
+// Timer used to calculate the transit time of each packet
+clock TrTimer[MaxPackets];
+int[0, MaxPackets] first = 0, last = 0, num = 0;
+
+time_t VlTrMax;    // Maximum transmission delay through a physical link
+time_t VlTrMin;    // Minimum transmission delay through a physical link
+
+void initVar() {
+    VlTrMax = vlink[vlid].TxDelay * Links + SwTechMax * Switches + RxTechMax;
+    VlTrMin = vlink[vlid].TxDelay * Links + SwTechMin * Switches + RxTechMin;
+}
+
+bool isFull() { return num == MaxPackets; }
+bool isEmpty() { return num == 0; }
+
+void add() {
+    if(num &gt; 0) last = (last + 1) % MaxPackets;
+    num++;
+}
+
+void remove() {
+    if(num &gt; 1) first = (first + 1) % MaxPackets;
+    num--;
+}
+
+void setVlErr() { fifo[vlink[vlid].src].err = true; msgErr = true; }
+
+bool rcv_bitmap[pid_t];
+
+bool canRcv(pid_t n) {
+    if(vlink[vlid].dst[n] != NO_LINK &amp;&amp; !rcv_bitmap[n])
+        return true;
+    else
+        return false;
+}
+
+void vlRcv(pid_t n) {
+    bool sndall = true;
+    int i;
+
+    if(vlink[vlid].dst[n] != NO_LINK)
+        if(fifo[vlink[vlid].dst[n]].err)
+            setVlErr();
+        else{
+            if(!rcv_bitmap[n] &amp;&amp; fifo[vlink[vlid].dst[n]].buf &lt; MaxMsg)
+                fifo[vlink[vlid].dst[n]].buf++;
+        }
+        rcv_bitmap[n] = true;
+
+    for(i = 0; i &lt; Partitions; i++)
+        if(vlink[vlid].dst[i] != NO_LINK &amp;&amp; !rcv_bitmap[i])
+            sndall = false;
+
+    if(sndall){
+        remove();
+        for(i = 0; i &lt; Partitions; i++)
+            rcv_bitmap[i] = false;
+    }
+}</declaration>
+		<location id="id97" x="-127" y="170">
+			<name x="-137" y="136">Arriving</name>
+			<committed/>
+		</location>
+		<location id="id98" x="-8" y="-119">
+			<name x="-18" y="-153">Receiving</name>
+			<committed/>
+		</location>
+		<location id="id99" x="119" y="25">
+			<name x="109" y="-9">Transmitting</name>
+			<label kind="invariant" x="42" y="42">TrTimer[first] &lt;= VlTrMax</label>
+		</location>
+		<location id="id100" x="-8" y="-221">
+			<name x="-18" y="-255">LinkError</name>
+		</location>
+		<location id="id101" x="-127" y="-119">
+			<name x="-137" y="-153">Idle</name>
+		</location>
+		<location id="id102" x="-127" y="-221">
+			<name x="-137" y="-255">Init</name>
+			<committed/>
+		</location>
+		<init ref="id102"/>
+		<transition>
+			<source ref="id99"/>
+			<target ref="id98"/>
+			<label kind="synchronisation" x="34" y="-136">vl[vlid]?</label>
+			<nail x="119" y="-119"/>
+		</transition>
+		<transition>
+			<source ref="id97"/>
+			<target ref="id99"/>
+			<label kind="guard" x="-59" y="85">!isEmpty()</label>
+			<label kind="synchronisation" x="-59" y="102">ipinp!</label>
+		</transition>
+		<transition>
+			<source ref="id97"/>
+			<target ref="id101"/>
+			<label kind="guard" x="-127" y="8">isEmpty()</label>
+			<label kind="synchronisation" x="-127" y="25">ipinp!</label>
+		</transition>
+		<transition>
+			<source ref="id99"/>
+			<target ref="id97"/>
+			<label kind="select" x="-59" y="136">n:pid_t</label>
+			<label kind="guard" x="-59" y="153">TrTimer[first] &gt;= VlTrMin
+&amp;&amp; canRcv(n)</label>
+			<label kind="assignment" x="-59" y="187">vlRcv(n)</label>
+			<nail x="119" y="170"/>
+		</transition>
+		<transition>
+			<source ref="id98"/>
+			<target ref="id99"/>
+			<label kind="guard" x="-59" y="-68">!isFull()</label>
+			<label kind="assignment" x="-59" y="-51">add(), TrTimer[last] = 0</label>
+			<nail x="-8" y="25"/>
+		</transition>
+		<transition>
+			<source ref="id98"/>
+			<target ref="id100"/>
+			<label kind="guard" x="-8" y="-187">isFull()</label>
+			<label kind="assignment" x="-8" y="-170">setVlErr()</label>
+		</transition>
+		<transition>
+			<source ref="id101"/>
+			<target ref="id98"/>
+			<label kind="synchronisation" x="-93" y="-136">vl[vlid]?</label>
+		</transition>
+		<transition>
+			<source ref="id102"/>
+			<target ref="id101"/>
+			<label kind="assignment" x="-127" y="-187">initVar()</label>
+		</transition>
+	</template>
+	<system>/* Template instantiations */
+ps1 = PartitionSupply(P1);
+ps2 = PartitionSupply(P2);
+ps3 = PartitionSupply(P3);
+ps4 = PartitionSupply(P4);
+ps5 = PartitionSupply(P5);
+ls1 = TaskScheduler(P1);
+ls2 = TaskScheduler(P2);
+ls3 = TaskScheduler(P3);
+ls4 = TaskScheduler(P4);
+ls5 = TaskScheduler(P5);
+
+// Tasks of partition 1
+task11 = PeriodicTask(0); task12 = PeriodicTask(1); task13 = PeriodicTask(2); task14 = PeriodicTask(3); task15 = SporadicTask(4);
+// Tasks of partition 2
+task21 = PeriodicTask(5); task22 = PeriodicTask(6); task23 = PeriodicTask(7); task24 = SporadicTask(8);
+// Tasks of partition 3
+task31 = PeriodicTask(9); task32 = PeriodicTask(10); task33 = PeriodicTask(11); task34 = SporadicTask(12);
+// Tasks of partition 4
+task41 = PeriodicTask(13); task42 = PeriodicTask(14); task43 = PeriodicTask(15); task44 = PeriodicTask(16); task45 = PeriodicTask(17);
+// Tasks of partition 5
+task51 = PeriodicTask(18); task52 = PeriodicTask(19); task53 = PeriodicTask(20); task54 = SporadicTask(21);
+
+// Messages
+msg1_rcv = PMsgReceiver(MSG1); msg1_snd = PMsgSender(MSG1);
+msg2_rcv = PMsgReceiver(MSG2); msg2_snd = PMsgSender(MSG2);
+msg3_rcv = PMsgReceiver(MSG3); msg3_snd = PMsgSender(MSG3);
+msg4_rcv = PMsgReceiver(MSG4); msg4_snd = PMsgSender(MSG4);
+
+// Virtual links
+vltx1 = VLinkTx(VL1);
+vltx2 = VLinkTx(VL2);
+vltx3 = VLinkTx(VL3);
+vltx4 = VLinkTx(VL4);
+
+vlrx1 = VLinkRx(VL1);
+vlrx2 = VLinkRx(VL2);
+vlrx3 = VLinkRx(VL3);
+vlrx4 = VLinkRx(VL4);
+
+// IPTx
+iptx1 = IPTx(portbuf[portid(PORT1_1Ss)], fifo[FIFO_1t], 2, MSG1);
+iptx2 = IPTx(portbuf[portid(PORT2_2Ss)], fifo[FIFO_2t], 1, MSG2);
+iptx3 = IPTx(portbuf[portid(PORT4_3Sq)], fifo[FIFO_3t], 1, MSG3);
+iptx4 = IPTx(portbuf[portid(PORT5_4Sq)], fifo[FIFO_4t], 1, MSG4);
+
+// IPRx
+iprx1_3 = IPRx(fifo[FIFO_1r_1], portbuf[portid(PORT3_1Ds)], 2, PORT3_1Ds);
+iprx1_4 = IPRx(fifo[FIFO_1r_2], portbuf[portid(PORT4_1Ds)], 2, PORT4_1Ds);
+iprx1_5 = IPRx(fifo[FIFO_1r_3], portbuf[portid(PORT5_1Ds)], 2, PORT5_1Ds);
+iprx2_3 = IPRx(fifo[FIFO_2r_1], portbuf[portid(PORT3_2Ds)], 1, PORT3_2Ds);
+iprx2_5 = IPRx(fifo[FIFO_2r_2], portbuf[portid(PORT5_2Ds)], 1, PORT5_2Ds);
+iprx3_3 = IPRx(fifo[FIFO_3r_1], portbuf[portid(PORT3_3Dq)], 1, PORT3_3Dq);
+iprx4_4 = IPRx(fifo[FIFO_4r_1], portbuf[portid(PORT4_4Dq)], 1, PORT4_4Dq);
+
+/* Processes */
+system
+// Global analysis
+ps1, ps2, ps3, ps4, ps5,
+ls1, ls2, ls3, ls4, ls5,
+task11, task12, task13, task14, task15,
+task21, task22, task23, task24,
+task31, task32, task33, task34,
+task41, task42, task43, task44, task45,
+task51, task52, task53, task54,
+vltx1, vlrx1, iptx1, iprx1_3, iprx1_4, iprx1_5,
+vltx2, vlrx2, iptx2, iprx2_3, iprx2_5,
+vltx3, vlrx3, iptx3, iprx3_3,
+vltx4, vlrx4, iptx4, iprx4_4;
+// Compositional analysis
+// Partition 1
+//ps1, ls1,
+//task11, task12, task13, task14, task15,
+//msg1_rcv;
+// Partition 2
+//ps2, ls2,
+//task21, task22, task23, task24,
+//msg2_rcv;
+// Partition 3
+//ps3, ls3,
+//task31, task32, task33, task34,
+//msg1_snd, vltx1, vlrx1, iptx1, iprx1_3, msg2_snd, vltx2, vlrx2, iptx2, iprx2_3, msg3_snd, vltx3, vlrx3, iptx3, iprx3_3;
+// Partition 4
+//ps4, ls4,
+//task41, task42, task43, task44, task45,
+//msg1_snd, vltx1, vlrx1, iptx1, iprx1_4, msg3_rcv, msg4_snd, vltx4, vlrx4, iptx4, iprx4_4;
+// Partition 5
+//ps5, ls5,
+//task51, task52, task53, task54,
+//msg1_snd, vltx1, vlrx1, iptx1, iprx1_5, msg2_snd, vltx2, vlrx2, iptx2, iprx2_5, msg4_rcv;</system>
+	<queries>
+		<query>
+			<formula>Pr[&lt;=100000](&lt;&gt; error) &lt;= 0.001
+			</formula>
+			<comment>Statistical Model Checking
+			</comment>
+		</query>
+		<query>
+			<formula>A[] not (error == true)
+			</formula>
+			<comment>Classic Model Checking
+			</comment>
+		</query>
+	</queries>
+</nta>

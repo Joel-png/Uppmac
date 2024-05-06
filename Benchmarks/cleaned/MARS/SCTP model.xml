@@ -1,0 +1,355 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE nta PUBLIC '-//Uppaal Team//DTD Flat System 1.1//EN' 'http://www.it.uu.se/research/group/darts/uppaal/flat-1_2.dtd'>
+<nta>
+	<declaration>const int E = 3;
+
+const int RESOURCES = (E-1);
+
+const int CLOSED = 0;
+const int COOKIE_WAIT = 1;
+const int COOKIE_ECHOED = 2;
+const int ESTABLISHED = 3;
+
+typedef scalar[E] ids;
+
+broadcast chan initiation[ids];
+broadcast chan init_ack[ids];
+broadcast chan cookie_echo[ids];
+broadcast chan cookie_ack[ids];
+
+broadcast chan end_assoc[ids];
+
+broadcast chan abort_init[ids];
+broadcast chan abort_cookie_echo[ids];</declaration>
+	<template>
+		<name x="8" y="8">Server</name>
+		<declaration>typedef struct {
+	ids peer;
+	int [CLOSED, ESTABLISHED]cur_state;
+} TCB;
+
+TCB tcb[RESOURCES];
+
+ids temp;
+ids t;
+
+void reset() {
+	temp = t;
+}
+
+bool resources_available() {
+	bool available = false;
+	int i;
+	
+	for (i = 0; (i &lt; RESOURCES) &amp;&amp; (available == false); i++) {
+		if (tcb[i].cur_state == CLOSED) {
+			available = true;
+		}
+	}
+	
+	return available;
+}
+
+void create_TCB(ids id) {
+	bool found = false;
+	int i;
+	
+	for (i = 0; (i &lt; RESOURCES) &amp;&amp; (found == false); i++) {
+		if (tcb[i].cur_state == CLOSED) {
+			found = true;
+			tcb[i].peer = id;
+			tcb[i].cur_state = ESTABLISHED;	
+		}
+	}	
+}
+
+void delete_TCB() {
+	bool found = false;
+	int i;
+	
+	for (i = 0; (i &lt; RESOURCES) &amp;&amp; (found == false); i++) {
+		if ((tcb[i].peer == temp) &amp;&amp; (tcb[i].cur_state == ESTABLISHED)) {
+			found = true;
+			tcb[i].peer = t;
+			tcb[i].cur_state = CLOSED;
+		}
+	}
+}</declaration>
+		<location id="id0" x="1080" y="424">
+			<name x="1096" y="424">S2</name>
+			<committed/>
+		</location>
+		<location id="id1" x="552" y="232">
+			<name x="560" y="240">S1</name>
+			<committed/>
+		</location>
+		<location id="id2" x="912" y="80">
+			<name x="880" y="56">S0</name>
+			<label kind="comments" x="902" y="115">closed or established state</label>
+		</location>
+		<init ref="id2"/>
+		<transition color="#00ffff">
+			<source ref="id2"/>
+			<target ref="id2"/>
+			<label kind="select" x="960" y="0">id: ids</label>
+			<label kind="synchronisation" x="960" y="16">end_assoc[id]?</label>
+			<label kind="assignment" x="960" y="32">temp = id,
+delete_TCB(),
+reset()</label>
+			<nail x="912" y="8"/>
+			<nail x="952" y="8"/>
+			<nail x="952" y="48"/>
+		</transition>
+		<transition color="#ffa500">
+			<source ref="id0"/>
+			<target ref="id2"/>
+			<label kind="synchronisation" x="1096" y="216">abort_cookie_echo[temp]!</label>
+			<label kind="assignment" x="1096" y="232">reset()</label>
+			<nail x="1176" y="256"/>
+			<nail x="1088" y="256"/>
+			<nail x="1088" y="168"/>
+		</transition>
+		<transition color="#ff00ff">
+			<source ref="id1"/>
+			<target ref="id2"/>
+			<label kind="assignment" x="744" y="240">reset()</label>
+			<nail x="736" y="328"/>
+			<nail x="736" y="240"/>
+			<nail x="832" y="240"/>
+		</transition>
+		<transition color="#ff00ff">
+			<source ref="id0"/>
+			<target ref="id2"/>
+			<label kind="assignment" x="1032" y="288">reset()</label>
+			<nail x="1112" y="312"/>
+			<nail x="1024" y="312"/>
+			<nail x="1024" y="224"/>
+		</transition>
+		<transition color="#ffa500">
+			<source ref="id1"/>
+			<target ref="id2"/>
+			<label kind="synchronisation" x="680" y="176">abort_init[temp]!</label>
+			<label kind="assignment" x="680" y="192">reset()</label>
+			<nail x="672" y="264"/>
+			<nail x="672" y="176"/>
+			<nail x="768" y="176"/>
+		</transition>
+		<transition color="#0000ff">
+			<source ref="id0"/>
+			<target ref="id2"/>
+			<label kind="guard" x="1136" y="80">resources_available()</label>
+			<label kind="synchronisation" x="1152" y="96">cookie_ack[temp]!</label>
+			<label kind="assignment" x="1152" y="112">create_TCB(temp),
+reset()</label>
+			<nail x="1272" y="424"/>
+			<nail x="1272" y="80"/>
+		</transition>
+		<transition color="#0000ff">
+			<source ref="id2"/>
+			<target ref="id0"/>
+			<label kind="select" x="928" y="368">id: ids</label>
+			<label kind="synchronisation" x="928" y="384">cookie_echo[id]?</label>
+			<label kind="assignment" x="928" y="400">temp = id</label>
+			<nail x="920" y="424"/>
+		</transition>
+		<transition color="#0000ff">
+			<source ref="id1"/>
+			<target ref="id2"/>
+			<label kind="guard" x="560" y="368">resources_available()</label>
+			<label kind="synchronisation" x="560" y="384">init_ack[temp]!</label>
+			<label kind="assignment" x="560" y="400">reset()</label>
+			<nail x="552" y="424"/>
+			<nail x="904" y="424"/>
+		</transition>
+		<transition color="#0000ff">
+			<source ref="id2"/>
+			<target ref="id1"/>
+			<label kind="select" x="560" y="80">id: ids</label>
+			<label kind="synchronisation" x="560" y="96">initiation[id]?</label>
+			<label kind="assignment" x="560" y="112">temp = id</label>
+			<nail x="552" y="80"/>
+		</transition>
+	</template>
+	<template>
+		<name x="8" y="8">Legit_Client</name>
+		<parameter>const ids id</parameter>
+		<declaration>const int T = 60;
+const int MAX = 4; 
+
+int [CLOSED, ESTABLISHED]cur_state;
+int [0, MAX]counter;
+clock timer;
+
+void reset() {
+	cur_state = CLOSED;
+	timer = 0;
+	counter = 0;
+}</declaration>
+		<location id="id3" x="912" y="-272">
+			<name x="928" y="-296">LC2</name>
+			<committed/>
+		</location>
+		<location id="id4" x="1272" y="-272">
+			<name x="1232" y="-296">LC3</name>
+			<label kind="invariant" x="1168" y="-272">timer &lt;= T</label>
+		</location>
+		<location id="id5" x="552" y="-272">
+			<name x="568" y="-296">LC1</name>
+			<label kind="invariant" x="592" y="-272">timer &lt;= T</label>
+		</location>
+		<location id="id6" x="912" y="80">
+			<name x="872" y="80">LC0</name>
+			<label kind="comments" x="902" y="115">closed or established state</label>
+		</location>
+		<init ref="id6"/>
+		<transition color="#00ffff">
+			<source ref="id6"/>
+			<target ref="id6"/>
+			<label kind="guard" x="960" y="104">cur_state == ESTABLISHED</label>
+			<label kind="synchronisation" x="960" y="120">end_assoc[id]!</label>
+			<label kind="assignment" x="960" y="136">reset()</label>
+			<nail x="912" y="152"/>
+			<nail x="952" y="152"/>
+			<nail x="952" y="104"/>
+		</transition>
+		<transition color="#ff00ff">
+			<source ref="id4"/>
+			<target ref="id6"/>
+			<label kind="guard" x="1088" y="-80">timer &gt;= T
+&amp;&amp; counter == MAX</label>
+			<label kind="assignment" x="1088" y="-48">reset()</label>
+			<nail x="1208" y="-80"/>
+			<nail x="1056" y="-80"/>
+		</transition>
+		<transition color="#ffc0cb">
+			<source ref="id4"/>
+			<target ref="id4"/>
+			<label kind="guard" x="1040" y="-224">timer &gt;= T
+&amp;&amp; counter &lt; MAX</label>
+			<label kind="synchronisation" x="1040" y="-192">cookie_echo[id]!</label>
+			<label kind="assignment" x="1040" y="-176">timer = 0,
+counter++</label>
+			<nail x="1160" y="-144"/>
+			<nail x="1032" y="-144"/>
+			<nail x="1032" y="-224"/>
+			<nail x="1160" y="-224"/>
+		</transition>
+		<transition color="#ff00ff">
+			<source ref="id5"/>
+			<target ref="id6"/>
+			<label kind="guard" x="616" y="-80">timer &gt;= T
+&amp;&amp; counter == MAX</label>
+			<label kind="assignment" x="616" y="-48">reset()</label>
+			<nail x="616" y="-80"/>
+			<nail x="768" y="-80"/>
+		</transition>
+		<transition color="#ffc0cb">
+			<source ref="id5"/>
+			<target ref="id5"/>
+			<label kind="guard" x="672" y="-224">timer &gt;= T
+&amp;&amp; counter &lt; MAX</label>
+			<label kind="synchronisation" x="672" y="-192">initiation[id]!</label>
+			<label kind="assignment" x="672" y="-176">timer = 0,
+counter++</label>
+			<nail x="656" y="-224"/>
+			<nail x="792" y="-224"/>
+			<nail x="792" y="-144"/>
+			<nail x="664" y="-144"/>
+		</transition>
+		<transition color="#00ff00">
+			<source ref="id4"/>
+			<target ref="id6"/>
+			<label kind="guard" x="1160" y="24">counter &lt;= MAX</label>
+			<label kind="synchronisation" x="1168" y="40">cookie_ack[id]?</label>
+			<label kind="assignment" x="1096" y="56">cur_state = ESTABLISHED</label>
+			<nail x="1272" y="80"/>
+		</transition>
+		<transition color="#ffa500">
+			<source ref="id4"/>
+			<target ref="id6"/>
+			<label kind="synchronisation" x="1024" y="-128">abort_cookie_echo[id]?</label>
+			<label kind="assignment" x="1024" y="-112">reset()</label>
+			<nail x="1168" y="-128"/>
+			<nail x="1016" y="-128"/>
+		</transition>
+		<transition color="#ff00ff">
+			<source ref="id3"/>
+			<target ref="id6"/>
+			<label kind="assignment" x="864" y="-128">reset()</label>
+		</transition>
+		<transition color="#ffa500">
+			<source ref="id5"/>
+			<target ref="id6"/>
+			<label kind="synchronisation" x="720" y="-128">abort_init[id]?</label>
+			<label kind="assignment" x="720" y="-112">reset()</label>
+			<nail x="656" y="-128"/>
+			<nail x="808" y="-128"/>
+		</transition>
+		<transition color="#00ff00">
+			<source ref="id3"/>
+			<target ref="id4"/>
+			<label kind="synchronisation" x="928" y="-272">cookie_echo[id]!</label>
+			<label kind="assignment" x="928" y="-256">cur_state = COOKIE_ECHOED,
+timer = 0,
+counter = 0</label>
+		</transition>
+		<transition color="#00ff00">
+			<source ref="id5"/>
+			<target ref="id3"/>
+			<label kind="guard" x="784" y="-272">counter &lt;= MAX</label>
+			<label kind="synchronisation" x="784" y="-256">init_ack[id]?</label>
+		</transition>
+		<transition color="#00ff00">
+			<source ref="id6"/>
+			<target ref="id5"/>
+			<label kind="guard" x="560" y="-8">cur_state == CLOSED</label>
+			<label kind="synchronisation" x="560" y="8">initiation[id]!</label>
+			<label kind="assignment" x="560" y="24">cur_state = COOKIE_WAIT,
+timer = 0,
+counter = 0</label>
+			<nail x="552" y="80"/>
+		</transition>
+	</template>
+	<template>
+		<name x="8" y="8">Illegit_Client</name>
+		<parameter>const ids id</parameter>
+		<declaration>bool sent = false;</declaration>
+		<location id="id7" x="912" y="80">
+			<name x="880" y="80">IL0</name>
+			<label kind="comments" x="902" y="115">closed or established state</label>
+		</location>
+		<init ref="id7"/>
+		<transition color="#00ff00">
+			<source ref="id7"/>
+			<target ref="id7"/>
+			<label kind="synchronisation" x="776" y="40">initiation[id]!</label>
+			<label kind="assignment" x="776" y="56">sent = true</label>
+			<nail x="712" y="80"/>
+			<nail x="808" y="-24"/>
+		</transition>
+	</template>
+	<system>system Legit_Client, Illegit_Client, Server;</system>
+	<queries>
+		<query>
+			<formula>A[] forall (i:ids) (
+       Legit_Client(i).cur_state == ESTABLISHED imply
+          exists (j: int[0,(RESOURCES-1)])(
+            Server.tcb[j].peer == i and Server.tcb[j].cur_state == ESTABLISHED
+          )
+    )
+			</formula>
+			<comment>
+			</comment>
+		</query>
+		<query>
+			<formula>E&lt;&gt; exists (i:ids) (
+       forall (j: int[0,(RESOURCES-1)])(
+          Server.tcb[j].peer == i and  Server.tcb[j].cur_state != CLOSED
+       )
+    )
+			</formula>
+			<comment>
+			</comment>
+		</query>
+	</queries>
+</nta>
