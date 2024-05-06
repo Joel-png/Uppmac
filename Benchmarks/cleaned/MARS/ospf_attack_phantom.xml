@@ -1,0 +1,1138 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE nta PUBLIC '-//Uppaal Team//DTD Flat System 1.1//EN' 'http://www.it.uu.se/research/group/darts/uppaal/flat-1_2.dtd'>
+<nta>
+	<declaration>// =================== //
+// Global DECLARATIONS //
+// =================== //
+
+// CONSTANTS
+const int A=5; //The total number of nodes. A - N == number of malicious IPs active in the network
+const int N=4;          // number of honest nodes
+const int time_sending=1; // minimum time taken to send a message
+const int time_spread=0;  // maximum time to send message is time_sending + time_spread
+const int hellointvl=10;  // time between sending hello messages
+const int rtdeadcount=5;  //number of hellos used to decide neighbour liveness
+const int start_interval = 10; // max wait time before a node initialises the ospf automaton. All routers will be booted-up nondeterministically within the start_interval
+const int age_bound = 2 * N;   // upper bound for age of an LSA.
+
+//The global clock, always in [0,1]
+//clock second_ticker;
+
+//The current integer lower bound of second_ticker, absolute in respect to global time modulo hellointvl.
+int[0,hellointvl-1] second_tracker;
+
+
+//Types
+
+//IP addresses
+typedef int[0,N-1] IP;   // range of IP addresses in the given topology
+
+//An optional IP address, where -1 indicates 'none'
+typedef int[-1,N-1] OPTIONALIP;
+
+//A potentially malicious, IP address
+typedef int[0, A-1] MALIP;
+
+//An optional, potentially malicious, IP address
+typedef int[-1, A-1] OPTIONALMALIP;
+
+// Neighbour structure
+typedef struct                            
+{ 
+  int[0,rtdeadcount] inactivity_timer; //Inactivity timer
+} NBR;
+
+//A message containing an optional IP of the sender. If sip == -1, the message is effectively non-existant
+typedef struct {
+    OPTIONALMALIP sip;
+} SIPMESSAGE;
+
+//Type aliases for each message type, for explicitness
+typedef SIPMESSAGE HELLOMSG;
+typedef SIPMESSAGE LSUMSG;
+typedef SIPMESSAGE DBDMSG;
+typedef SIPMESSAGE LSRMSG;
+
+//Malicious broadcast channels for different message types
+urgent broadcast chan mal_hello, mal_lsu, mal_dbd, mal_lsr;
+
+typedef struct               // LSA is identical to LSA header since the extra info is unused
+{                            // We distinguish them as we wish to model the DBD exchange procedure.
+  int[0,A-1] ip;             
+  int[0,age_bound+1] age;
+} LSA;
+
+//=================================
+//MESSAGE STATE
+//=================================
+
+//An optional hello message currently being propagated
+HELLOMSG hello_on_wire = {-1};
+
+//An optional lsu message currently being propagated
+LSUMSG lsu_on_wire = {-1};
+
+//An optional dbd message currently being propagated
+DBDMSG dbd_on_wire = {-1};
+
+//An optional lsr message currently being propagated
+LSRMSG lsr_on_wire = {-1};
+
+//An optional hello IP address, for finding the next node to send a hello
+OPTIONALIP hello_ip = -1;
+
+//An optional hello lsu address, for finding the next node to send a lsu
+OPTIONALIP lsu_ip = -1;
+
+//An array of nodes to receive hello_on_wire, where node n requires the message if need_hello[n] == true
+bool need_hello[N];
+
+//An array of nodes to receive lsu_on_wire, where node n requires the message if need_lsu[n] == true
+bool need_lsu[N];
+
+//The optional recipient of a dbd message
+OPTIONALMALIP dbd_recipient = -1;
+
+//The optional recipient of a lsr message
+OPTIONALMALIP lsr_recipient = -1;
+
+//CHANNELS
+urgent broadcast chan tau;       // used to prioritise internal transitions
+
+broadcast chan start_timing;
+
+
+//GLOBAL TIME-KEEPING
+
+typedef int[0,hellointvl-1] HELLOINTVL;
+
+HELLOINTVL clock_locks[N];    //For x=clock_locks[], node n sends a hello in the interval [x,x+1).
+
+bool sent_hello_intvl[N];    //sent_hello_intvl[n] is true if node n sent a hello in the current hellointvl time cycle.
+
+OPTIONALIP next_hello(const int[0, hellointvl - 1] time_integer)
+{
+    for(i : IP)
+    {
+        if(clock_locks[i] == time_integer &amp;&amp; !sent_hello_intvl[i])
+        {
+            return i;
+        }
+    }
+    
+    return -1;
+}
+
+
+void choose_hello_intvl (const HELLOINTVL intvl,  const IP ip){
+    clock_locks[ip] = intvl;
+}
+
+const bool topology[N][N]={ // the topology described in terms of connectivity
+  {0,0,0,1}, 
+  {0,0,0,1},
+  {0,0,0,1},
+  {1,1,1,0}
+};
+
+//local data structure of OSPF
+NBR nbrs[N][A];  // array of neighbours that have been discovered
+LSA lsdb[N][A];  // array of LSAs (which make up the LSDB)
+
+
+bool upd_required[N][A]; //if a node changes its state it lets its neighbours know
+
+bool upd_required_req[N]; // which LSA's are requested from a REQ message
+
+int[1,age_bound+1] age[N]; // age of the last self-originated LSA
+
+
+//O(n^2)check of total LSDB synchronisation
+bool total_sync()
+{
+
+    for(i : IP)
+    {
+        const int[0,N-1] ip = lsdb[0][i].ip;              
+        const int[0,age_bound+1] age = lsdb[0][i].age; 
+        
+        for(j : int[1,N-1])
+        {
+            if(lsdb[j][i].ip != ip || lsdb[j][i].age != age)
+            {
+                return false;
+            }
+        }    
+    }
+
+    return true;
+}
+
+typedef int[0,3] MSGCODE;
+
+const MSGCODE HELLOCODE = 0;
+const MSGCODE LSUCODE = 1;
+const MSGCODE LSRCODE = 2;
+const MSGCODE DBDCODE = 3;
+
+bool is_malicious_ip(const OPTIONALMALIP ip)
+{
+    return ip &gt;= N;
+}
+
+bool is_malicious(const MSGCODE type)
+{
+    //Have had very bad experiences with switch statements in UPPAAL before...
+    //For hello and upd, we should investigate whether we should return true if any recipient is malicious O(n) vs O(1)
+    if(type == HELLOCODE)
+    {
+        return is_malicious_ip(hello_on_wire.sip);
+    }
+    else if(type == LSUCODE)
+    {
+        return is_malicious_ip(lsu_on_wire.sip);
+    }
+    else if(type == LSRCODE)
+    {
+        return is_malicious_ip(lsr_on_wire.sip) || is_malicious_ip(lsr_recipient);
+    }
+    else 
+    {
+        return is_malicious_ip(dbd_on_wire.sip) || is_malicious_ip(dbd_recipient);
+    }
+}
+
+
+//=================================
+//MISC
+//=================================
+
+bool isconnected(IP i, IP j){
+  return(topology[i][j]==1);
+}
+
+
+
+//create LSA for own IP
+LSA new_lsa(const IP ip){
+  LSA lsa;
+  lsa.ip = ip;
+  age[ip] = (age[ip]==age_bound)? 1 : age[ip]+1; // wrap around age if it exceeds age_bound
+  lsa.age = age[ip];              
+  return lsa;
+}
+
+//returns true if age1 is newer than age2 (handles wrap around)
+bool newer_age(const int age1, const int age2){
+  if (age1==0) {
+      return false;
+  } else if (age2==0) {
+      return true;
+  }
+  if ((age2 &gt; age1 &amp;&amp; 2*(age2 - age1)&lt;age_bound) // wrap around handling
+     || 
+     (age1 &gt; age2 &amp;&amp; 2*(age1 - age2)&gt;age_bound))
+      return false;
+  return true;
+}
+
+void install_lsa(const IP ip, LSA lsa){                  // install LSA in LSDB if it is more recent than the current copy.
+  if(newer_age(lsa.age,lsdb[ip][lsa.ip].age))
+      lsdb[ip][lsa.ip]=lsa;
+}
+
+
+bool nbr_exists(const MALIP sip, const IP dip){                      // check if sender of current message is active
+  return nbrs[dip][sip].inactivity_timer &gt; 0;
+}
+
+void reduce_lifetime_nbrs(const IP ip){         // after a hello message is sent we reduce the inactivity timer of each neighbour.
+
+  for (i : IP){
+    if(nbrs[ip][i].inactivity_timer &gt; 0){
+      nbrs[ip][i].inactivity_timer --;
+      if(nbrs[ip][i].inactivity_timer == 0){   // if timer reaches zero, set the upd_required flag to true.
+        install_lsa(ip, new_lsa(ip));
+        upd_required[ip][ip] = true;
+      }
+    }
+  }
+}
+
+void install_lsas_from_lsdb(const IP dip, const IP sip) //Used for non-requested LSAs
+{
+    for(i : MALIP)
+    {
+        if(upd_required[sip][i])
+        {
+            if(lsdb[sip][i].age != lsdb[dip][i].age &amp;&amp; newer_age(lsdb[sip][i].age, lsdb[dip][i].age))
+            {
+                //Sender has a newer version of this
+                lsdb[dip][i] = lsdb[sip][i];
+                upd_required[dip][i]=true;
+            }
+        }
+    }
+}
+
+void which_lsas_are_newer(const IP sip, const IP dip) //Used when a node receives a DBD message to see which LSAs to request
+{
+    for(i : IP)
+    {
+        if(lsdb[sip][i].age != lsdb[dip][i].age &amp;&amp; newer_age(lsdb[sip][i].age, lsdb[dip][i].age))
+            {
+                //Sender has a newer version of this
+                upd_required_req[i]= true;
+            }
+        
+    }
+}
+
+void install_requested_lsas_from_lsdb(const IP dip, const IP sip) // Used for requested LSAs
+{
+    for(i : IP)
+    {
+        if(upd_required_req[i])
+        {
+            lsdb[dip][i] = lsdb[sip][i];
+            upd_required[dip][i]=true; //must update peers of new lsas
+        }
+    }
+}
+
+void flush_upd_required(const IP ip) // Used after LSAs have been sent
+{
+    for(i : IP)
+    {
+        upd_required[ip][i] = false;
+    }
+}
+
+void flush_req_upd_required() // Used after requested LSAs have been sent
+{
+    for(i : IP)
+    {
+        upd_required_req[i] = false;
+    }
+}
+
+//=================================
+//MESSAGE PREPARATION
+//=================================
+
+void find_next_lsu_sender() // Updates the next node to send a non-requested update (unfortunately there is a bias for lower IP nodes)
+{
+
+    if (lsu_ip != -1)
+    {
+    return;
+    }
+
+    for(i : IP)
+    {
+        for(j : IP)
+       {
+            if(upd_required[i][j])
+            {
+                lsu_ip = i;
+                return;
+            }
+        }
+    }
+}
+
+void find_active_lsu_recipients(const IP sip) // Finds active neighbours for non-requested updates
+{
+    for(i : IP)
+    {
+        if(nbrs[sip][i].inactivity_timer)
+        {
+            need_lsu[i] = true;
+        }
+    }
+}
+
+
+//=================================
+//MESSAGE GENERATORS
+//=================================
+
+
+void generate_and_send_hello(const IP ip){ // creates a hello message and adds to out queue
+    hello_on_wire.sip = ip;
+
+    for(i : IP)
+    {
+        if(isconnected(ip, i))
+        {
+            need_hello[i] = true;
+        }
+    } 
+}
+
+void generate_and_send_dbd(const MALIP sip, const MALIP dip)
+{
+    dbd_on_wire.sip = sip;
+    dbd_recipient = dip;
+}
+
+void generate_and_send_lsu(const IP ip){ //LSU to all active neighbours
+    lsu_on_wire.sip = ip;
+    find_active_lsu_recipients(ip);
+}
+
+void generate_and_send_requested_lsu(const IP sip, const MALIP dip) //LSU only to sender of LSR
+{
+    lsu_on_wire.sip = sip;
+    need_lsu[dip] = true;
+}
+
+void generate_and_send_lsr(const IP sip, const MALIP dip)
+{
+    lsr_on_wire.sip = sip;
+    lsr_recipient = dip;
+}
+
+//=================================
+//MESSAGE PROPAGATION
+//=================================
+
+void propagate_hello()
+{
+    //Potentially O(n^2), but very unlikely.
+
+    for(dip : IP)
+    {
+        if(need_hello[dip])
+        {
+            if(nbr_exists(hello_on_wire.sip, dip))
+            {
+                nbrs[dip][hello_on_wire.sip].inactivity_timer = rtdeadcount;        
+            }
+            else
+            {
+                nbrs[dip][hello_on_wire.sip].inactivity_timer = rtdeadcount;
+                install_lsa(dip, new_lsa(dip)); //Create a new LSA as neighbours have changed
+                upd_required[dip][dip] = true;
+                generate_and_send_dbd(dip, hello_on_wire.sip);
+            }
+
+            need_hello[dip] = false;
+ 
+           return;
+       
+        }
+    }
+
+
+    //There was no one else to propagate the hello too...
+    hello_on_wire.sip = -1;
+
+}
+
+void propagate_lsu() //unrequested LSU just reads from upd_required
+{
+
+    const IP sip = lsu_on_wire.sip;
+
+    for(dip : IP)
+    {
+        if(need_lsu[dip])
+        {
+            install_lsas_from_lsdb(dip, sip);
+            need_lsu[dip] = false;
+        }
+    }
+    
+    flush_upd_required(sip);
+    lsu_on_wire.sip = -1;
+    lsu_ip = -1;
+
+}
+
+void propogate_requested_lsu() //requested LSU reads from upd_required_req
+{
+    const IP sip = lsu_on_wire.sip;
+
+    for(dip : IP)
+    {
+        if(need_lsu[dip])
+        {
+            install_requested_lsas_from_lsdb(dip, sip);
+            need_lsu[dip] = false;
+        }
+    }
+    
+    flush_req_upd_required();
+    lsu_on_wire.sip = -1;
+}
+
+
+void propagate_dbd()
+{
+
+    if(nbr_exists(dbd_on_wire.sip, dbd_recipient))
+    {
+        //Are neighbours...send the REQ
+        generate_and_send_lsr(dbd_recipient, dbd_on_wire.sip);
+
+        dbd_recipient = -1;
+        dbd_on_wire.sip = -1;
+
+    }
+    else
+    {
+        //Not neighbours
+        nbrs[dbd_recipient][dbd_on_wire.sip].inactivity_timer = rtdeadcount;
+        
+
+        install_lsa(dbd_recipient, new_lsa(dbd_recipient));
+        upd_required[dbd_recipient][dbd_recipient]=true;
+
+        //Send a LSR back
+        generate_and_send_lsr(dbd_recipient, dbd_on_wire.sip);
+        //Send a DBD back...
+        generate_and_send_dbd(dbd_recipient, dbd_on_wire.sip);
+        
+
+    }
+}
+
+void propagate_lsr()
+{
+    if(nbr_exists(lsr_on_wire.sip, lsr_recipient))
+    {
+        which_lsas_are_newer(lsr_recipient, lsr_on_wire.sip); //edits the upd_required_req array
+        generate_and_send_requested_lsu(lsr_recipient, lsr_on_wire.sip);
+    }
+    
+    lsr_on_wire.sip = -1;
+    lsr_recipient = -1;
+}
+
+//=================================
+//ORACLE FUNCTIONS
+//=================================
+
+bool ongoing_exchange()
+{
+    //There is a DBD-exchange process occuring in the network
+    return lsu_on_wire.sip != -1 || lsr_on_wire.sip != -1;
+}
+
+
+bool can_hello()
+{
+    return hello_ip != -1 &amp;&amp; hello_on_wire.sip == -1;
+}
+
+bool can_lsu()
+{
+    return lsu_on_wire.sip == -1 &amp;&amp; lsu_ip !=-1;
+}
+
+bool hello_on_wire_oracle()
+{
+    return hello_on_wire.sip != -1;
+}
+
+
+bool dbd_on_wire_oracle()
+{
+    return dbd_on_wire.sip != -1;
+}
+
+bool lsu_on_wire_oracle()
+{
+    return lsu_on_wire.sip != -1;
+}
+
+bool lsr_on_wire_oracle()
+{
+    return lsr_on_wire.sip != -1;
+}
+</declaration>
+	<template>
+		<name>honest_ospf_composer</name>
+		<declaration>// =============================== //
+// DECLARATIONS for ospf template  //
+// =============================== //
+
+
+
+
+//TEMPORARY VARIABLES
+//Can't be meta since they are used in more than one transition
+int[0,N] node_idx;
+IP ip;
+
+void initialise(const IP ip){ // when a node starts up it will write its own initial LSA into its LSDB
+  lsdb[ip][ip].ip = ip;
+  lsdb[ip][ip].age = 1;
+}
+
+
+
+//OLD CODE
+
+/*
+
+
+// in_queue of messages (received from other nodes)
+//MSG msg_inqueue[N][M];     // last M local copies of incoming messages, 
+//int buffersize_inqueue[N]; // number of messages contained in the in queue
+
+
+// out_queue of messages to be sent
+//MSG msg_outqueue[N][M];        // Last M local copies of outgoing messages
+//bool dests_outqueue[N][M][N];  // boolean matrix of destinations for outgoing messages
+//int buffersize_outqueue[N];    // the number of messages in the out queue
+
+
+
+// =================== //
+//      FUNCTIONS      //
+// =================== //
+
+// OUT QUEUE
+// ------------
+//add a message (and its destinations) to the out queue - there is no check whether there is space in the queue; may lead to a buffer overflow
+void addmsg_outqueue(const IP ip, MSG msg, bool dests[N]){
+  dests_outqueue[ip][buffersize_outqueue[ip]]=dests;
+  msg_outqueue[ip][buffersize_outqueue[ip]]=msg;
+  buffersize_outqueue[ip]++;
+}
+
+//returns type of next message to be sent, if NONE the out queue is empty
+MSGTYPE nextmsg_outqueue(const IP ip){
+  return msg_outqueue[ip][0].msgtype;
+}
+
+// After sending the message from the out queue, need to delete the message from the queue and shift all other messages forward one place.
+void deletemsg_outqueue(const IP ip){
+  MSG empty;
+  bool emptyd[N];
+  for(i: int[1,M-1]){                          //move all messages forward one position
+    msg_outqueue[ip][i-1]=msg_outqueue[ip][i];
+    dests_outqueue[ip][i-1]=dests_outqueue[ip][i];
+  }
+  msg_outqueue[ip][M-1]=empty;                      //write an empty message at end of the queue 
+  dests_outqueue[ip][M-1]=emptyd;
+  buffersize_outqueue[ip]--;
+}
+
+// IN QUEUE
+// ------------
+//add a message to the in queue - no check whether there is space in the queue; may lead to a buffer overflow
+void addmsg_inqueue(const IP ip, MSG msg){
+  msg_inqueue[ip][buffersize_inqueue[ip]]=msg;
+  buffersize_inqueue[ip]++;
+}
+
+//returns type of next message, if it returns NONE, we know the in queue is empty
+MSGTYPE nextmsg_inqueue(const IP ip){
+  return msg_inqueue[ip][0].msgtype;
+}
+
+//After processing the message from the front of the in queue delete it from the queue and shift all other messages forward one place.
+void deletemsg_inqueue(const IP ip){
+  MSG empty;
+  for(i: int[1,M-1]){       //move all messages by one position
+    msg_inqueue[ip][i-1]=msg_inqueue[ip][i];
+  }
+  msg_inqueue[ip][M-1]=empty;   //write an empty message into the last slot of the queue 
+  buffersize_inqueue[ip]--;
+}
+
+
+void generate_send_dbd(const IP ip, const IP dip){ // creates a dbd message and adds to out queue with the correct destinations
+  MSG msg;
+  bool dests[N];
+  msg.msgtype=DBD;
+  msg.sip=ip;
+  for(i:IP){
+    msg.hdrs[i].ip = lsdb[ip][i].ip;
+    msg.hdrs[i].age = lsdb[ip][i].age;
+  }
+  dests[dip]=true;
+  addmsg_outqueue(ip,msg,dests);
+}
+
+void generate_send_upd_single(const IP ip, const LSA lsa){ // create single LSA upd message and put it in out queue
+  MSG msg;
+  bool dests[N];
+  msg.msgtype=UPD;
+  msg.sip=ip;
+  msg.lsas[lsa.ip] = lsa;
+  for(i : IP)
+    dests[i] = (nbrs[ip][i].inactivity_timer!=0);
+  addmsg_outqueue(ip,msg,dests);
+}
+
+void generate_send_upd(const IP ip, const LSA lsas[N]){ // creates (multi-LSA) update message add to out queue
+  MSG msg;
+  bool dests[N];
+  msg.msgtype=UPD;
+  msg.sip=ip;
+  msg.lsas = lsas;
+  for(i : IP)
+    dests[i] = (nbrs[ip][i].inactivity_timer!=0);
+  addmsg_outqueue(ip,msg,dests);
+}
+
+// create and process an update message in response to a request message
+void generate_send_upd_requested(const IP ip, const IP dip){ 
+  MSG msg;
+  bool dests[N];                          
+  msg.msgtype=UPD;
+  msg.sip=ip;
+  for(i:IP)
+    if(msg_inqueue[ip][0].hdrs[i].ip == i &amp;&amp; newer_age(lsdb[ip][i].age,msg_inqueue[ip][0].hdrs[i].age))
+      msg.lsas[i] = lsdb[ip][i];
+  dests[dip]=true;
+  addmsg_outqueue(ip,msg,dests);
+}
+
+
+// after receiving a dbd message create a req message to request required LSAs
+void generate_send_req(const IP ip, const IP dip){
+  MSG msg; 
+  bool dests[N];
+  LSAHDR fresh[N];
+  msg.msgtype=REQ;
+  msg.sip=ip;
+  for(i : IP)
+    if(newer_age(msg_inqueue[ip][0].hdrs[i].age, lsdb[ip][i].age))
+      msg.hdrs[i] = msg_inqueue[ip][0].hdrs[i];
+  if(msg.hdrs!=fresh){                  //only send if request is non-empty
+    dests[dip]=true;
+    addmsg_outqueue(ip,msg,dests);
+  }
+}
+
+*/
+
+//ADAM's CODE
+
+
+
+
+
+
+
+
+
+</declaration>
+		<location id="id0" x="-348" y="-1343">
+			<name x="-424" y="-1360">Initialiser</name>
+		</location>
+		<location id="id1" x="-442" y="-1054">
+			<name x="-501" y="-1062">OSPF</name>
+		</location>
+		<location id="id2" x="-1079" y="-977">
+			<name x="-1190" y="-994">CheckMalLSR</name>
+			<committed/>
+		</location>
+		<location id="id3" x="195" y="-969">
+			<name x="204" y="-960">CheckMalDBD</name>
+			<committed/>
+		</location>
+		<location id="id4" x="195" y="-994">
+			<name x="204" y="-1020">CheckMalLSU</name>
+			<committed/>
+		</location>
+		<location id="id5" x="195" y="-1131">
+			<name x="204" y="-1156">CheckMalHello</name>
+			<committed/>
+		</location>
+		<init ref="id0"/>
+		<transition>
+			<source ref="id5"/>
+			<target ref="id1"/>
+			<label kind="guard" x="-399" y="-1199">hello_on_wire.sip &gt;= N</label>
+			<label kind="synchronisation" x="-399" y="-1182">mal_hello!</label>
+			<nail x="195" y="-1199"/>
+			<nail x="-425" y="-1199"/>
+			<nail x="-425" y="-1088"/>
+		</transition>
+		<transition>
+			<source ref="id5"/>
+			<target ref="id1"/>
+			<label kind="guard" x="-399" y="-1267">!(hello_on_wire.sip &gt;= N)</label>
+			<label kind="assignment" x="-399" y="-1250">propagate_hello(),
+find_next_lsu_sender()</label>
+			<nail x="195" y="-1267"/>
+			<nail x="-425" y="-1267"/>
+			<nail x="-425" y="-1088"/>
+		</transition>
+		<transition>
+			<source ref="id4"/>
+			<target ref="id1"/>
+			<label kind="guard" x="-323" y="-1114">!(lsu_on_wire.sip &gt;= N)</label>
+			<label kind="assignment" x="-323" y="-1097">propogate_requested_lsu(),
+find_next_lsu_sender()</label>
+			<nail x="195" y="-1114"/>
+			<nail x="-331" y="-1114"/>
+		</transition>
+		<transition>
+			<source ref="id4"/>
+			<target ref="id1"/>
+			<label kind="guard" x="-323" y="-1054">lsu_on_wire.sip &gt;= N</label>
+			<label kind="synchronisation" x="-323" y="-1037">mal_lsu!</label>
+			<nail x="195" y="-1054"/>
+		</transition>
+		<transition>
+			<source ref="id3"/>
+			<target ref="id1"/>
+			<label kind="guard" x="-391" y="-952">!(dbd_on_wire.sip &gt;= N || dbd_recipient &gt;= N)</label>
+			<label kind="assignment" x="-391" y="-935">propagate_dbd(),
+find_next_lsu_sender()</label>
+			<nail x="195" y="-901"/>
+			<nail x="-425" y="-901"/>
+			<nail x="-425" y="-1011"/>
+		</transition>
+		<transition>
+			<source ref="id3"/>
+			<target ref="id1"/>
+			<label kind="guard" x="-391" y="-867">dbd_on_wire.sip &gt;= N || dbd_recipient &gt;= N</label>
+			<label kind="synchronisation" x="-391" y="-850">mal_dbd!</label>
+			<nail x="195" y="-833"/>
+			<nail x="-425" y="-833"/>
+			<nail x="-425" y="-1011"/>
+		</transition>
+		<transition>
+			<source ref="id2"/>
+			<target ref="id1"/>
+			<label kind="guard" x="-782" y="-943">!(lsr_on_wire.sip &gt;= N || lsr_recipient &gt;= N)</label>
+			<label kind="assignment" x="-782" y="-926">propagate_lsr()</label>
+			<nail x="-1079" y="-909"/>
+			<nail x="-459" y="-909"/>
+			<nail x="-459" y="-1020"/>
+		</transition>
+		<transition>
+			<source ref="id2"/>
+			<target ref="id1"/>
+			<label kind="guard" x="-756" y="-867">lsr_on_wire.sip &gt;= N || lsr_recipient &gt;= N</label>
+			<label kind="synchronisation" x="-756" y="-850">mal_lsr!</label>
+			<nail x="-1079" y="-833"/>
+			<nail x="-459" y="-833"/>
+			<nail x="-459" y="-1020"/>
+		</transition>
+		<transition>
+			<source ref="id1"/>
+			<target ref="id2"/>
+			<label kind="guard" x="-1062" y="-977">lsr_on_wire_oracle() &amp;&amp; !lsu_on_wire_oracle()</label>
+			<label kind="synchronisation" x="-442" y="-697">tau!</label>
+			<nail x="-476" y="-1020"/>
+			<nail x="-476" y="-977"/>
+		</transition>
+		<transition>
+			<source ref="id1"/>
+			<target ref="id3"/>
+			<label kind="guard" x="-144" y="-969">dbd_on_wire_oracle() &amp;&amp; !ongoing_exchange()</label>
+			<label kind="synchronisation" x="-459" y="-689">tau!</label>
+			<nail x="-408" y="-1011"/>
+			<nail x="-408" y="-969"/>
+		</transition>
+		<transition>
+			<source ref="id1"/>
+			<target ref="id4"/>
+			<label kind="guard" x="34" y="-1020">lsu_on_wire_oracle()</label>
+			<label kind="synchronisation" x="-459" y="-689">tau!</label>
+			<nail x="-331" y="-994"/>
+		</transition>
+		<transition>
+			<source ref="id1"/>
+			<target ref="id1"/>
+			<label kind="guard" x="-1071" y="-1113">can_lsu() &amp;&amp; !ongoing_exchange() &amp;&amp; !dbd_on_wire_oracle()</label>
+			<label kind="synchronisation" x="-459" y="-706">tau!</label>
+			<label kind="assignment" x="-1071" y="-1096">generate_and_send_lsu(lsu_ip),
+propagate_lsu(),
+find_next_lsu_sender()</label>
+			<nail x="-535" y="-1113"/>
+			<nail x="-1079" y="-1113"/>
+			<nail x="-1079" y="-1003"/>
+			<nail x="-535" y="-1003"/>
+		</transition>
+		<transition>
+			<source ref="id1"/>
+			<target ref="id5"/>
+			<label kind="guard" x="-153" y="-1156">hello_on_wire_oracle() &amp;&amp; !dbd_on_wire_oracle()</label>
+			<label kind="synchronisation" x="-459" y="-680">tau!</label>
+			<nail x="-408" y="-1088"/>
+			<nail x="-408" y="-1131"/>
+		</transition>
+		<transition>
+			<source ref="id1"/>
+			<target ref="id1"/>
+			<label kind="guard" x="-1071" y="-1266">can_hello() &amp;&amp; !dbd_on_wire_oracle()</label>
+			<label kind="synchronisation" x="-459" y="-697">tau!</label>
+			<label kind="assignment" x="-1071" y="-1249">reduce_lifetime_nbrs(hello_ip),
+generate_and_send_hello(hello_ip),
+sent_hello_intvl[hello_ip] = true,
+hello_ip = next_hello(second_tracker),
+find_next_lsu_sender()</label>
+			<nail x="-476" y="-1087"/>
+			<nail x="-476" y="-1130"/>
+			<nail x="-1079" y="-1130"/>
+			<nail x="-1079" y="-1266"/>
+			<nail x="-459" y="-1266"/>
+			<nail x="-459" y="-1096"/>
+		</transition>
+		<transition>
+			<source ref="id0"/>
+			<target ref="id1"/>
+			<label kind="guard" x="-612" y="-1352">node_idx==N</label>
+			<label kind="synchronisation" x="-612" y="-1335">start_timing!</label>
+			<label kind="assignment" x="-612" y="-1318">node_idx=0,
+hello_ip = next_hello(0)</label>
+			<nail x="-442" y="-1343"/>
+		</transition>
+		<transition>
+			<source ref="id0"/>
+			<target ref="id0"/>
+			<label kind="select" x="-271" y="-1394">t : int[0,hellointvl-1]</label>
+			<label kind="guard" x="-271" y="-1377">node_idx&lt;N</label>
+			<label kind="assignment" x="-271" y="-1360">initialise(node_idx), 
+choose_hello_intvl(t,node_idx),
+++node_idx</label>
+			<nail x="-280" y="-1301"/>
+			<nail x="-280" y="-1394"/>
+		</transition>
+	</template>
+	<template>
+		<name>time_automaton</name>
+		<declaration>// =============================== //
+// DECLARATIONS for time_automaton template  //
+// =============================== //
+
+urgent broadcast chan time_tau;
+
+void reset_intvl_trackers (){ //Resets hello bools for each node
+    for(i : IP){
+        sent_hello_intvl[i] =   false;
+    }
+}
+
+// Checks if there are any ongoing messages to be sent or received. Used to check whether the second_tracker can increase 
+bool anything_on_wire()
+{
+    return lsr_on_wire.sip != -1|| lsu_on_wire.sip != -1 || dbd_on_wire.sip != - 1 || hello_on_wire.sip != -1 || lsu_ip != -1 || hello_ip !=-1;
+}</declaration>
+		<location id="id6" x="-195" y="0">
+			<name x="-178" y="-42">Main</name>
+		</location>
+		<location id="id7" x="-612" y="0">
+			<committed/>
+		</location>
+		<location id="id8" x="-850" y="0">
+			<committed/>
+		</location>
+		<location id="id9" x="17" y="0">
+			<name x="0" y="-34">Entry</name>
+		</location>
+		<init ref="id9"/>
+		<transition>
+			<source ref="id9"/>
+			<target ref="id6"/>
+			<label kind="synchronisation" x="-136" y="-25">start_timing?</label>
+		</transition>
+		<transition>
+			<source ref="id8"/>
+			<target ref="id6"/>
+			<label kind="assignment" x="-697" y="-323">second_tracker = (second_tracker + 1) % hellointvl,
+hello_ip = next_hello(second_tracker)</label>
+			<nail x="-926" y="0"/>
+			<nail x="-926" y="-263"/>
+			<nail x="-195" y="-263"/>
+			<nail x="-195" y="-34"/>
+		</transition>
+		<transition>
+			<source ref="id7"/>
+			<target ref="id8"/>
+			<label kind="guard" x="-799" y="-144">second_tracker &lt; hellointvl - 1</label>
+			<nail x="-731" y="-110"/>
+		</transition>
+		<transition>
+			<source ref="id7"/>
+			<target ref="id8"/>
+			<label kind="guard" x="-807" y="119">second_tracker == hellointvl - 1</label>
+			<label kind="assignment" x="-790" y="144">reset_intvl_trackers()</label>
+			<nail x="-731" y="110"/>
+		</transition>
+		<transition>
+			<source ref="id6"/>
+			<target ref="id7"/>
+			<label kind="guard" x="-476" y="-25">!anything_on_wire()</label>
+		</transition>
+	</template>
+	<template>
+		<name>non_determ_false_adj</name>
+		<parameter>const OPTIONALMALIP phantom_ip, const IP victim</parameter>
+		<declaration>typedef int[0,4] ATTACK_STAGE;
+const ATTACK_STAGE DORMANT = 0;
+const ATTACK_STAGE NEIGHBOUR = 1;
+const ATTACK_STAGE RECEIVED_DBD = 2;
+const ATTACK_STAGE SENT_DBD = 3;
+const ATTACK_STAGE ADJACENT = 4;
+
+ATTACK_STAGE attack_status;
+
+int[-1,age_bound+1] age_of_false_adj_victim = -1;
+int[-1,age_bound+1] age_of_false_adj_phantom = -1;
+
+//Checks that the age of everyone's LSA from the victim is at least age_of_false_adj i.e. it includes the false remote adjacency
+bool check_false_adj_propagation()
+{
+    for(i : IP)
+    {
+        if(lsdb[i][victim].age &lt; age_of_false_adj_victim)
+        {
+            return false;
+        }
+        else if(lsdb[i][phantom_ip].age != age_of_false_adj_phantom)
+        {
+            return false;
+        }
+    }
+
+    return true;
+
+}
+
+void inject_mal_lsa(){
+  lsdb[victim][phantom_ip].ip = phantom_ip;
+  lsdb[victim][phantom_ip].age = 1;
+}</declaration>
+		<location id="id10" x="-1054" y="-671">
+			<name x="-1028" y="-663">RemoteFalseAdjacency</name>
+		</location>
+		<location id="id11" x="-1054" y="-875">
+		</location>
+		<location id="id12" x="-1564" y="-629">
+			<name x="-1564" y="-672">Drop</name>
+			<committed/>
+		</location>
+		<location id="id13" x="-1054" y="-510">
+			<committed/>
+		</location>
+		<init ref="id11"/>
+		<transition>
+			<source ref="id13"/>
+			<target ref="id10"/>
+			<label kind="assignment" x="-1037" y="-595">dbd_recipient = dbd_on_wire.sip = -1</label>
+		</transition>
+		<transition>
+			<source ref="id12"/>
+			<target ref="id13"/>
+			<label kind="guard" x="-1530" y="-510">attack_status == SENT_DBD 
+&amp;&amp; nbrs[dbd_recipient][phantom_ip].inactivity_timer
+&amp;&amp; dbd_on_wire.sip == phantom_ip</label>
+			<label kind="assignment" x="-1530" y="-467">attack_status = ADJACENT,
+age_of_false_adj_victim = lsdb[victim][victim].age,
+inject_mal_lsa(),
+age_of_false_adj_phantom = lsdb[victim][phantom_ip].age,
+upd_required[victim][phantom_ip] = true</label>
+			<nail x="-1564" y="-510"/>
+		</transition>
+		<transition>
+			<source ref="id12"/>
+			<target ref="id13"/>
+			<label kind="guard" x="-1504" y="-586">attack_status &lt; SENT_DBD 
+|| !nbrs[dbd_recipient][phantom_ip].inactivity_timer</label>
+			<nail x="-1530" y="-544"/>
+			<nail x="-1088" y="-544"/>
+		</transition>
+		<transition>
+			<source ref="id11"/>
+			<target ref="id10"/>
+			<label kind="synchronisation" x="-1045" y="-867">start_timing?</label>
+		</transition>
+		<transition>
+			<source ref="id10"/>
+			<target ref="id12"/>
+			<label kind="synchronisation" x="-1513" y="-654">mal_dbd?</label>
+			<nail x="-1088" y="-629"/>
+		</transition>
+		<transition>
+			<source ref="id10"/>
+			<target ref="id10"/>
+			<label kind="guard" x="-1547" y="-748">attack_status == RECEIVED_DBD &amp;&amp; !dbd_on_wire_oracle() 
+&amp;&amp; dbd_recipient == -1 &amp;&amp; !ongoing_exchange()</label>
+			<label kind="assignment" x="-1547" y="-714">generate_and_send_dbd(phantom_ip, victim),
+attack_status = SENT_DBD</label>
+			<nail x="-1139" y="-748"/>
+			<nail x="-1564" y="-748"/>
+			<nail x="-1564" y="-671"/>
+		</transition>
+		<transition>
+			<source ref="id10"/>
+			<target ref="id10"/>
+			<label kind="guard" x="-1547" y="-841">dbd_recipient == phantom_ip</label>
+			<label kind="assignment" x="-1547" y="-824">dbd_recipient = -1,
+dbd_on_wire.sip = -1,
+attack_status = RECEIVED_DBD</label>
+			<nail x="-1130" y="-841"/>
+			<nail x="-1564" y="-841"/>
+			<nail x="-1564" y="-756"/>
+			<nail x="-1139" y="-756"/>
+		</transition>
+		<transition>
+			<source ref="id10"/>
+			<target ref="id10"/>
+			<label kind="guard" x="-782" y="-748">can_hello()</label>
+			<label kind="assignment" x="-782" y="-731">hello_on_wire.sip = phantom_ip, 
+need_hello[victim] = true</label>
+			<nail x="-969" y="-748"/>
+			<nail x="-544" y="-748"/>
+			<nail x="-544" y="-671"/>
+		</transition>
+		<transition>
+			<source ref="id10"/>
+			<target ref="id10"/>
+			<label kind="synchronisation" x="-782" y="-833">mal_hello?</label>
+			<label kind="assignment" x="-782" y="-824">propagate_hello(),
+find_next_lsu_sender(),
+hello_on_wire.sip = -1,
+attack_status = NEIGHBOUR</label>
+			<nail x="-978" y="-841"/>
+			<nail x="-544" y="-841"/>
+			<nail x="-544" y="-756"/>
+			<nail x="-969" y="-756"/>
+		</transition>
+	</template>
+	<system>// system DECLARATIONS
+//-----------------------
+// Place template instantiations here.
+
+//TOPOLOGY
+network = honest_ospf_composer();
+
+timer = time_automaton();
+
+attacker = non_determ_false_adj(4,1);
+
+system network,timer,attacker;</system>
+	<queries>
+		<query>
+			<formula>(can_hello() &amp;&amp; !dbd_on_wire_oracle()) --&gt; hello_on_wire_oracle()</formula>
+			<comment></comment>
+		</query>
+		<query>
+			<formula>A[](hello_on_wire.sip &gt;= N imply is_malicious(HELLOCODE))</formula>
+			<comment></comment>
+		</query>
+		<query>
+			<formula>A[](can_hello() imply hello_ip != -1)</formula>
+			<comment></comment>
+		</query>
+		<query>
+			<formula>A[](can_hello() imply !hello_on_wire_oracle())</formula>
+			<comment></comment>
+		</query>
+		<query>
+			<formula>A[]not deadlock</formula>
+			<comment></comment>
+		</query>
+	</queries>
+</nta>

@@ -17,20 +17,23 @@ public class Identifier {
 
 
     public void outputNtaTemplateProperties() throws IOException {
-        excelWriter.writeRow(new Object[] {nta.name}); // print name of nta
+        excelWriter.writeRow(new String[] {nta.name}); // print name of nta
+        excelWriter.writeRow(excelWriter.titles);
         for (int i = 0; i < templateProperties.size(); i++) {
             TemplateProperty currentTemplateProperty = templateProperties.get(i);
-
+            
             int numOfPoplarLocations = currentTemplateProperty.numOfPoplarLocations;
+            
+
             String isLinear = "no";
-            String hasLonelyInit = "";
+            String hasLonelyInit = "no";
             String isSingleLocation = "no";
 
             // System.out.println();
             // System.out.println();
             // System.out.println();
             // System.out.println(currentTemplateProperty.template.name);
-            
+
             // Navigator.indent(1);
             // System.out.println("Has " + numOfPoplarLocations + " popular locations (75-100% degree presences)");
 
@@ -56,9 +59,9 @@ public class Identifier {
                 isSingleLocation = "yes";
             }
 
-            excelWriter.writeRow(new Object[] {"", currentTemplateProperty.template.name, String.valueOf(numOfPoplarLocations), isLinear, hasLonelyInit, isSingleLocation});
+            excelWriter.writeRow(new String[] {"", currentTemplateProperty.template.name, hasLonelyInit, String.valueOf(currentTemplateProperty.numLocations), String.valueOf(currentTemplateProperty.numTransitions), String.valueOf(numOfPoplarLocations), isLinear, isSingleLocation});
         }
-        excelWriter.writeRow(new Object[] {""});
+        excelWriter.writeRow(new String[] {""});
     }
 
     public void printLocationProperties(Location location, Location[] locations, Transition[] transitions, int indent) {
@@ -73,6 +76,9 @@ public class Identifier {
         Transition[] transitions = template.transitions; 
         Location init = template.getInit();
         TemplateProperty tempTemplateProperty = new TemplateProperty(template);
+
+        tempTemplateProperty.numLocations = template.locations.length;
+        tempTemplateProperty.numTransitions = template.transitions.length;
 
         if (checkIsLinear(locations, init)) {
             Navigator.indent(indent);
@@ -90,11 +96,14 @@ public class Identifier {
         }
 
         Navigator.indent(indent);
+        
         int popularLocations = getNumOfPopularLocations(locations, transitions);
         System.out.println("Template has " + popularLocations + " popular locations (75-100% degree presences)");
         tempTemplateProperty.numOfPoplarLocations = popularLocations;
+        
 
         int singleLocationState = isSingleLocation(locations);
+        tempTemplateProperty.singleLocation = true;
         if (singleLocationState == 1) {
             System.out.println();
             Navigator.indent(indent);
@@ -103,6 +112,8 @@ public class Identifier {
             System.out.println();
             Navigator.indent(indent);
             System.out.println("Template has a single location with transitions");
+        } else {
+            tempTemplateProperty.singleLocation = false;
         }
 
 

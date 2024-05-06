@@ -1,67 +1,79 @@
 package com.uppmacparser;
 
-import java.io.FileOutputStream;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.io.BufferedWriter;
 import java.io.File;
 
-import org.apache.poi.ss.usermodel.Cell;
-import org.apache.poi.xssf.usermodel.XSSFRow;
-import org.apache.poi.xssf.usermodel.XSSFSheet;
-import org.apache.poi.xssf.usermodel.XSSFWorkbook;
-
 public class ExcelWriter {
-    XSSFWorkbook workbook;
-    XSSFSheet spreadsheet;
-    XSSFRow row;
-    ArrayList<Object[]> ntaData;
+    String[] titles = {"", "         name         ", "lonelyInit", "locations", "transitions", "flowers", "linear", "single"};
+
+    ArrayList<String[]> ntaData;
 
     int rowIndex = 0;
 
     public ExcelWriter() {
         System.out.println("//* ignore this");
-        workbook = new XSSFWorkbook();
+        //workbook = new XSSFWorkbook();
         System.out.println("*//");
-        spreadsheet = workbook.createSheet(" Uppaal NTA Data "); 
-        ntaData = new ArrayList<Object[]>(); 
+        //spreadsheet = workbook.createSheet(" Uppaal NTA Data "); 
+        ntaData = new ArrayList<String[]>(); 
     }
 
-    public void writeRow(Object[] object) {
+    public void writeRow(String[] strings) {
         System.out.println(rowIndex++);
-        printObject(object);
-        ntaData.add(object);
+        printObject(strings);
+        ntaData.add(strings);
     }
 
-    public void printObject(Object[] object) {
-        for (int i = 0; i < object.length; i++) {
-            System.out.print(object[i] + " ");
+    public void printObject(String[] strings) {
+        for (int i = 0; i < strings.length; i++) {
+            System.out.print(strings[i] + " ");
         }
         System.out.println();
     }
 
     public void finish() throws IOException {
-  
+        File outputFile = new File("output.txt");
+        BufferedWriter writer = new BufferedWriter(new FileWriter(outputFile));
+
         // writing the data into the sheets... 
         for (int i = 0; i < ntaData.size(); i++) {
             printObject(ntaData.get(i));
         }
 
         for (int i = 0; i < ntaData.size(); i++) {
-            row = spreadsheet.createRow(i+1);
-            Object[] objectArr = ntaData.get(i);
-            int cellid = 0;
-            for (Object obj : objectArr) { 
+            //row = spreadsheet.createRow(i+1);
+            String[] stringArr = ntaData.get(i);
+            //int cellid = 0;
+            String data = "";
+            for (int j = 0; j < stringArr.length; j++) { 
+                String str = stringArr[j];
+                //Cell cell = row.createCell(cellid++); 
+                //cell.setCellValue((String)obj); 
+                if (stringArr.length == titles.length) {
+                    str = formatLength(str, titles[j].length());
+                }
                 
-                Cell cell = row.createCell(cellid++); 
-                cell.setCellValue((String)obj); 
+                data += str + " | ";
+                
             } 
+            writer.write(data + System.getProperty("line.separator"));
         }
 
-        FileOutputStream out = new FileOutputStream( 
-            new File("nta.xlsx")); 
-  
-        workbook.write(out); 
-        workbook.close();
-        out.close(); 
+        writer.close();
+        
+        //workbook.write(out); 
+        //workbook.close();
+        //out.close(); 
+    }
+
+    public String formatLength(String data, int length) {
+        String newData = data;
+        for (int i = 0; i < length - data.length(); i++) {
+            newData += " ";
+        }
+        return newData;
     }
 }

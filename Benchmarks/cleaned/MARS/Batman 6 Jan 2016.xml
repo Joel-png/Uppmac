@@ -1,0 +1,790 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE nta PUBLIC '-//Uppaal Team//DTD Flat System 1.1//EN' 'http://www.it.uu.se/research/group/darts/uppaal/flat-1_2.dtd'>
+<nta>
+	<declaration>// Place global declarations here.
+// Place global declarations here.
+
+const int N = 5;
+const int BUFFERSIZE = 6;
+typedef int[0,N-1] id_t;
+broadcast chan SendOGM[N];
+//int counter[N] = {0,0,0,0};
+const int SEQNO_MAX = 16;//bounded to 8 since 65535 will have many states
+const int MAX_PKT_COUNT = 4;
+const int WINDOW = 4;
+const int MAXTTL = 3;
+const int MINTTL = 0;   
+typedef int[-1,N-1] IP; 
+typedef int[-1,SEQNO_MAX] SQN;
+typedef int[MINTTL,MAXTTL] TTL;
+bool adjMatrix[N][N] = {{0,1,1,0,0},{1,0,0,1,1},{1,0,0,1,0},{0,1,1,0,0},{0,1,0,0,0}};
+bool biMatrix[N][N] = {{0,0,0,0,0},{0,0,0,0,0},{0,0,0,0,0},{0,0,0,0,0},{0,0,0,0,0}};
+
+bool routingMatrix [N][N][N];
+typedef struct {
+   	int [0,MAX_PKT_COUNT] pkt_count; //packet count
+	bool window[WINDOW];
+
+
+} NEIGH_LIST;
+
+
+typedef struct {
+//	IP oid; //originator ID
+	SQN BI_sqn; // Bidirectional sequence number
+	TTL ttl;
+    SQN Current_sqn; //current sequence number
+	NEIGH_LIST list[N]; //neighbor list
+    int [0,SEQNO_MAX]myub;
+	int [0,SEQNO_MAX]mylb;
+}ORIG_LIST;
+
+
+typedef struct {
+	IP oid; //originator ID
+	//SQN BI_sqn; // Bidirectional sequence number
+	IP sid;
+	TTL ttl;
+    SQN sqn; //current sequence number
+    bool IS_DIRECT_flag; // This flag indicates whether a node is a direct neighbor.
+	bool IS_UNIDIRECTIONAL_flag;// Thos inidcates whether the neighboring node is bidirectional or not.
+	
+} OGM;
+meta OGM ogmGlobal;
+
+
+
+
+
+OGM reset()
+{
+OGM ogm;
+ogm.oid = -1;
+ogm.sid = -1;
+ogm.ttl = 0;
+ogm.sqn = 0;
+ogm.IS_DIRECT_flag=false;
+ogm.IS_UNIDIRECTIONAL_flag=false;
+return ogm;
+}
+
+bool allBidirectional()
+{
+	
+	for (i : int[0,N-1]) 
+	{
+		
+		for (j : int[0,N-1]) 
+			if(adjMatrix[i][j] != biMatrix[i][j])
+				{
+					return false;
+				}
+
+	}
+	
+	return true;
+
+}
+
+bool allBidirectionalcounter1()
+{
+//if (counter[0]==1&amp;&amp;	counter[1]==1&amp;&amp;	counter[2]==1&amp;&amp;	counter[3]==1){
+	for (i : int[0,N-1]) 
+	{
+		
+		for (j : int[0,N-1]) 
+			if(adjMatrix[i][j] != biMatrix[i][j])
+				{
+					return false;
+				}
+
+	}
+	
+	return true;
+
+//}else
+//return false;
+}
+
+
+bool hasloop() {
+    
+    //routing Matix is an array of adjancency matrices. We check for each oid if the matrix
+    //moutingMatrix[:][oid][:] has a loop.
+
+    //This first determines which nodes have no out going transition (ecept self loops)
+    //Then it discards, repeatedly, transitions to those nodes.
+    //If at the end of that process transitions remain, there is a loop.
+
+	for (oid : int[0,N-1]) { //For each originator check if there is a loop leading to it.		
+		
+		
+        int outdegree[N];
+        bool check[N];
+        bool anycheck = false;
+        int counter=0;
+
+        //compute the out degree
+		for(nhop : int[0,N-1]) {
+			for(sid : int[0,N-1]) {
+				if(sid!=nhop &amp;&amp; routingMatrix[sid][oid][nhop]) { //Compute out-degree. Ignore self loops.					
+					outdegree[sid]++;
+				}
+			}
+		}
+		 
+        //check if a node has no outgoing transition
+		for(nhop : int[0,N-1]) {
+			check[nhop]=(outdegree[nhop]==0);
+		}
+
+        //check if any node has an outgoing transition
+	    for(nhop : int[0,N-1]) {
+			if(check[nhop]){
+                anycheck = true;
+            }
+		}
+
+        //The main loop. Repeat removing transitions that lead to dead ends.
+        while(anycheck){
+		    anycheck = false;
+        	for(nhop : int[0,N-1]){
+        		if(check[nhop]){//It's a dead end and hasn't been checked before.
+        			check[nhop]=false;//Has been checked
+					for(sid : int[0,N-1]){
+				 		if(routingMatrix[sid][oid][nhop] &amp;&amp; sid!=nhop){
+							outdegree[sid]--;
+							if(outdegree[sid]==0){
+								check[sid]=true;//A new dead end that needs to be checked.
+							}
+						}			
+				  	}	
+				}
+			}
+           //Check if any node has an outgoing transition
+            for(nhop : int[0,N-1]) {
+			    if(check[nhop]){
+                    anycheck = true;
+                }
+		    }	
+		}
+        
+        //Check if there are transitions eft. If there are, there is a loop.
+        for(sid : int[0,N-1]){
+        	if(outdegree[sid]!=0){
+        		return true;       		
+			}        	
+		}
+        
+	}        
+
+	return false;
+
+}
+
+ bool anyRoutingMatrix(){
+    for(sid:int[0,N-1]){
+       for(oid:int[0,N-1]){
+           for(nhop:int[0,N-1]){
+               if(routingMatrix[sid][oid][nhop]){
+                    return true;
+               }
+           }
+       }
+
+    }
+
+   return false;
+}
+
+
+bool twoNhopsRoutingMatrix(){
+    for(sid:int[0,N-1]){
+       for(oid:int[0,N-1]){
+           int counter = 0;
+           for(nhop:int[0,N-1]){
+               if(routingMatrix[sid][oid][nhop]){
+                    counter++;
+               }
+           }
+           if(counter&gt;=2){
+              return true;
+           }
+       }
+
+    }
+
+   return false;
+}
+</declaration>
+	<template>
+		<name x="5" y="5">Node</name>
+		<parameter>const id_t id</parameter>
+		<declaration>// Place local declarations here.
+
+int[0,11]counter = 0; //Feb: Remove
+bool BufferFlag = false;
+SQN SQ_NUMBER = 0;
+ORIG_LIST table[N]; 
+OGM ogmLocal[BUFFERSIZE];
+
+void initial()
+{
+	for (i : int[0,N-1]) 
+	{
+		table[i].BI_sqn  = -1;
+		table[i].mylb = SEQNO_MAX-WINDOW + 1;	
+        table[i].myub = 0;
+
+	}
+	for (i : int[0,BUFFERSIZE-1])
+	{
+		ogmLocal[i].oid = -1;
+		ogmLocal[i].sid = -1;
+	} 
+
+}
+
+int pkt_count(id_t oid,id_t sid){
+ int count =0;
+    for (i : int [0,WINDOW-1]) 
+	{
+      count += (table[oid].list[sid].window[i]?1:0);
+    }
+
+    return count;
+}
+
+bool inwindow(int newsqn, int oid, int sid){
+   //Check if a sqnnumber is in the window, i.e. between the lower and upper bound.
+   //The complication arises since the window will loop. 
+   if(table[oid].myub&gt;=table[oid].mylb){
+        if(newsqn&lt;=table[oid].myub &amp;&amp; newsqn &gt;= table[oid].mylb){
+            return true;
+        }
+        else{
+            return false;
+        }
+   }
+   else{
+       //This covers the case that window consists of the last few seqnence numbers
+       //below the max sequence number and the first few larger or equal to zero.
+        if(newsqn&gt;=table[oid].mylb || newsqn &lt;=table[oid].myub){ 
+            return true;
+        }
+        else{
+            return false;
+        }
+    } 
+}
+
+int sqn2index(int newsqn, int oid, int sid){
+  //Only use if newsqn inwindow
+  if(table[oid].mylb&lt;=table[oid].myub){
+       return newsqn-table[oid].mylb;
+  }else
+  if(newsqn&gt;=table[oid].mylb){
+      return newsqn-table[oid].mylb;
+  }else if (newsqn&lt;=table[oid].myub){
+     return WINDOW-1 - (table[oid].myub-newsqn);
+  }
+  return -1;
+}
+
+int newlb(int newub){
+//Given an upperbound, compute the corresponding lower bound
+    if(newub&gt;=WINDOW-1){
+        return newub-WINDOW+1;
+    }else{
+        return SEQNO_MAX -(WINDOW-1-newub);
+    }
+}
+
+int sizeshift(int newsqn, int oid, int sid){
+//return the number of places to shift the window
+//assumes not inwindow
+
+ if(newsqn&gt;table[oid].myub){
+       return newsqn-table[oid].myub;
+ } else if(newsqn&lt; table[oid].mylb){//Means, the new sequence number wrapped around
+       return SEQNO_MAX+newsqn-table[oid].myub;
+ }
+ return -1;
+}
+
+
+void shiftwindow(int newsqn, int oid, int sid){
+        int i=0,j=0;
+     
+        int n = sizeshift(newsqn, oid, sid);
+
+        if(n&gt;0){
+            for(j=0;j&lt;N;j++)
+            {
+                if(n&lt;WINDOW )
+                {            
+                    for(i=0;i&lt;WINDOW-n;i++){
+                      table[oid].list[j].window[i]=table[oid].list[j].window[i+n];               
+                    }        
+                    for(i=WINDOW-n;i&lt;WINDOW;i++){
+                        table[oid].list[j].window[i]=false;                 
+                    }
+                }else{           
+                    for(i=0;i&lt;WINDOW;i++){
+                        table[oid].list[j].window[i]=false; 
+                    }
+                }
+                table[ogmLocal[0].oid].list[j].pkt_count = pkt_count(ogmLocal[0].oid,j);//Feb:Possibly replaceable by use of function
+            }
+            //Update upper and lower bound
+            table[oid].myub = newsqn;
+            table[oid].mylb = newlb(table[oid].myub);  
+        }        
+}
+
+
+void sendOGM()
+{
+    ogmGlobal.oid = id;
+    ogmGlobal.sid = id;
+    SQ_NUMBER = (SQ_NUMBER + 1)% SEQNO_MAX;
+    ogmGlobal.sqn = SQ_NUMBER; 
+    ogmGlobal.ttl = MAXTTL; 
+    ogmGlobal.IS_DIRECT_flag = false; 
+    ogmGlobal.IS_UNIDIRECTIONAL_flag = false;
+}
+
+bool checkBuffer()
+{
+    int flag = false;
+    int [0,BUFFERSIZE]i;
+    for (i = 0; i &lt; BUFFERSIZE; i++) 
+    {
+        if(ogmLocal[i]==reset())
+	    {
+		    flag = true;
+	    }
+    }
+    return flag;
+}
+
+bool isemptyBuffer()
+{
+    int flag = true;
+    int [0,BUFFERSIZE]i;
+    for (i = 0; i &lt; BUFFERSIZE; i++) 
+    {
+  	    if(ogmLocal[i]!=reset())
+	    {
+		    flag = false;
+	    }
+    }
+    return flag;
+
+}
+int getEmptyBufferIndex()
+{
+    int [0,BUFFERSIZE] index = 0;
+    int [0,BUFFERSIZE]i;
+    for (i = 0; i &lt; BUFFERSIZE; i++) 
+    {
+  	    if(ogmLocal[i] == reset())
+	    {
+		    return i;
+	    }
+    }
+    return index;
+}
+
+
+bool checkOGM(int ind)
+{
+bool flag = false;
+
+ if(ogmLocal[ind].oid != -1 &amp;&amp; ogmLocal[ind].sid != id  )
+{
+	flag = true;
+}
+
+
+return flag;
+
+}
+
+void updateBuffer()
+{
+
+OGM temp[BUFFERSIZE];
+
+
+
+int [0, BUFFERSIZE-1] index = 0;
+int [0,BUFFERSIZE]i;
+for (i : int[0,BUFFERSIZE-1])
+	{
+		temp[i].oid = -1;
+		temp[i].sid = -1;
+
+	} 
+for (i = 0; i &lt; BUFFERSIZE; i++) 
+{
+  	if(ogmLocal[i]!= reset())
+	{
+		temp[index] = ogmLocal[i];
+		index++;
+	}
+
+}
+
+
+for (i = 0; i &lt; BUFFERSIZE; i++) 
+{
+  	
+	ogmLocal[i] = temp[i] ;
+
+	
+
+}
+
+}
+void checkBufferAndUpdate()
+{
+    if(ogmLocal[0].ttl == 1)
+{
+	ogmLocal[0] =  reset();
+    updateBuffer();
+}
+
+
+}
+void forwardOGM()
+{
+    ogmLocal[0].sid=id;
+    //checkBufferAndUpdate(),
+    if(ogmLocal[0].ttl &gt; 1)
+    {
+	    ogmLocal[0].ttl = (ogmLocal[0].ttl&gt;0)?ogmLocal[0].ttl - 1:0;
+    ogmGlobal = ogmLocal[0];
+    }
+    
+    ogmLocal[0] = reset();
+    updateBuffer();
+
+
+}
+
+
+void updateOGM()
+{
+    if(!inwindow(ogmLocal[0].sqn, ogmLocal[0].oid, ogmLocal[0].sid)&amp;&amp;table[ogmLocal[0].sid].BI_sqn &gt; -1 &amp;&amp; ogmLocal[0].sqn &gt; table[ogmLocal[0].oid].Current_sqn ) 
+        {
+            shiftwindow(ogmLocal[0].sqn, ogmLocal[0].oid, ogmLocal[0].sid );
+            table[ogmLocal[0].oid].list[ogmLocal[0].sid].window[sqn2index(ogmLocal[0].sqn, ogmLocal[0].oid, ogmLocal[0].sid)]=true;
+            table[ogmLocal[0].oid].list[ogmLocal[0].sid].pkt_count = pkt_count(ogmLocal[0].oid,ogmLocal[0].sid);
+            table[ogmLocal[0].oid].ttl = ogmLocal[0].ttl;
+            table[ogmLocal[0].oid].Current_sqn = ogmLocal[0].sqn;
+        }
+    else if (inwindow(ogmLocal[0].sqn, ogmLocal[0].oid, ogmLocal[0].sid)&amp;&amp;table[ogmLocal[0].sid].BI_sqn &gt; -1 &amp;&amp; ogmLocal[0].sqn &gt; table[ogmLocal[0].oid].Current_sqn)
+        {
+            table[ogmLocal[0].oid].list[ogmLocal[0].sid].window[sqn2index(ogmLocal[0].sqn, ogmLocal[0].oid, ogmLocal[0].sid)]=true;
+            table[ogmLocal[0].oid].list[ogmLocal[0].sid].pkt_count = pkt_count(ogmLocal[0].oid,ogmLocal[0].sid);
+
+        }
+    ogmLocal[0] = reset();
+    updateBuffer();
+}
+
+void checkunidirectAndupdate()
+{
+
+
+if(((ogmGlobal.IS_UNIDIRECTIONAL_flag == true &amp;&amp; ogmGlobal.oid != id )))// || (ogmGlobal.IS_DIRECT_flag == false &amp;&amp; ogmGlobal.oid == id)))
+  {
+ }else if ((ogmGlobal.IS_DIRECT_flag == false &amp;&amp; ogmGlobal.oid == id))
+{
+
+}else if(ogmGlobal.sqn &lt;= table[ogmGlobal.oid].Current_sqn)
+{
+}
+else
+ogmLocal[getEmptyBufferIndex()] = ogmGlobal;
+
+}
+
+void updateRoutingMatrix()
+{
+    int maxpktcount = 0;
+    for (i : int [0,N-1]) 
+	{
+       if(table[ogmLocal[0].oid].list[i].pkt_count &gt;= maxpktcount)
+            maxpktcount = table[ogmLocal[0].oid].list[i].pkt_count;
+    }
+    if (maxpktcount != 0)
+    for (i: int [0,N-1])
+    {
+        
+        if(table[ogmLocal[0].oid].list[i].pkt_count == maxpktcount)
+        {
+            routingMatrix[id][ogmLocal[0].oid][i] = 1;
+        }
+        else
+        {
+            routingMatrix[id][ogmLocal[0].oid][i] = 0;
+        }
+    }
+    }
+
+
+
+</declaration>
+		<location id="id0" x="176" y="120">
+			<name x="161" y="170">Wait</name>
+			<urgent/>
+		</location>
+		<location id="id1" x="-297" y="68">
+			<committed/>
+		</location>
+		<init ref="id1"/>
+		<transition>
+			<source ref="id0"/>
+			<target ref="id0"/>
+			<label kind="guard" x="-399" y="221">checkOGM(0) &amp;&amp; ogmLocal[0].ttl == 1</label>
+			<label kind="assignment" x="-280" y="238">updateOGM()</label>
+			<nail x="-161" y="204"/>
+			<nail x="-93" y="297"/>
+		</transition>
+		<transition>
+			<source ref="id0"/>
+			<target ref="id0"/>
+			<label kind="guard" x="510" y="68">counter == 1 || SQ_NUMBER == SEQNO_MAX</label>
+			<label kind="comments" x="518" y="85">//Feb: Remove</label>
+			<nail x="510" y="51"/>
+			<nail x="510" y="102"/>
+			<nail x="510" y="102"/>
+		</transition>
+		<transition>
+			<source ref="id0"/>
+			<target ref="id0"/>
+			<label kind="guard" x="-246" y="578">checkOGM(0)&amp;&amp;
+(inwindow(ogmLocal[0].sqn, ogmLocal[0].oid, ogmLocal[0].sid)&amp;&amp;table[ogmLocal[0].sid].BI_sqn &gt; -1 ) &amp;&amp;
+ogmLocal[0].oid != ogmLocal[0].sid &amp;&amp; ogmLocal[0].oid != id &amp;&amp; 
+ogmLocal[0].IS_UNIDIRECTIONAL_flag==false &amp;&amp; ogmLocal[0].ttl &gt; 1</label>
+			<label kind="synchronisation" x="136" y="425">SendOGM[id]!</label>
+			<label kind="assignment" x="-246" y="663">table[ogmLocal[0].oid].list[ogmLocal[0].sid].window[sqn2index(ogmLocal[0].sqn, ogmLocal[0].oid, ogmLocal[0].sid)]=true,
+table[ogmLocal[0].oid].list[ogmLocal[0].sid].pkt_count = pkt_count(ogmLocal[0].oid,ogmLocal[0].sid),
+ogmLocal[0].IS_DIRECT_flag = false,
+updateRoutingMatrix(),
+forwardOGM()</label>
+			<label kind="comments" x="59" y="714">Section 5.2 No. 6 &amp; 7
+Processing: Section 5.4 and 5.5</label>
+			<nail x="93" y="416"/>
+			<nail x="297" y="416"/>
+		</transition>
+		<transition>
+			<source ref="id0"/>
+			<target ref="id0"/>
+			<label kind="guard" x="416" y="331">checkOGM(0)&amp;&amp;(!inwindow(ogmLocal[0].sqn, ogmLocal[0].oid, ogmLocal[0].sid)&amp;&amp;table[ogmLocal[0].sid].BI_sqn &gt; -1 &amp;&amp;
+ogmLocal[0].oid != ogmLocal[0].sid &amp;&amp;ogmLocal[0].oid != id) &amp;&amp; 
+ogmLocal[0].IS_UNIDIRECTIONAL_flag==false &amp;&amp; ogmLocal[0].ttl &gt; 1</label>
+			<label kind="synchronisation" x="416" y="382">SendOGM[id]!</label>
+			<label kind="assignment" x="416" y="399">shiftwindow(ogmLocal[0].sqn, ogmLocal[0].oid, ogmLocal[0].sid ),
+table[ogmLocal[0].oid].list[ogmLocal[0].sid].window[sqn2index(ogmLocal[0].sqn, ogmLocal[0].oid, ogmLocal[0].sid)]=true,
+table[ogmLocal[0].oid].list[ogmLocal[0].sid].pkt_count = pkt_count(ogmLocal[0].oid,ogmLocal[0].sid),
+table[ogmLocal[0].oid].ttl = ogmLocal[0].ttl,
+table[ogmLocal[0].oid].Current_sqn = ogmLocal[0].sqn,
+ogmLocal[0].IS_DIRECT_flag = false,
+updateRoutingMatrix(),
+forwardOGM()</label>
+			<label kind="comments" x="714" y="518">Section 5.2 No. 6 &amp; 7
+Processing: Section 5.4 and 5.5</label>
+			<nail x="331" y="399"/>
+			<nail x="467" y="297"/>
+		</transition>
+		<transition>
+			<source ref="id0"/>
+			<target ref="id0"/>
+			<label kind="select" x="-204" y="-161">sid:int[0,N-1]</label>
+			<label kind="guard" x="-255" y="-204">adjMatrix[id][sid] &amp;&amp; !checkBuffer()</label>
+			<label kind="synchronisation" x="-212" y="-178">SendOGM[sid]?</label>
+			<label kind="assignment" x="-221" y="-144">BufferFlag = true</label>
+			<label kind="comments" x="-289" y="-229">Receive OGM When Buffer is full</label>
+			<nail x="-144" y="-102"/>
+			<nail x="-59" y="-178"/>
+		</transition>
+		<transition>
+			<source ref="id0"/>
+			<target ref="id0"/>
+			<label kind="guard" x="510" y="229">checkOGM(0)&amp;&amp;(((table[ogmLocal[0].sid].BI_sqn == -1 &amp;&amp; ogmLocal[0].oid != ogmLocal[0].sid &amp;&amp; ogmLocal[0].oid != id) &amp;&amp; 
+ogmLocal[0].IS_UNIDIRECTIONAL_flag==false))</label>
+			<label kind="assignment" x="553" y="263">ogmLocal[0] = reset(),
+updateBuffer()</label>
+			<nail x="510" y="204"/>
+			<nail x="484" y="272"/>
+		</transition>
+		<transition>
+			<source ref="id0"/>
+			<target ref="id0"/>
+			<label kind="guard" x="-476" y="119">ogmLocal[0].ttl == 0 &amp;&amp; ogmLocal[0] != reset()&amp;&amp; ogmLocal[0].sid==id</label>
+			<label kind="assignment" x="-433" y="136">ogmLocal[0] = reset(),
+updateBuffer()</label>
+			<nail x="-178" y="170"/>
+			<nail x="-187" y="93"/>
+		</transition>
+		<transition color="#0000ff">
+			<source ref="id0"/>
+			<target ref="id0"/>
+			<label kind="guard" x="518" y="102">checkOGM(0)&amp;&amp;((  ogmLocal[0].IS_DIRECT_flag == true )
+             &amp;&amp; ogmLocal[0].oid == id)</label>
+			<label kind="assignment" x="595" y="136">table[ogmLocal[0].sid].BI_sqn = ogmLocal[0].sqn,
+biMatrix[id][ogmLocal[0].sid] = 1,
+ogmLocal[0] = reset(),
+updateBuffer()</label>
+			<label kind="comments" x="909" y="161">Section 5.2 No 4
+Processing: Section 5.3</label>
+			<nail x="518" y="127"/>
+			<nail x="518" y="187"/>
+		</transition>
+		<transition>
+			<source ref="id0"/>
+			<target ref="id0"/>
+			<label kind="guard" x="153" y="-340">((ogmLocal[0].IS_UNIDIRECTIONAL_flag == true 
+         &amp;&amp; ogmLocal[0].oid != id )&amp;&amp;checkOGM(0))</label>
+			<label kind="assignment" x="195" y="-272">ogmLocal[0] = reset(),
+updateBuffer()</label>
+			<label kind="comments" x="161" y="-382">Section 5.2 No 5</label>
+			<nail x="306" y="-212"/>
+			<nail x="187" y="-229"/>
+		</transition>
+		<transition>
+			<source ref="id0"/>
+			<target ref="id0"/>
+			<label kind="guard" x="518" y="-127">checkOGM(0)&amp;&amp;(ogmLocal[0].oid == ogmLocal[0].sid &amp;&amp; ogmLocal[0].oid != id 
+&amp;&amp; table[ogmLocal[0].oid].BI_sqn == -1)</label>
+			<label kind="synchronisation" x="518" y="-85">SendOGM[id]!</label>
+			<label kind="assignment" x="518" y="-68">ogmLocal[0].sid=id,
+ogmLocal[0].IS_DIRECT_flag=true,
+ogmLocal[0].IS_UNIDIRECTIONAL_flag=true,
+ogmLocal[0].ttl = (ogmLocal[0].ttl&gt;0)?ogmLocal[0].ttl - 1:0,
+ogmGlobal = ogmLocal[0],
+ogmLocal[0] = reset(),
+updateBuffer()</label>
+			<label kind="comments" x="960" y="-68">Section 5.2 No 7
+Processing: Section 5.5</label>
+			<nail x="484" y="-51"/>
+			<nail x="510" y="25"/>
+		</transition>
+		<transition>
+			<source ref="id0"/>
+			<target ref="id0"/>
+			<label kind="guard" x="-671" y="391">checkOGM(0)&amp;&amp;(!inwindow(ogmLocal[0].sqn, ogmLocal[0].oid, ogmLocal[0].sid)&amp;&amp;table[ogmLocal[0].sid].BI_sqn &gt; -1 &amp;&amp;
+ogmLocal[0].oid == ogmLocal[0].sid) &amp;&amp; ogmLocal[0].IS_UNIDIRECTIONAL_flag == false &amp;&amp; ogmLocal[0].ttl &gt; 1</label>
+			<label kind="synchronisation" x="-663" y="425">SendOGM[id]!</label>
+			<label kind="assignment" x="-688" y="450">shiftwindow(ogmLocal[0].sqn, ogmLocal[0].oid, ogmLocal[0].sid ),
+table[ogmLocal[0].oid].list[ogmLocal[0].sid].window[sqn2index(ogmLocal[0].sqn, ogmLocal[0].oid, ogmLocal[0].sid)]=true,
+table[ogmLocal[0].oid].list[ogmLocal[0].sid].pkt_count = pkt_count(ogmLocal[0].oid,ogmLocal[0].sid),
+table[ogmLocal[0].oid].ttl = ogmLocal[0].ttl,
+table[ogmLocal[0].oid].Current_sqn = ogmLocal[0].sqn,
+ogmLocal[0].IS_DIRECT_flag = true,
+updateRoutingMatrix(),
+forwardOGM()</label>
+			<label kind="comments" x="-561" y="348">Section 5.2 No. 6 &amp; 7
+Processing: Section 5.4 and 5.5</label>
+			<nail x="17" y="408"/>
+			<nail x="-51" y="357"/>
+		</transition>
+		<transition>
+			<source ref="id0"/>
+			<target ref="id0"/>
+			<label kind="guard" x="501" y="-382">checkOGM(0)&amp;&amp;
+(inwindow(ogmLocal[0].sqn, ogmLocal[0].oid, ogmLocal[0].sid)&amp;&amp;table[ogmLocal[0].sid].BI_sqn &gt; -1 ) &amp;&amp;
+ogmLocal[0].oid == ogmLocal[0].sid &amp;&amp; ogmLocal[0].IS_UNIDIRECTIONAL_flag == false &amp;&amp; ogmLocal[0].ttl &gt; 1</label>
+			<label kind="synchronisation" x="510" y="-323">SendOGM[id]!</label>
+			<label kind="assignment" x="552" y="-306">table[ogmLocal[0].oid].list[ogmLocal[0].sid].window[sqn2index(ogmLocal[0].sqn, ogmLocal[0].oid, ogmLocal[0].sid)]=true,
+table[ogmLocal[0].oid].list[ogmLocal[0].sid].pkt_count = pkt_count(ogmLocal[0].oid,ogmLocal[0].sid),
+ogmLocal[0].IS_DIRECT_flag = true,
+updateRoutingMatrix(),
+forwardOGM()</label>
+			<label kind="comments" x="960" y="-255">Section 5.2 No. 6 &amp; 7
+Processing: Section 5.4 and 5.5</label>
+			<nail x="331" y="-195"/>
+			<nail x="476" y="-68"/>
+		</transition>
+		<transition>
+			<source ref="id0"/>
+			<target ref="id0"/>
+			<label kind="select" x="-8" y="-238">sid:int[0,N-1]</label>
+			<label kind="guard" x="-59" y="-289">adjMatrix[id][sid] &amp;&amp; checkBuffer()</label>
+			<label kind="synchronisation" x="-25" y="-272">SendOGM[sid]?</label>
+			<label kind="assignment" x="-25" y="-255">checkunidirectAndupdate()</label>
+			<label kind="comments" x="-34" y="-323">Receive OGM</label>
+			<nail x="-8" y="-195"/>
+			<nail x="153" y="-229"/>
+		</transition>
+		<transition>
+			<source ref="id0"/>
+			<target ref="id0"/>
+			<label kind="guard" x="-561" y="-136">SQ_NUMBER &lt; SEQNO_MAX</label>
+			<label kind="synchronisation" x="-552" y="-119">SendOGM[id]!</label>
+			<label kind="assignment" x="-177" y="72">sendOGM()</label>
+			<label kind="comments" x="-552" y="-161">Broadcast OGM</label>
+			<nail x="-195" y="25"/>
+			<nail x="-161" y="-60"/>
+		</transition>
+		<transition>
+			<source ref="id1"/>
+			<target ref="id0"/>
+			<label kind="assignment" x="-153" y="59">initial()</label>
+		</transition>
+	</template>
+	<system>system Node;</system>
+	<queries>
+		<query>
+			<formula>A[] routingMatrix[0][3][1] == 0 || routingMatrix[0][3][2] == 0
+			</formula>
+			<comment>
+			</comment>
+		</query>
+		<query>
+			<formula>E&lt;&gt; twoNhopsRoutingMatrix()
+			</formula>
+			<comment>
+			</comment>
+		</query>
+		<query>
+			<formula>E&lt;&gt; anyRoutingMatrix()
+			</formula>
+			<comment>
+			</comment>
+		</query>
+		<query>
+			<formula>E&lt;&gt; exists(sid:id_t) (exists(oid:id_t) ( Node(sid).table[oid].mylb&gt;13))
+			</formula>
+			<comment>
+			</comment>
+		</query>
+		<query>
+			<formula>E&lt;&gt; allBidirectional()
+			</formula>
+			<comment>
+			</comment>
+		</query>
+		<query>
+			<formula>E&lt;&gt; hasloop()
+			</formula>
+			<comment>
+			</comment>
+		</query>
+		<query>
+			<formula>A[] (forall(sid:id_t) (forall(oid:id_t) (forall(nhop:id_t) (forall(i:int[0,WINDOW-1]) Node(sid).table[oid].list[nhop].window[i] &lt;=1))))
+			</formula>
+			<comment>
+			</comment>
+		</query>
+		<query>
+			<formula>A[] ( (forall(i:id_t)(Node(i).counter == 1 &amp;&amp; Node(i).ogmLocal[0] == reset())) imply allBidirectional())
+			</formula>
+			<comment>
+			</comment>
+		</query>
+	</queries>
+</nta>
