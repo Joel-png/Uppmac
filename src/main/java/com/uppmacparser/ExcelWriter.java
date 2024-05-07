@@ -19,7 +19,7 @@ public class ExcelWriter {
 
     public void writeRow(String[] strings) {
         //System.out.println(rowIndex++);
-        printObject(strings);
+        //printObject(strings);
         ntaData.add(strings);
     }
 
@@ -36,7 +36,7 @@ public class ExcelWriter {
 
         // writing the data into the sheets... 
         for (int i = 0; i < ntaData.size(); i++) {
-            printObject(ntaData.get(i));
+            //printObject(ntaData.get(i));
         }
 
         for (int i = 0; i < ntaData.size(); i++) {
