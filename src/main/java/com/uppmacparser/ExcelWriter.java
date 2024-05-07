@@ -7,22 +7,18 @@ import java.io.BufferedWriter;
 import java.io.File;
 
 public class ExcelWriter {
-    String[] titles = {"", "         name         ", "lonelyInit", "locations", "transitions", "flowers", "linear", "single"};
+    String[] titles = {"", "         name         ", "lonelyInit", "locations", "transitions", "flowers", "linear", "dag", "single", "deadEnds"};
 
     ArrayList<String[]> ntaData;
 
     int rowIndex = 0;
 
     public ExcelWriter() {
-        System.out.println("//* ignore this");
-        //workbook = new XSSFWorkbook();
-        System.out.println("*//");
-        //spreadsheet = workbook.createSheet(" Uppaal NTA Data "); 
         ntaData = new ArrayList<String[]>(); 
     }
 
     public void writeRow(String[] strings) {
-        System.out.println(rowIndex++);
+        //System.out.println(rowIndex++);
         printObject(strings);
         ntaData.add(strings);
     }

@@ -1,4 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE nta PUBLIC '-//Uppaal Team//DTD Flat System 1.1//EN' 'http://www.it.uu.se/research/group/darts/uppaal/flat-1_2.dtd'>
 <nta>
 	<declaration>/*
  * For more details about this example, see 
@@ -7,12 +8,11 @@
  * Conference on Formal Description Techniques, pages 223-238, North-Holland. 1994.
  */
 
-const int N = 6;         // # trains
+const int N = 2;         // # trains
 typedef int[0,N-1] id_t;
 
 chan        appr[N], stop[N], leave[N];
-urgent chan go[N];
-</declaration>
+urgent chan go[N];</declaration>
 	<template>
 		<name x="40" y="16">Train</name>
 		<parameter>const id_t id</parameter>
@@ -78,6 +78,7 @@ urgent chan go[N];
 		<declaration>id_t list[N+1];
 int[0,N] len;
 
+
 // Put an element at the end of the queue
 void enqueue(id_t element)
 {
@@ -109,6 +110,7 @@ id_t tail()
    return list[len - 1];
 }</declaration>
 		<location id="id5" x="192" y="360">
+			<name x="200" y="368">o_id0</name>
 			<committed/>
 		</location>
 		<location id="id6" x="192" y="264">
@@ -158,116 +160,119 @@ id_t tail()
 			<label kind="assignment" x="200" y="200">enqueue(e)</label>
 		</transition>
 	</template>
-	<system>system Train, Gate;
+	<lsc>
+		<name>Scenario1</name>
+		<parameter>const id_t id</parameter>
+		<type>Universal</type>
+		<mode>Invariant</mode>
+		<declaration>clock y;</declaration>
+		<yloccoord number="0" y="0"/>
+		<yloccoord number="1" y="48"/>
+		<yloccoord number="2" y="88"/>
+		<yloccoord number="3" y="128"/>
+		<yloccoord number="4" y="220"/>
+		<instance id="id8" x="-200" y="0">
+			<name x="0" y="0">Train(id)</name>
+		</instance>
+		<instance id="id9" x="0" y="0">
+			<name x="0" y="0">Gate</name>
+		</instance>
+		<prechart x="0" y="88">
+			<lsclocation>2</lsclocation>
+		</prechart>
+		<message x="0" y="128">
+			<source ref="id8"/>
+			<target ref="id9"/>
+			<lsclocation>3</lsclocation>
+			<label kind="message" x="-103" y="-18">leave[id]</label>
+		</message>
+		<message x="0" y="48">
+			<source ref="id9"/>
+			<target ref="id8"/>
+			<lsclocation>1</lsclocation>
+			<label kind="message" x="-115" y="-18">go[id]</label>
+		</message>
+		<condition x="0" y="128">
+			<anchor instanceid="id9"/>
+			<lsclocation>3</lsclocation>
+			<temperature>hot</temperature>
+			<label kind="condition">y&gt;=10 &amp;&amp; y&lt;=20</label>
+		</condition>
+		<update x="0" y="48">
+			<anchor instanceid="id8"/>
+			<lsclocation>1</lsclocation>
+			<label kind="update">y:=0</label>
+		</update>
+	</lsc>
+	<lsc>
+		<name>Scenario2</name>
+		<type>Universal</type>
+		<mode>Invariant</mode>
+		<declaration>clock z;</declaration>
+		<yloccoord number="0" y="0"/>
+		<yloccoord number="1" y="56"/>
+		<yloccoord number="2" y="72"/>
+		<yloccoord number="3" y="112"/>
+		<yloccoord number="4" y="168"/>
+		<yloccoord number="5" y="192"/>
+		<yloccoord number="6" y="220"/>
+		<instance id="id10" x="192" y="0">
+			<name x="0" y="0">Train(1)</name>
+		</instance>
+		<instance id="id11" x="-184" y="0">
+			<name x="0" y="0">Train(0)</name>
+		</instance>
+		<instance id="id12" x="0" y="0">
+			<name x="0" y="0">Gate</name>
+		</instance>
+		<prechart x="0" y="112">
+			<lsclocation>3</lsclocation>
+		</prechart>
+		<message x="0" y="192">
+			<source ref="id11"/>
+			<target ref="id12"/>
+			<lsclocation>5</lsclocation>
+			<label kind="message" x="-92" y="-18">leave[0]</label>
+		</message>
+		<message x="0" y="168">
+			<source ref="id12"/>
+			<target ref="id10"/>
+			<lsclocation>4</lsclocation>
+			<label kind="message" x="96" y="-19">stop[1]</label>
+		</message>
+		<message x="0" y="72">
+			<source ref="id10"/>
+			<target ref="id12"/>
+			<lsclocation>2</lsclocation>
+			<label kind="message" x="93" y="-19">appr[1]</label>
+		</message>
+		<message x="0" y="56">
+			<source ref="id11"/>
+			<target ref="id12"/>
+			<lsclocation>1</lsclocation>
+			<label kind="message" x="-100" y="-18">appr[0]</label>
+		</message>
+		<condition x="0" y="168">
+			<anchor instanceid="id10"/>
+			<lsclocation>4</lsclocation>
+			<temperature>hot</temperature>
+			<label kind="condition">z &gt;= 0 &amp;&amp; z &lt;= 2</label>
+		</condition>
+		<update x="0" y="72">
+			<anchor instanceid="id12"/>
+			<lsclocation>2</lsclocation>
+			<label kind="update">z:=0</label>
+		</update>
+	</lsc>
+	<system>Scenario = Scenario1(1);
+
+system Train, Gate;
 </system>
 	<queries>
 		<query>
-			<formula>
-			</formula>
-			<comment>===== Validation Properties:
-			</comment>
-		</query>
-		<query>
-			<formula>E&lt;&gt; Gate.Occ
-			</formula>
-			<comment>Gate can receive (and store in queue) msg's from approaching trains.
-			</comment>
-		</query>
-		<query>
-			<formula>E&lt;&gt; Train(0).Cross
-			</formula>
-			<comment>Train 0 can reach crossing.
-			</comment>
-		</query>
-		<query>
-			<formula>E&lt;&gt; Train(1).Cross
-			</formula>
-			<comment>Train 1 can reach crossing.
-			</comment>
-		</query>
-		<query>
-			<formula>E&lt;&gt; Train(0).Cross and Train(1).Stop
-			</formula>
-			<comment>Train 0 can be crossing bridge while Train 1 is waiting to cross.
-			</comment>
-		</query>
-		<query>
-			<formula>E&lt;&gt; Train(0).Cross and (forall (i : id_t) i != 0 imply Train(i).Stop)
-			</formula>
-			<comment>Train 0 can cross bridge while the other trains are waiting to cross.
-			</comment>
-		</query>
-		<query>
-			<formula>
-			</formula>
-			<comment>===== Safety Properties:
-			</comment>
-		</query>
-		<query>
-			<formula>A[] forall (i : id_t) forall (j : id_t) Train(i).Cross &amp;&amp; Train(j).Cross imply i == j
-			</formula>
-			<comment>There is never more than one train crossing the bridge (at
-any time instance).
-			</comment>
-		</query>
-		<query>
-			<formula>A[] Gate.list[N] == 0
-			</formula>
-			<comment>There can never be N elements in the queue (thus the array will not overflow).
-			</comment>
-		</query>
-		<query>
-			<formula>
-			</formula>
-			<comment>===== Liveness Properties:
-			</comment>
-		</query>
-		<query>
-			<formula>Train(0).Appr --&gt; Train(0).Cross
-			</formula>
-			<comment>Whenever a train approaches the bridge, it will eventually cross.
-			</comment>
-		</query>
-		<query>
-			<formula>Train(1).Appr --&gt; Train(1).Cross
+			<formula>sat: Scenario
 			</formula>
 			<comment>
-			</comment>
-		</query>
-		<query>
-			<formula>Train(2).Appr --&gt; Train(2).Cross
-			</formula>
-			<comment>
-			</comment>
-		</query>
-		<query>
-			<formula>Train(3).Appr --&gt; Train(3).Cross
-			</formula>
-			<comment>
-			</comment>
-		</query>
-		<query>
-			<formula>Train(4).Appr --&gt; Train(4).Cross
-			</formula>
-			<comment>
-			</comment>
-		</query>
-		<query>
-			<formula>Train(5).Appr --&gt; Train(5).Cross
-			</formula>
-			<comment>
-			</comment>
-		</query>
-		<query>
-			<formula>
-			</formula>
-			<comment>===== Deadlock checking:
-			</comment>
-		</query>
-		<query>
-			<formula>A[] not deadlock
-			</formula>
-			<comment>The system is deadlock-free.
 			</comment>
 		</query>
 	</queries>

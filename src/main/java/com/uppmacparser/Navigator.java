@@ -48,7 +48,7 @@ public class Navigator {
     }
 
     public void getProperties() throws IOException {
-        boolean print = false;
+        boolean print = true;
         // NTA
         if (print) {
             System.out.print("<");
