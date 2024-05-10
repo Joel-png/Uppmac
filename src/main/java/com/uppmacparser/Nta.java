@@ -7,9 +7,10 @@ public class Nta {
     SSystem system;
     String name;
 
-    public Nta(int templateLength, String name) {
+    public Nta(int templateLength, String name, String declaration) {
         this.templates = new Template[templateLength];
         this.name = name;
+        this.globalDeclaration = new Declaration(declaration);
     }
 
     public void addTemplate(Template template, int index) {

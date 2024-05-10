@@ -1,7 +1,10 @@
 package com.uppmacparser;
 
 import java.io.IOException;
+import java.io.LineNumberReader;
+import java.io.StringReader;
 import java.util.ArrayList;
+
 
 
 public class Identifier {
@@ -17,7 +20,7 @@ public class Identifier {
 
 
     public void outputNtaTemplateProperties() throws IOException {
-        excelWriter.writeRow(new String[] {nta.name}); // print name of nta
+        excelWriter.writeRow(new String[] {nta.name, "globalDeclarationLength: " + getLengthOfDeclaration(nta.globalDeclaration)}); // print name of nta
         excelWriter.writeRow(excelWriter.titles);
         for (int i = 0; i < templateProperties.size(); i++) {
             TemplateProperty currentTemplateProperty = templateProperties.get(i);
@@ -29,6 +32,7 @@ public class Identifier {
             String hasLonelyInit = "no";
             String isSingleLocation = "no";
             String dag = "no";
+            int declarationLength = currentTemplateProperty.declarationLength;
 
             // System.out.println();
             // System.out.println();
@@ -60,7 +64,7 @@ public class Identifier {
                 dag = "yes";
             }
 
-            excelWriter.writeRow(new String[] {"", currentTemplateProperty.template.name, hasLonelyInit, String.valueOf(currentTemplateProperty.numLocations), String.valueOf(currentTemplateProperty.numTransitions), String.valueOf(numOfPoplarLocations), isLinear, dag, isSingleLocation, String.valueOf(currentTemplateProperty.deadEnds)});
+            excelWriter.writeRow(new String[] {"", currentTemplateProperty.template.name, hasLonelyInit, String.valueOf(currentTemplateProperty.numLocations), String.valueOf(currentTemplateProperty.numTransitions), String.valueOf(declarationLength), String.valueOf(numOfPoplarLocations), dag, isSingleLocation, String.valueOf(currentTemplateProperty.deadEnds)});
         }
         excelWriter.writeRow(new String[] {""});
     }
@@ -72,7 +76,18 @@ public class Identifier {
         System.out.println("Location has " + checkAdjustedUniqueLoops(location, locations) + " adjusted unique loops");
     }
 
-    public void printTemplateProperties(Template template, int indent) {
+    public int getLengthOfDeclaration(Declaration declaration) throws IOException {
+        int count = 0;
+        String input = declaration.content;
+        for (int i = 0; i < input.length(); i++) {
+            if (input.charAt(i) == ';') {
+                count++;
+            }
+        }
+        return count;
+    }
+
+    public void printTemplateProperties(Template template, int indent) throws IOException {
         Location[] locations = template.locations;
         Transition[] transitions = template.transitions; 
         Location init = template.getInit();
@@ -131,6 +146,9 @@ public class Identifier {
         if (counter == 0) {
             tempTemplateProperty.dag = true;
         }
+
+        int declarationLength = getLengthOfDeclaration(template.declaration);
+        tempTemplateProperty.declarationLength = declarationLength;
 
         templateProperties.add(tempTemplateProperty);
     }

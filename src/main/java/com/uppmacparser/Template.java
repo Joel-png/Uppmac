@@ -6,10 +6,11 @@ public class Template {
     Transition[] transitions;
     String init = "";
 
-    public Template(String name, int locationsLength, int transitionsLength) {
+    public Template(String name, int locationsLength, int transitionsLength, String declaration) {
         this.name = name;
         this.locations = new Location[locationsLength];
         this.transitions = new Transition[transitionsLength];
+        this.declaration = new Declaration(declaration);
     }
 
     public void addLocation(Location location, int index) {

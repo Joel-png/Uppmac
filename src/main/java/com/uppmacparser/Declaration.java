@@ -1,8 +1,8 @@
 package com.uppmacparser;
 public class Declaration {
-    String declarations;
+    String content;
     
-    public Declaration() {
-        
+    public Declaration(String content) {
+        this.content = content;
     }
 }

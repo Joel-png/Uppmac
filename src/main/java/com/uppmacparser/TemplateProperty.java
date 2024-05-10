@@ -9,6 +9,7 @@ public class TemplateProperty {
     int numTransitions = 0;
     int deadEnds = 0;
     boolean dag = false;
+    int declarationLength = 0;
     
     public TemplateProperty(Template template) {
         this.template = template;
