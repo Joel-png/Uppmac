@@ -1,0 +1,168 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE nta PUBLIC '-//Uppaal Team//DTD Flat System 1.1//EN' 'http://www.it.uu.se/research/group/darts/uppaal/flat-1_1.dtd'>
+<nta>
+<declaration>
+// Sliced Online Model Checking for Optimizing the Beam Scheduling Problem in Robotic Radiation Therapy
+//
+// Lars Beckers¹, Stefan Gerlach², Ole Lübke¹, Alexander Schlaefer², Sibylle Schupp¹
+// {lars.beckers, stefan.gerlach, ole.luebke, schlaefer, schupp}@tuhh.de
+//
+// ¹ Institute for Software Systems
+// ² Institute of Medical Technology and Intelligent Systems
+// Hamburg University of Technology, Hamburg, Germany
+//
+// Published under the Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International License.
+// This study was partially funded by DFG SCHU 2479, and DFG SCHL 1844/6-1.
+//
+// The original model template was created for and with an Online Model Checking Framework, presented in:
+// "An online model-checking framework for timed automata" by Jonas Rinast,
+// available at: https://doi.org/10.15480/882.1253
+
+const double accuracy = 100.0;
+
+const double period = 3855.0;
+const double drift = -0.0;
+
+double base = 1.951;
+double a[4] = { 0.4263, 0.0123, -0.0093, -0.0024 };
+double b[4] = { 0.139, 0.0451, 0.0464, 0.0185 };
+
+double v[4];
+double result;
+
+double time;
+broadcast chan step;
+
+double frequency = 2 * 3.14159265358979323846 / period;</declaration>
+	<template>
+		<name>TermModifier</name>
+		<parameter>double &amp;a, double &amp;b, double rate, int minWait, int maxWait</parameter>
+		<declaration>
+meta double m;
+
+clock t;</declaration>
+		<location id="id0" x="-348" y="-34">
+			<committed/>
+		</location>
+		<location id="id1" x="-161" y="-34">
+			<label kind="invariant" x="-144" y="-42">t &lt;= maxWait</label>
+		</location>
+		<init ref="id1"/>
+		<transition>
+			<source ref="id1"/>
+			<target ref="id0"/>
+			<label kind="guard" x="-289" y="-59">t &gt;= minWait</label>
+			<label kind="assignment" x="-323" y="-34">t = 0, m = random(rate)</label>
+		</transition>
+		<transition>
+			<source ref="id0"/>
+			<target ref="id1"/>
+			<label kind="assignment" x="-323" y="8">a = a - m, b = b + m</label>
+			<nail x="-348" y="8"/>
+			<nail x="-161" y="8"/>
+		</transition>
+		<transition>
+			<source ref="id0"/>
+			<target ref="id1"/>
+			<label kind="assignment" x="-323" y="-93">a = a + m, b = b - m</label>
+			<nail x="-348" y="-68"/>
+			<nail x="-161" y="-68"/>
+		</transition>
+	</template>
+	<template>
+		<name>Timer</name>
+		<parameter>int rate</parameter>
+		<declaration>clock dt;</declaration>
+		<location id="id2" x="-76" y="-25">
+			<label kind="invariant" x="-102" y="-8">dt &lt;= rate</label>
+		</location>
+		<init ref="id2"/>
+		<transition>
+			<source ref="id2"/>
+			<target ref="id2"/>
+			<label kind="guard" x="-110" y="-119">dt &gt;= rate</label>
+			<label kind="synchronisation" x="-93" y="-76">step!</label>
+			<label kind="assignment" x="-221" y="-102">time = time + dt, base = base + drift * dt, dt = 0</label>
+			<nail x="-110" y="-76"/>
+			<nail x="-42" y="-76"/>
+		</transition>
+	</template>
+	<template>
+		<name>CoeffModifier</name>
+		<parameter>double &amp;c, double rate, int minWait, int maxWait</parameter>
+		<declaration>
+clock t;</declaration>
+		<location id="id3" x="-204" y="8">
+			<label kind="invariant" x="-178" y="0">t &lt;= maxWait</label>
+		</location>
+		<init ref="id3"/>
+		<transition>
+			<source ref="id3"/>
+			<target ref="id3"/>
+			<label kind="guard" x="-238" y="68">t &gt;= minWait</label>
+			<label kind="assignment" x="-272" y="93">c = c - random(rate), t = 0</label>
+			<nail x="-255" y="93"/>
+			<nail x="-144" y="93"/>
+		</transition>
+		<transition>
+			<source ref="id3"/>
+			<target ref="id3"/>
+			<label kind="guard" x="-246" y="-68">t &gt;= minWait</label>
+			<label kind="assignment" x="-280" y="-102">c = c + random(rate), t = 0</label>
+			<nail x="-264" y="-68"/>
+			<nail x="-144" y="-68"/>
+		</transition>
+	</template>
+	<template>
+		<name>Summer</name>
+		<parameter>double &amp;s, double &amp;v[4], double &amp;offset</parameter>
+		<location id="id4" x="-187" y="-34">
+		</location>
+		<init ref="id4"/>
+		<transition>
+			<source ref="id4"/>
+			<target ref="id4"/>
+			<label kind="synchronisation" x="-204" y="-93">step?</label>
+			<label kind="assignment" x="-306" y="-119">s = v[0] + v[1] + v[2] + v[3] + offset</label>
+			<nail x="-229" y="-93"/>
+			<nail x="-144" y="-93"/>
+		</transition>
+	</template>
+	<template>
+		<name x="5" y="5">FSTerm</name>
+		<parameter>double &amp;v, double &amp;a, double &amp;b, double &amp;freq, int k</parameter>
+		<location id="id5" x="-527" y="-102">
+		</location>
+		<init ref="id5"/>
+		<transition>
+			<source ref="id5"/>
+			<target ref="id5"/>
+			<label kind="synchronisation" x="-544" y="-170">step?</label>
+			<label kind="assignment" x="-671" y="-195">v = a * cos(freq * k * time) + b * sin(freq * k * time)</label>
+			<nail x="-569" y="-170"/>
+			<nail x="-484" y="-170"/>
+		</transition>
+	</template>
+	<system>
+Clock = Timer(38);
+
+const double accrate = (100.0 - accuracy) / 15.0;
+
+CMP = CoeffModifier(frequency, 1.0 * accrate * 0.0001, 10, 1000);
+CMB = CoeffModifier(base, 1.0 * accrate * 0.25, 10, 1000);
+TM1 = TermModifier(a[0], b[0], 1.0 * accrate * 0.1, 10, 1000);
+TM2 = TermModifier(a[1], b[1], 1.0 * accrate * 0.1, 10, 1000);
+TM3 = TermModifier(a[2], b[2], 1.0 * accrate * 0.1, 10, 1000);
+TM4 = TermModifier(a[3], b[3], 1.0 * accrate * 0.1, 10, 1000);
+
+First = FSTerm(v[0],a[0],b[0],frequency,1);
+Second = FSTerm(v[1],a[1],b[1],frequency,2);
+Third = FSTerm(v[2],a[2],b[2],frequency,3);
+Fourth = FSTerm(v[3],a[3],b[3],frequency,4);
+
+TermSummer = Summer(result,v,base);
+
+system Clock, First, Second, Third, Fourth, TermSummer, CMP, CMB, TM1, TM2, TM3, TM4;</system>
+	<queries>
+	</queries>
+</nta>

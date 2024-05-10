@@ -1,0 +1,17 @@
+digraph automaton {
+  node [shape = doublecircle]; node_final;
+  node [shape = circle]
+  node_0 -> node_1 [label="1_M"]
+  node_1 -> node_2 [label="1_H"]
+  node_1_5 -> node_2_6 [label="1_H"]
+  node_1_9 -> node_2 [label="1_H"]
+  node_1_9 -> node_final [label="1_M"]
+  node_2 -> node_3 [label="3_M"]
+  node_2_6 -> node_3 [label="3_M"]
+  node_2_6 -> node_4_7 [label="4_H"]
+  node_3 -> node_4 [label="4_M"]
+  node_4 -> node_1_5 [label="1_M"]
+  node_4_7 -> node_1_5 [label="1_M"]
+  node_4_7 -> node_8 [label="5_M"]
+  node_8 -> node_1_9 [label="1_M"]
+}

@@ -1,0 +1,358 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE nta PUBLIC '-//Uppaal Team//DTD Flat System 1.1//EN' 'http://www.it.uu.se/research/group/darts/uppaal/flat-1_2.dtd'>
+<nta>
+	<declaration>
+
+//    constants
+const int H = 0;            //    Hit
+const int M = 1;            //    Miss
+
+const int initPC = 0;        //    program counter at the beginning
+const int endPC = 2;         //    end of program
+
+int PC = initPC;
+int cacheLine = 0;
+int nIter = 0;                //    number of iterations of the loop
+
+//    channels
+urgent chan completed;        //    
+urgent chan fetch;            
+
+urgent broadcast chan ICacheReadStart;
+broadcast chan ICacheReadEnd; 
+
+//    global time
+clock GBL_CLK;
+</declaration>
+	<template>
+		<name>FullCache</name>
+		<declaration>int MissTime = 20;
+int HitTime = 2;
+const int cache_size = 2;
+const int bot = - 1;
+int delayTime;
+
+int cache_content[cache_size];
+
+clock x; 
+
+void initCache() {
+	int i;
+	for (i=0; i &lt; cache_size;i++) {
+		cache_content[i]= bot;  // initialised to N +1 means not in
+	}
+}
+
+int find(int element){
+	int i;
+	for ( i = 0; i &lt; cache_size; i++) {
+		if(cache_content[i] == element) return i;
+	}
+	return -1;
+}
+
+void insert(int k,int element){
+	int i;
+
+	for ( i = k; i &gt;= 1; i--) {
+		cache_content[i] = cache_content[i-1];
+	}
+	cache_content[0] = element;
+
+}
+
+int access(int thePC){
+    int i = find(thePC);
+	if(i &lt; 0){
+        // not found, miss
+		insert(cache_size - 1, thePC);
+        return M;
+	} else {
+        // found, hit
+        cache_content[i] = bot;
+		insert(i, thePC);
+        return H;
+	}
+
+}
+
+
+</declaration>
+		<location id="id0" x="-739" y="-688">
+			<committed/>
+		</location>
+		<location id="id1" x="-739" y="-408">
+			<name x="-799" y="-417">Delay</name>
+			<label kind="invariant" x="-765" y="-391">x &lt;= delayTime</label>
+		</location>
+		<location id="id2" x="-485" y="-604">
+			<name x="-501" y="-637">Check</name>
+			<committed/>
+		</location>
+		<location id="id3" x="-740" y="-604">
+			<name x="-799" y="-612">Ready</name>
+		</location>
+		<init ref="id0"/>
+		<transition>
+			<source ref="id0"/>
+			<target ref="id3"/>
+			<label kind="assignment" x="-816" y="-663">initCache()</label>
+		</transition>
+		<transition>
+			<source ref="id1"/>
+			<target ref="id3"/>
+			<label kind="guard" x="-858" y="-510">x == delayTime</label>
+			<label kind="synchronisation" x="-858" y="-527">ICacheReadEnd!</label>
+			<nail x="-739" y="-501"/>
+		</transition>
+		<transition>
+			<source ref="id2"/>
+			<target ref="id1"/>
+			<label kind="guard" x="-561" y="-493">find(cacheLine) &lt; 0</label>
+			<label kind="assignment" x="-561" y="-476">delayTime = MissTime,
+x = 0,
+access(cacheLine)</label>
+			<nail x="-578" y="-467"/>
+		</transition>
+		<transition>
+			<source ref="id2"/>
+			<target ref="id1"/>
+			<label kind="guard" x="-714" y="-569">find(cacheLine) &gt;= 0</label>
+			<label kind="assignment" x="-714" y="-552">delayTime = HitTime,
+x = 0,
+access(cacheLine)</label>
+			<nail x="-604" y="-492"/>
+		</transition>
+		<transition>
+			<source ref="id3"/>
+			<target ref="id2"/>
+			<label kind="synchronisation" x="-672" y="-629">ICacheReadStart?</label>
+		</transition>
+	</template>
+	<template>
+		<name>FetchStage</name>
+		<declaration>
+clock x;
+
+int dur(int k) {
+    return 1;
+}</declaration>
+		<location id="id4" x="-68" y="-246">
+			<name x="-51" y="-254">END</name>
+		</location>
+		<location id="id5" x="-68" y="-42">
+			<name x="-144" y="-51">Execute</name>
+			<label kind="invariant" x="-136" y="-25">x &lt;= dur(PC)</label>
+		</location>
+		<location id="id6" x="110" y="-42">
+			<name x="118" y="-25">Waiting</name>
+		</location>
+		<location id="id7" x="110" y="-144">
+			<name x="110" y="-178">Start</name>
+		</location>
+		<location id="id8" x="-68" y="-144">
+			<name x="-127" y="-152">Ready</name>
+		</location>
+		<init ref="id8"/>
+		<transition>
+			<source ref="id8"/>
+			<target ref="id4"/>
+			<label kind="synchronisation" x="-60" y="-220">completed?</label>
+		</transition>
+		<transition>
+			<source ref="id5"/>
+			<target ref="id8"/>
+			<label kind="guard" x="-161" y="-102">x == dur(PC)</label>
+		</transition>
+		<transition>
+			<source ref="id6"/>
+			<target ref="id5"/>
+			<label kind="synchronisation" x="-25" y="-59">ICacheReadEnd?</label>
+			<label kind="assignment" x="8" y="-76">x = 0</label>
+		</transition>
+		<transition>
+			<source ref="id7"/>
+			<target ref="id6"/>
+			<label kind="synchronisation" x="119" y="-110">ICacheReadStart!</label>
+		</transition>
+		<transition>
+			<source ref="id8"/>
+			<target ref="id7"/>
+			<label kind="synchronisation" x="0" y="-170">fetch?</label>
+		</transition>
+	</template>
+	<template>
+		<name>Simple</name>
+		<declaration>
+const int M = 5;
+
+//    looks like a bug in UPPAAL: when N set to 0, there is still 
+//    a transition from loc_2 to loc_3
+const int N = 1;
+</declaration>
+		<location id="id9" x="34" y="-25">
+			<name x="51" y="-34">END</name>
+			<committed/>
+		</location>
+		<location id="id10" x="34" y="238">
+			<name x="-17" y="238">loc_3</name>
+		</location>
+		<location id="id11" x="221" y="238">
+			<name x="238" y="238">loc_2</name>
+		</location>
+		<location id="id12" x="221" y="76">
+			<name x="238" y="68">loc_1</name>
+		</location>
+		<location id="id13" x="34" y="76">
+			<name x="-17" y="68">loc_0</name>
+		</location>
+		<init ref="id13"/>
+		<transition>
+			<source ref="id13"/>
+			<target ref="id9"/>
+			<label kind="guard" x="-59" y="8">nIter &gt; M</label>
+			<label kind="synchronisation" x="-60" y="25">completed!</label>
+		</transition>
+		<transition>
+			<source ref="id10"/>
+			<target ref="id13"/>
+			<label kind="synchronisation" x="-76" y="127">fetch!</label>
+			<label kind="assignment" x="-76" y="144">PC = PC + 1,
+cacheLine = PC</label>
+		</transition>
+		<transition>
+			<source ref="id11"/>
+			<target ref="id10"/>
+			<label kind="select" x="85" y="161">i : int[3,N + 3]</label>
+			<label kind="synchronisation" x="85" y="178">fetch!</label>
+			<label kind="assignment" x="85" y="195">PC = i,
+cacheLine = i</label>
+		</transition>
+		<transition>
+			<source ref="id12"/>
+			<target ref="id11"/>
+			<label kind="synchronisation" x="229" y="127">fetch!</label>
+			<label kind="assignment" x="229" y="144">PC = 2,
+cacheLine = 1</label>
+		</transition>
+		<transition>
+			<source ref="id13"/>
+			<target ref="id12"/>
+			<label kind="guard" x="76" y="8">nIter &lt;= M</label>
+			<label kind="synchronisation" x="76" y="25">fetch!</label>
+			<label kind="assignment" x="76" y="42">PC = 1, nIter++,
+cacheLine = 1</label>
+		</transition>
+	</template>
+	<template>
+		<name>SmallCache</name>
+		<declaration>int MissTime = 20;
+int HitTime = 2;
+
+clock x;</declaration>
+		<location id="id14" x="-144" y="-85">
+		</location>
+		<location id="id15" x="-93" y="59">
+			<name x="-51" y="67">MIss3</name>
+			<label kind="invariant" x="-76" y="84">x &lt;= MissTime</label>
+		</location>
+		<location id="id16" x="-102" y="229">
+		</location>
+		<location id="id17" x="-348" y="221">
+			<name x="-416" y="221">MIss2a</name>
+			<label kind="invariant" x="-416" y="246">x &lt;= MissTime</label>
+		</location>
+		<location id="id18" x="-408" y="127">
+		</location>
+		<location id="id19" x="-408" y="34">
+			<name x="-450" y="0">Hit1</name>
+			<label kind="invariant" x="-382" y="17">x &lt;= HitTime</label>
+		</location>
+		<location id="id20" x="-408" y="-102">
+		</location>
+		<location id="id21" x="-408" y="-204">
+			<name x="-442" y="-238">Miss1</name>
+			<label kind="invariant" x="-535" y="-212">x &lt;= MissTime</label>
+		</location>
+		<location id="id22" x="-34" y="-280">
+		</location>
+		<init ref="id22"/>
+		<transition>
+			<source ref="id14"/>
+			<target ref="id21"/>
+			<label kind="synchronisation" x="-246" y="-161">ICacheReadStart?</label>
+			<label kind="assignment" x="-229" y="-144">x = 0</label>
+		</transition>
+		<transition>
+			<source ref="id15"/>
+			<target ref="id14"/>
+			<label kind="guard" x="-85" y="-25">x == MissTime</label>
+			<label kind="synchronisation" x="-85" y="-8">ICacheReadEnd!</label>
+			<nail x="-102" y="-34"/>
+		</transition>
+		<transition>
+			<source ref="id16"/>
+			<target ref="id15"/>
+			<label kind="synchronisation" x="-85" y="144">ICacheReadStart?</label>
+			<label kind="assignment" x="-76" y="170">x = 0</label>
+		</transition>
+		<transition>
+			<source ref="id17"/>
+			<target ref="id16"/>
+			<label kind="guard" x="-280" y="238">x == MissTime</label>
+			<label kind="synchronisation" x="-297" y="204">ICacheReadEnd!</label>
+		</transition>
+		<transition>
+			<source ref="id18"/>
+			<target ref="id17"/>
+			<label kind="synchronisation" x="-510" y="170">ICacheReadStart?</label>
+			<label kind="assignment" x="-425" y="187">x = 0</label>
+		</transition>
+		<transition>
+			<source ref="id19"/>
+			<target ref="id18"/>
+			<label kind="guard" x="-510" y="59">x == HitTime</label>
+			<label kind="synchronisation" x="-527" y="76">ICacheReadEnd!</label>
+		</transition>
+		<transition>
+			<source ref="id20"/>
+			<target ref="id19"/>
+			<label kind="synchronisation" x="-535" y="-68">ICacheReadStart?</label>
+			<label kind="assignment" x="-459" y="-51">x = 0</label>
+		</transition>
+		<transition>
+			<source ref="id22"/>
+			<target ref="id21"/>
+			<label kind="synchronisation" x="-229" y="-289">ICacheReadStart?</label>
+			<label kind="assignment" x="-229" y="-272">x = 0</label>
+		</transition>
+		<transition>
+			<source ref="id21"/>
+			<target ref="id20"/>
+			<label kind="guard" x="-527" y="-161">x == MissTime</label>
+			<label kind="synchronisation" x="-535" y="-178">ICacheReadEnd!</label>
+		</transition>
+	</template>
+	<system>
+
+// List one or more processes to be composed into a system.
+
+theProg = Simple();
+
+system theProg,FetchStage,SmallCache;
+</system>
+	<queries>
+		<query>
+			<formula>E&lt;&gt; theProg.END
+			</formula>
+			<comment>
+			</comment>
+		</query>
+		<query>
+			<formula>sup { theProg.END }: GBL_CLK
+			</formula>
+			<comment>computes the largest value of GBL when we reach theProg.END
+			</comment>
+		</query>
+	</queries>
+</nta>

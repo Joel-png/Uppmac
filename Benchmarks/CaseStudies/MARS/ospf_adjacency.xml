@@ -1,0 +1,1532 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE nta PUBLIC '-//Uppaal Team//DTD Flat System 1.1//EN' 'http://www.it.uu.se/research/group/darts/uppaal/flat-1_2.dtd'>
+<nta>
+	<declaration>// Constant Parameters
+
+const int N = 2;               // number of nodes/IP addresses
+const int M = 10;              // maximum sequence number for DBD messages
+const int LSDB_Size = 10;      // maximum size of each nodes LSDB
+const int MTU = 5;             // maximum number of LSA Headers transmitted per DBD message
+const int Age_Bound = 5;       // upper bound for age of an LSA
+const int Rxmt_Interval = 5;   // time to resend message if no response
+const int Queue_Size = 3;      // maximum input queue size
+
+
+// Type Definitions
+
+typedef int[0,N-1] IP;        // IP addresses
+typedef int[0,M-1] SEQ;       // sequence numbers for DBD messages
+
+
+// Topology/ Adjacency
+
+const bool AdjacencyMatrix[N][N] = {{0,1},{1,0}};    // Determines which nodes should form an adjacency
+
+bool adj(IP ip, IP nip)    // Returns whether or not nodes should form an adjacency
+{
+    return AdjacencyMatrix[ip][nip];
+}
+
+
+// OSPF Structures &amp; Helper Functions
+
+typedef struct                  // LSA header contains IP of the originating router and LSA age.
+{                           
+  bool empty;                   // Flag for whether this LSA is just a placeholder - used in lsdb
+  int[0,LSDB_Size-1] ip;
+  int[0,Age_Bound-1] age;       // the age acts as a wrap-around sequence number
+} LSAHDR;
+
+
+typedef struct               // LSA is identical to LSA header since the extra info is unused
+{   
+  bool empty;                         // We distinguish them as we wish to model the DBD exchange procedure.
+  int[0,LSDB_Size-1] ip;             
+  int[0,Age_Bound-1] age;
+} LSA;
+
+LSA lsdb[N][LSDB_Size];    // Array of LSAs forming an lsdb (some may be empty). Stored globally so synchronisation checks can be performed
+
+bool Newer_Age(int age1, int age2)    // Checks which integer is bigger 
+{
+    if (age1 &gt; age2)
+    {
+        return 1;
+    }
+    return 0;
+}
+
+typedef int[0,6] NS;            // Neighbour States
+    const NS DOWN = 0;
+    const NS INIT = 1;
+    const NS TWOWAY = 2;
+    const NS EXSTART = 3;
+    const NS EXCHANGE = 4;
+    const NS LOADING = 5;
+    const NS FULL = 6;
+
+// Neighbour Structure
+typedef struct
+{
+    IP nip;                              // IP address of neighbour
+    NS ns;                               // State of neighbour relationship
+    bool master;                         // 1 ==&gt; node is master
+    SEQ sequence;                        // associated sequence number with the node
+    bool received;                       // Flag that indicates DBD message has been received
+    bool last_received_master;           // Master flag of last received message
+    bool last_received_more;             // More flag of last received message
+    bool last_received_in;               // Init flag of last received message
+    SEQ last_received_sequence;          // Sequence number of last received message
+    LSAHDR Database_Summary[LSDB_Size];    // LSAs in the database at the time the neighbour goes into exchange state
+    LSAHDR Request_List[LSDB_Size];        //LSAs which need to be requested from neighbour
+} NBR;
+
+
+// Message Data Structures
+
+// Message Types
+typedef int[0,5] MSGTYPE;
+    const MSGTYPE NONE=0;
+    const MSGTYPE HELLO=1;
+    const MSGTYPE DBD=2;
+    const MSGTYPE REQ=3;
+    const MSGTYPE UPD=4;
+    const MSGTYPE ACK = 5;
+
+// Message Structure
+typedef struct
+{
+    MSGTYPE type;
+    IP sip;
+    bool ips[N];          // IPs which the sender has received contact from (HELLO)
+    bool in;              // Init flag (used in the negotiation phase) (DBD)
+    bool more;            // More flag used to indicate more messages to come (DBD)
+    bool master;          // Master flag used to indicate sender believes it is the master (DBD)
+    SEQ sequence;         // Sequence number of DBD message (DBD)
+    LSAHDR hdrs[MTU];     // Array of headers (DBD &amp; LSR &amp; ACK)
+    LSA lsa;              // (LSU)
+} MSG;    
+
+
+// Channels + Communication
+
+chan unicast;    // Used to communicate between nodes
+
+bool Can_Receive[N] = {1,1};    // Used to communicate when nodes have room to receive an extra message (Queue Position &lt; = 1)
+
+bool Messages_Processed[N] = {1,1};    // Used to indicate when the neighbour has finished processing all their messages
+
+MSG Global_Message;    // Variable for copying messages between sender and receiver
+
+int[0,N] HelloTurn;    // Used to determine whose turn it is to send a hello
+
+void Next_Turn_Hello()    // Used to switch hello turns
+{
+    HelloTurn= 1-HelloTurn;
+    return;
+}
+
+int[0,N] DBDTurn;    // Used to determine whose turn it is to send a DBD
+
+void Next_Turn_DBD()    // Used to switch DBD turns
+{
+    DBDTurn= 1-DBDTurn;
+    return;
+}
+
+
+// Model Checking Functions
+
+bool AttackerTurn;
+
+bool LSBDs_Synchronised()
+{
+    for (i: int[0, LSDB_Size - 1])
+    {
+        if (!lsdb[0][i].empty || !lsdb[1][i].empty)
+        {
+            if (lsdb[0][i]!=lsdb[1][i])
+            {
+                return 0;
+            }
+        }
+    }
+    return 1;
+}</declaration>
+	<template>
+		<name x="9" y="9">Node</name>
+		<parameter>IP ip, IP nip</parameter>
+		<declaration>// Local Data Structures
+
+NBR NeighbourStructure;                             // Local neighbour data structure
+MSG InQueue[Queue_Size];                            // Queue for incoming messages
+int[0, Queue_Size] Queue_Position = 0;              // Position within queue
+
+// Messsage Control &amp; Queue Functions
+
+void Add_Message_To_Queue()
+{
+    if (Global_Message.sip != nip)     // Reject messages not from neighbour
+    {
+        return;
+    }
+    InQueue[Queue_Position] = Global_Message;
+    Queue_Position ++;
+    if (Queue_Position &gt; 1)
+    {
+        Can_Receive[ip] = 0;    // Check if the node has more room to receive arbitrary messages (has only 1 or less message in queue)
+    }
+    Messages_Processed[ip] = 0;    // Node has no longer processed all it's messages
+    return;
+}
+
+void Delete_Message_In_Queue()    // Delete message from front of queue and shift all other messages forward one place
+{
+    MSG Empty;
+    for(i: int[1,Queue_Size - 1])  // Move all messages by one position (comment if Queue_Size = 1)
+    {       
+        InQueue[i-1]=InQueue[i];
+    }
+    InQueue[Queue_Size-1]=Empty;   // Write an empty message into the last slot of the queue 
+    Queue_Position --;
+    if (Queue_Position &lt;= 1)
+    {
+        Can_Receive[ip] = 1;    // Check if node can now receive an extra message
+    }
+    if (Queue_Position == 0)
+    {
+        Messages_Processed[ip] = 1;    // Check if node has now processed all it's messages
+    }
+    return;
+}
+
+void Flush_Global_Message()    // Set the Global Message to none type and resets arrays
+{
+    Global_Message.type = NONE;
+    for (i: int[0,N-1])
+    {
+        Global_Message.ips[i] = 0;
+    }
+    for (j: int[0,MTU-1])
+    {
+        Global_Message.hdrs[j].empty = 1;
+    }
+}
+
+int LSRCount;    // Used to track how many lSRs have been sent since the last HELLO was sent
+
+
+// Initialise functions
+
+void Initialise_Neighbour(NS NeighbourState)        // Used to initialise and re-initialise the neighbour structure after certain events
+{    
+    NeighbourStructure.nip = nip;                    
+    NeighbourStructure.ns = NeighbourState;          
+    NeighbourStructure.master = 1;                   // Always assume itself is the master
+    NeighbourStructure.received = 0;                 // Ignore stored last received messages
+    for (i: int[0,LSDB_Size - 1])
+    {
+        NeighbourStructure.Request_List[i].empty = 1;
+        NeighbourStructure.Database_Summary[i].empty = 1;
+    }
+    return;
+}
+
+void Initialise_LSDB()                               // May be edited to change the initial state of the lsdb
+{
+    if (ip == 0)
+    {
+        lsdb[ip][0].empty = 0;
+        lsdb[ip][1].empty = 0;
+        lsdb[ip][2].empty = 0;
+        lsdb[ip][3].empty = 0;
+        lsdb[ip][4].empty = 0;
+        lsdb[ip][5].empty = 1;
+        lsdb[ip][6].empty = 1;
+        lsdb[ip][7].empty = 1;
+        lsdb[ip][8].empty = 1;
+        lsdb[ip][9].empty = 1;
+
+        lsdb[ip][0].ip = 0;
+        lsdb[ip][1].ip = 1;
+        lsdb[ip][2].ip = 2;
+        lsdb[ip][3].ip = 3;
+        lsdb[ip][4].ip = 4;
+        lsdb[ip][5].ip = 5;
+        lsdb[ip][6].ip = 6;
+        lsdb[ip][7].ip = 7;
+        lsdb[ip][8].ip = 8;
+        lsdb[ip][9].ip = 9;
+
+        lsdb[ip][0].age = 1;
+        lsdb[ip][1].age = 4;
+        lsdb[ip][2].age = 2;
+        lsdb[ip][3].age = 0;
+        lsdb[ip][4].age = 2;
+        lsdb[ip][5].age = 3;
+        lsdb[ip][6].age = 0;
+        lsdb[ip][7].age = 4;
+        lsdb[ip][8].age = 2;
+        lsdb[ip][9].age = 1;
+    }
+    else if (ip == 1)
+    {
+        lsdb[ip][0].empty = 1;
+        lsdb[ip][1].empty = 1;
+        lsdb[ip][2].empty = 1;
+        lsdb[ip][3].empty = 1;
+        lsdb[ip][4].empty = 1;
+        lsdb[ip][5].empty = 0;
+        lsdb[ip][6].empty = 0;
+        lsdb[ip][7].empty = 0;
+        lsdb[ip][8].empty = 0;
+        lsdb[ip][9].empty = 0;
+        
+        lsdb[ip][0].ip = 0;
+        lsdb[ip][1].ip = 1;
+        lsdb[ip][2].ip = 2;
+        lsdb[ip][3].ip = 3;
+        lsdb[ip][4].ip = 4;
+        lsdb[ip][5].ip = 5;
+        lsdb[ip][6].ip = 6;
+        lsdb[ip][7].ip = 7;
+        lsdb[ip][8].ip = 8;
+        lsdb[ip][9].ip = 9;
+
+        lsdb[ip][0].age = 0;
+        lsdb[ip][1].age = 3;
+        lsdb[ip][2].age = 4;
+        lsdb[ip][3].age = 1;
+        lsdb[ip][4].age = 1;
+        lsdb[ip][5].age = 2;
+        lsdb[ip][6].age = 1;
+        lsdb[ip][7].age = 4;
+        lsdb[ip][8].age = 2;
+        lsdb[ip][9].age = 3;
+    }
+    return;
+}
+
+// Guard Functions
+
+bool TwoWay()    //Checks if HELLO message indicates neighbour is aware of node
+{
+    if (InQueue[0].ips[ip])
+    {
+        return 1;
+    }
+    else
+    {
+        return 0;
+    }
+}
+
+bool EmptyHeaders()    // Checks if all headers are empty in a received message
+{
+    for (i: int[0,MTU-1])
+    {
+        if (!InQueue[0].hdrs[i].empty)
+        {
+            return 0;
+        }
+    }
+    return 1;
+}
+
+bool IPSmaller()    // Checks if IP is smaller than sender's IP
+{
+    if (InQueue[0].sip &gt; ip)
+    {
+        return 1;
+    }
+    else
+    {
+        return 0;
+    }
+}
+
+bool Equal_Seq_Numbers()    // Checks if received sequence number is equal to stored sequence number
+{
+    if (InQueue[0].sequence == NeighbourStructure.sequence)
+    {
+        return 1;
+    }
+    return 0;
+}
+
+bool Is_Duplicate()    // Checks if message is a duplicate (master bit, init bit, more bit and sequence number equal)
+{
+    if (NeighbourStructure.received &amp;&amp; InQueue[0].master == NeighbourStructure.last_received_master 
+        &amp;&amp; InQueue[0].in == NeighbourStructure.last_received_in &amp;&amp; InQueue[0].more == NeighbourStructure.last_received_more 
+        &amp;&amp; InQueue[0].sequence == NeighbourStructure.last_received_sequence)
+    {
+        return 1;
+    }
+    return 0;
+}
+
+bool IsSlaveExStart()    // Checks if node is slave during the Exstart phase
+{
+    if (InQueue[0].in &amp;&amp; InQueue[0].more &amp;&amp; InQueue[0].master &amp;&amp; EmptyHeaders() &amp;&amp; IPSmaller())
+    {
+        return 1;
+    }
+    return 0;
+}
+
+bool IsMasterExStart()    // Checks if node is master during the Exstart phase
+{
+    if (!InQueue[0].in &amp;&amp; !InQueue[0].master &amp;&amp; Equal_Seq_Numbers() &amp;&amp; !IPSmaller())
+    {
+        return 1;
+    }
+    return 0;
+}
+
+bool IsMaster()    // Checks if node is master during the Exchange/Loading/Full phase
+{
+    return NeighbourStructure.master;
+}
+
+bool Message_Inconsistencies_Master()    // Checks if master bit, init bit or sequence number are not as expected
+{
+     if (InQueue[0].master || InQueue[0].in || InQueue[0].sequence != NeighbourStructure.sequence)
+    {
+        return 1;
+    }
+    return 0;
+}
+
+bool Message_Inconsistencies_Slave()    // Checks if master bit, init bit or sequence number are not as expected
+{
+     if (!InQueue[0].master || InQueue[0].in)
+    {
+        return 1;
+    }
+    if ((NeighbourStructure.sequence == M-1) &amp;&amp; (InQueue[0].sequence!=0))    // Handles wrap around
+    {
+        return 1;
+    }
+    if (NeighbourStructure.sequence != M-1 &amp;&amp; (InQueue[0].sequence != NeighbourStructure.sequence + 1))
+    {
+        return 1;
+    }
+    return 0;
+}
+
+bool Neighbour_Finished_Sending()    // Checks if more flag is set to 0 in received message, meaning that the neighbour has no more headers to send
+{
+    if (InQueue[0].more)
+    {
+        return 0;
+    }
+    return 1;
+}
+
+bool Finished_Sending()    // Checks if all LSA headers have been transmitted and acknowledged (Used by master)
+{
+    for (i: int[0,LSDB_Size - 1])
+    {
+        if (!NeighbourStructure.Database_Summary[i].empty)
+        {
+            return 0;
+        }
+    }
+    return 1;
+}
+
+bool Last_Message()    // Checks if the message about to be send will have more flag set to 0 (Used by slave)
+{
+    int[0,MTU + 1] j = 0;
+    for (i: int[0,LSDB_Size - 1])
+    {
+        if (!NeighbourStructure.Database_Summary[i].empty)
+        {
+            j ++;
+        }
+        if (j == MTU + 1)
+        {
+            return 0;
+        }
+    }
+    return 1;
+}
+
+bool LSA_Exists()    // Checks if an LSA exists is equal to the one in the LSDB
+{
+    if (InQueue[0].hdrs[0] == lsdb[ip][InQueue[0].hdrs[0].ip])
+    {
+        return 1;
+    }
+    return 0;
+}
+
+bool AppropriateLSA()    // Checks if the LSA received should be installed (is a newer instance or does not exist in the lsdb)
+{
+    int[0, LSDB_Size - 1] LSA_IP;
+    LSA_IP = InQueue[0].lsa.ip;
+    if (lsdb[ip][LSA_IP].empty)    // Node does not have an LSA for this IP
+    {
+        return 1;
+    }
+    else if (Newer_Age(InQueue[0].lsa.age, lsdb[ip][LSA_IP].age))
+    {
+        return 1;
+    }
+    return 0;
+}
+
+bool OnRequestList()    // Checks if LSA has or will be requested, used upon receiving an LSU
+{
+    if (NeighbourStructure.Request_List[InQueue[0].lsa.ip] == InQueue[0].lsa)
+    {
+        return 1;
+    }
+    return 0;
+}
+
+bool RequestListEmpty()    // Checks if there are no more requests to be made
+{
+    for (i: int[0, LSDB_Size - 1])
+    {
+        if (!NeighbourStructure.Request_List[i].empty)
+        {
+            return 0;
+        }
+    }
+    return 1;
+}
+
+// Next Message Guards (Check the type of the next message)
+
+bool HelloMessage()
+{
+    if (InQueue[0].type == HELLO)
+    {
+        return 1;
+    }
+    else
+    {
+        return 0;
+    }
+}
+
+bool DBDMessage()
+{
+    if (InQueue[0].type == DBD)
+    {
+        return 1;
+    }
+    else
+    {
+        return 0;
+    }
+}
+
+bool LSRMessage()
+{
+    if (InQueue[0].type == REQ)
+    {
+        return 1;
+    }
+    else
+    {
+        return 0;
+    }
+}
+
+bool LSUMessage()
+{
+    if (InQueue[0].type == UPD)
+    {
+        return 1;
+    }
+    else
+    {
+        return 0;
+    }
+}
+
+bool ACKMessage()
+{
+    if (InQueue[0].type == ACK)
+    {
+        return 1;
+    }
+    else
+    {
+        return 0;
+    }
+}
+
+// Neighbour State Guards (check what state the neighbour is in)
+
+bool NeighbourDown()
+{
+    if (NeighbourStructure.ns == DOWN)
+    {
+        return 1;
+    }
+    else
+    {
+        return 0;
+    }
+}
+
+bool NeighbourInit()
+{
+    if (NeighbourStructure.ns == INIT)
+    {
+        return 1;
+    }
+    else
+    {
+        return 0;
+    }
+}
+
+bool NeighbourTwoWay()
+{
+    if (NeighbourStructure.ns == TWOWAY)
+    {
+        return 1;
+    }
+    else
+    {
+        return 0;
+    }
+}
+
+bool NeighbourExStart()
+{
+    if (NeighbourStructure.ns == EXSTART)
+    {
+        return 1;
+    }
+    else
+    {
+        return 0;
+    }
+}
+
+bool NeighbourExchange()
+{
+    if (NeighbourStructure.ns == EXCHANGE)
+    {
+        return 1;
+    }
+    else
+    {
+        return 0;
+    }
+}
+
+bool NeighbourLoading()
+{
+    if (NeighbourStructure.ns == LOADING)
+    {
+        return 1;
+    }
+    else
+    {
+        return 0;
+    }
+}
+
+bool NeighbourFull()
+{
+    if (NeighbourStructure.ns == FULL)
+    {
+        return 1;
+    }
+    else
+    {
+        return 0;
+    }
+}
+
+bool CanAcceptLSR()    // Neighbour state is greater than or equal to Exchange
+{
+    if (NeighbourExchange() || NeighbourLoading() || NeighbourFull())
+    {
+        return 1;
+    }
+    return 0;
+}
+
+bool CanAcceptLSU()    // Neighbour state is greater than or equal to Exchange
+{
+    if (NeighbourExchange() || NeighbourLoading() || NeighbourFull())
+    {
+        return 1;
+    }
+    return 0;
+}
+
+
+// Generate Message Functions
+
+void Generate_Hello()    // Creates a HELLO message
+{
+    Global_Message.type = HELLO;
+    Global_Message.sip = ip;
+    Global_Message.ips[ip] = 1;
+    if (NeighbourStructure.ns != DOWN)    // In all other state contact has been received from neighbour
+    {
+        Global_Message.ips[nip] = 1;
+    }
+    else
+    {
+        Global_Message.ips[nip] = 0;
+    }
+    LSRCount = 0;    // Resets LSR Counter (3 more LSRs can be sent before hello is prioritized)
+    return;
+}
+
+void Generate_Exstart_DBD()    // Creates a DBD message while in the EXSTART state
+{
+    Global_Message.type = DBD;
+    Global_Message.sip = ip;
+    Global_Message.in = 1;
+    Global_Message.more = 1;
+    Global_Message.master = NeighbourStructure.master;
+    Global_Message.sequence = NeighbourStructure.sequence;
+}
+
+void Generate_Exchange_DBD()    // Create a DBD message while in the EXCHANGE state
+{
+    int[0,MTU] i = 0;
+    int[0, LSDB_Size] j = 0;
+    Global_Message.type = DBD;
+    Global_Message.sip = ip;
+    Global_Message.in = 0;
+    Global_Message.more = 1;
+    Global_Message.master = NeighbourStructure.master;
+    Global_Message.sequence = NeighbourStructure.sequence;
+    while (i &lt; MTU &amp;&amp; j &lt; LSDB_Size)    // Inserts less than or equal to MTU headers into the global message
+    {
+        if (!NeighbourStructure.Database_Summary[j].empty)
+        {
+            Global_Message.hdrs[i].empty = NeighbourStructure.Database_Summary[j].empty;
+            Global_Message.hdrs[i].ip = NeighbourStructure.Database_Summary[j].ip;
+            Global_Message.hdrs[i].age = NeighbourStructure.Database_Summary[j].age;
+            i ++;
+        }
+        j++;
+        if (j == LSDB_Size)
+        {
+            Global_Message.more = 0;    // Checks if there are any left to transmit
+        }
+    }
+    return; 
+}
+
+void Generate_LSR()    // Generate an LSR by searching through LSAs to request (only called if request list is non-empty)
+{
+    LSRCount += 1;    // Adds one to the LSR Counter - after 3 LSRs, automaton will prioritize hellos over LSRs
+    Global_Message.type = REQ;
+    Global_Message.sip = ip;
+    for (i: int[0, LSDB_Size -1])
+    {
+        if (!NeighbourStructure.Request_List[i].empty)    // Request the first needed LSA
+        {
+            Global_Message.hdrs[0] = NeighbourStructure.Request_List[i];
+            return;
+        }
+    }
+    return;
+}
+
+void Generate_LSU()    // Create an LSU in response to an LSR
+{
+    Global_Message.type = UPD;
+    Global_Message.sip = ip;
+    Global_Message.lsa = lsdb[ip][InQueue[0].hdrs[0].ip];    // Send the corresponding requested LSR
+    return;
+}
+
+void Generate_ACK()    // Generate an ACK in response to an LSU
+{
+    Global_Message.type = ACK;
+    Global_Message.sip = ip;
+    return;
+}
+ 
+// Receive Message Functions / Events described in RFC
+
+void Hello_Received()    // Node receives a HELLO
+{
+    if (NeighbourStructure.ns == DOWN)
+    {
+        NeighbourStructure.ns = INIT;
+    }
+    return;
+}
+
+void One_Way_Received()    // Node receives a hello indicating the neighbour is not aware of it
+{
+    if (NeighbourStructure.ns &gt;= TWOWAY)
+    {
+        Initialise_Neighbour(INIT);
+    }
+    return;
+}
+
+void Two_Way_Received()    // Node receives a hello or DBD indicating the neighbour is aware of it
+{
+    if (NeighbourStructure.ns &gt;= TWOWAY)
+    {
+        return;
+    }
+    else
+    {
+        if (adj(ip,nip))
+        {
+            NeighbourStructure.ns = EXSTART;
+        }
+        else
+        {
+            NeighbourStructure.ns = TWOWAY;
+        }
+    }
+    return;
+}
+
+void Negotiation_Done()    // Node becomes aware that it is the slave/master and it's neighbour knows it is the master/slave
+{
+    if (NeighbourStructure.ns == EXSTART)
+    {
+        NeighbourStructure.ns = EXCHANGE;
+        for (k: int[0,LSDB_Size-1])
+        {
+            NeighbourStructure.Database_Summary[k] = lsdb[ip][k];    // Indicates which LSAHDRS need to be transmitted
+        }
+    }
+    return;
+}
+
+void Exchange_Done()    // Node changes it's state to loading or full depending on if it has LSAs to request
+{
+    for (i: int[0,LSDB_Size - 1])
+    {
+        if (!NeighbourStructure.Request_List[i].empty)
+        {
+            NeighbourStructure.ns = LOADING;
+            return;
+        }
+    }
+    NeighbourStructure.ns = FULL;
+    return;
+}
+
+void LoadingDone()    // Node changes from state LOADING to FULL once all requested LSAs have been received
+{
+    if (NeighbourLoading())
+    {
+        NeighbourStructure.ns = FULL;
+    }
+    return;
+}
+
+void Sequence_Mismatch()    // Executed upon receiving a variety of unexpected messages (Also invokes incrementing sequence number,
+                            // and sending out a DBD message which is handled in the transition)
+{
+    Initialise_Neighbour(EXSTART);
+    return;
+}
+
+void Bad_LSReq()    // Executed upon recieving an LSR for an LSA which does not exist (Also invokes incrementing sequence number,
+                    // and sending out a DBD message which is handled in the transition)
+{
+    Initialise_Neighbour(EXSTART);
+    return;
+}
+
+// Visible Update Functions
+
+void Become_Slave()    // Neighbour declares itself the slave
+{
+    NeighbourStructure.master = 0;
+    return;
+}
+
+void Accept_Sequence()    // Use sequence number received from neighbour
+{
+    NeighbourStructure.sequence = InQueue[0].sequence;
+    return;
+}
+
+void Increment_Sequence()    // Adds one to sequence structure (handles wrap around)
+{
+    if (NeighbourStructure.sequence == M-1)
+    {
+        NeighbourStructure.sequence = 0;
+    }
+    else
+    {
+        NeighbourStructure.sequence ++;
+    }
+}
+
+void Record_Last_DBD_Message()    // Records last received DBD message in neighbour structure
+{
+    NeighbourStructure.received = 1;
+    NeighbourStructure.last_received_master = InQueue[0].master;
+    NeighbourStructure.last_received_in = InQueue[0].in;
+    NeighbourStructure.last_received_more = InQueue[0].more;
+    NeighbourStructure.last_received_sequence = InQueue[0].sequence;
+    return;
+}
+
+void Remove_Acknowledged_Headers()    // After receiving next DBD message in sequence, removes last sent headers from Database Summary list
+{
+    int[0,MTU] j = 0;
+    for (i: int[0,LSDB_Size - 1])
+    {
+        if (!NeighbourStructure.Database_Summary[i].empty)
+        {
+            NeighbourStructure.Database_Summary[i].empty = 1;
+            j ++;
+            if (j == MTU)
+            {
+                return;
+            }
+        }
+    }
+    return;   
+}
+
+void Add_Reqs()    // After receiving a DBD message, adds newer header IPs Request list
+{
+    int[0, LSDB_Size - 1] hip;
+    for (i: int[0, MTU - 1])
+    {
+        if (!InQueue[0].hdrs[i].empty)    // Array position i actually contains a header
+        {
+            hip = InQueue[0].hdrs[i].ip;
+            if (lsdb[ip][hip].empty)    // Node does not have an LSA for this IP
+            {
+                NeighbourStructure.Request_List[hip] = InQueue[0].hdrs[i];
+            }
+            else if (Newer_Age(InQueue[0].hdrs[i].age, lsdb[ip][hip].age))
+            {
+                NeighbourStructure.Request_List[hip] = InQueue[0].hdrs[i];
+            }
+        }
+    }
+    return;
+}
+
+void Install_LSA()    // Installs received LSA into LSDB
+{
+    lsdb[ip][InQueue[0].lsa.ip] = InQueue[0].lsa;
+    return;
+}
+
+void Delete_Requests()    // After receiving an LSU, delete the corresponding request (if it exists)
+{
+    if (InQueue[0].lsa == NeighbourStructure.Request_List[InQueue[0].lsa.ip])
+    {
+        NeighbourStructure.Request_List[InQueue[0].lsa.ip].empty = 1;
+    }
+    return;   
+}
+
+// More Message Control Functions
+
+void Initialise_Turn()    // Initialises whose turn it is to send hellos and DBDs first
+{
+    HelloTurn = ip;
+    DBDTurn = ip;
+    return;
+}
+
+// When the neighbouring node has room to receive another message, the node has processed all it's messages, less than 3 LSRs have been sent since the last HELLO,
+// the node is in state Exchange or Loading, and there are requests that need to be sent, a node can send out an LSR
+bool Can_LSR()
+{
+    return (Can_Receive[nip] &amp;&amp; Queue_Position == 0 &amp;&amp; (LSRCount &lt; 3) &amp;&amp; (NeighbourExchange() || NeighbourLoading()) &amp;&amp; !RequestListEmpty());
+}
+
+// When all messages have been processed, the node is in state ExStart and it is it's turn, or the
+// node is in state Exchange and it is the master a node can send out a DBD
+bool Can_DBD()
+{
+    return (Messages_Processed[nip] &amp;&amp; Queue_Position == 0 &amp;&amp; ((NeighbourExStart() &amp;&amp; DBDTurn==ip) || (NeighbourExchange() &amp;&amp; IsMaster()) ));
+}
+
+// When the neighbouring node has room to receive another message, the node has processed all it's messages, the node can't send an LSR or a DBD,
+// and it's the nodes turn, it can send a HELLO
+bool Can_Hello()
+{
+    return (HelloTurn==ip &amp;&amp; Can_Receive[nip] &amp;&amp; Queue_Position == 0  &amp;&amp; !Can_DBD() &amp;&amp; !Can_LSR());
+}
+</declaration>
+		<location id="id0" x="-365" y="-102">
+			<urgent/>
+		</location>
+		<location id="id1" x="-1513" y="110">
+			<committed/>
+		</location>
+		<location id="id2" x="-1521" y="-102">
+			<committed/>
+		</location>
+		<location id="id3" x="679" y="-102">
+			<committed/>
+		</location>
+		<location id="id4" x="679" y="93">
+			<committed/>
+		</location>
+		<location id="id5" x="1104" y="-102">
+			<committed/>
+		</location>
+		<location id="id6" x="1104" y="-340">
+			<committed/>
+		</location>
+		<location id="id7" x="1104" y="127">
+			<committed/>
+		</location>
+		<location id="id8" x="1512" y="-340">
+			<committed/>
+		</location>
+		<location id="id9" x="1521" y="127">
+			<committed/>
+		</location>
+		<location id="id10" x="1521" y="-93">
+			<committed/>
+		</location>
+		<location id="id11" x="1785" y="119">
+			<committed/>
+		</location>
+		<location id="id12" x="1785" y="-340">
+			<committed/>
+		</location>
+		<location id="id13" x="-969" y="-416">
+			<committed/>
+		</location>
+		<location id="id14" x="-136" y="-442">
+			<committed/>
+		</location>
+		<location id="id15" x="-518" y="-697">
+			<committed/>
+		</location>
+		<init ref="id1"/>
+		<transition>
+			<source ref="id0"/>
+			<target ref="id0"/>
+			<label kind="guard" x="-416" y="595">Can_DBD()</label>
+			<label kind="synchronisation" x="-399" y="620">unicast!</label>
+			<label kind="assignment" x="-450" y="646">Generate_Exstart_DBD(),
+Next_Turn_DBD()</label>
+			<nail x="-475" y="586"/>
+			<nail x="-263" y="586"/>
+		</transition>
+		<transition>
+			<source ref="id15"/>
+			<target ref="id0"/>
+			<label kind="guard" x="-510" y="-510">!NeighbourLoading() &amp;&amp; RequestListEmpty()</label>
+			<label kind="assignment" x="-492" y="-468">Delete_Message_In_Queue()</label>
+			<nail x="-518" y="-476"/>
+			<nail x="-314" y="-476"/>
+			<nail x="-255" y="-476"/>
+		</transition>
+		<transition>
+			<source ref="id15"/>
+			<target ref="id0"/>
+			<label kind="guard" x="-467" y="-621">!RequestListEmpty()</label>
+			<label kind="synchronisation" x="-433" y="-595">unicast!</label>
+			<label kind="assignment" x="-475" y="-570">Generate_LSR(),
+Delete_Message_In_Queue()</label>
+			<nail x="-518" y="-595"/>
+			<nail x="-255" y="-595"/>
+			<nail x="-255" y="-476"/>
+		</transition>
+		<transition>
+			<source ref="id15"/>
+			<target ref="id0"/>
+			<label kind="guard" x="-518" y="-740">NeighbourLoading() &amp;&amp; RequestListEmpty()</label>
+			<label kind="assignment" x="-475" y="-689">LoadingDone(),
+Delete_Message_In_Queue()</label>
+			<nail x="-255" y="-697"/>
+			<nail x="-255" y="-476"/>
+		</transition>
+		<transition>
+			<source ref="id0"/>
+			<target ref="id0"/>
+			<label kind="guard" x="-799" y="561">Can_LSR()</label>
+			<label kind="synchronisation" x="-790" y="586">unicast!</label>
+			<label kind="assignment" x="-816" y="612">Generate_LSR()</label>
+			<nail x="-833" y="518"/>
+			<nail x="-663" y="569"/>
+		</transition>
+		<transition>
+			<source ref="id13"/>
+			<target ref="id15"/>
+			<label kind="guard" x="-918" y="-561">CanAcceptLSU() &amp;&amp; AppropriateLSA()</label>
+			<label kind="synchronisation" x="-824" y="-535">unicast!</label>
+			<label kind="assignment" x="-909" y="-518">Install_LSA(),
+Generate_ACK(),
+Delete_Requests()</label>
+			<nail x="-969" y="-535"/>
+			<nail x="-569" y="-535"/>
+			<nail x="-569" y="-697"/>
+		</transition>
+		<transition>
+			<source ref="id0"/>
+			<target ref="id0"/>
+			<label kind="guard" x="-85" y="595">ACKMessage()</label>
+			<label kind="assignment" x="-127" y="620">Delete_Message_In_Queue()</label>
+			<nail x="-136" y="586"/>
+			<nail x="85" y="586"/>
+		</transition>
+		<transition>
+			<source ref="id13"/>
+			<target ref="id0"/>
+			<label kind="guard" x="-977" y="-850">CanAcceptLSU() &amp;&amp; !AppropriateLSA() &amp;&amp; !OnRequestList()</label>
+			<label kind="synchronisation" x="-833" y="-816">unicast!</label>
+			<label kind="assignment" x="-875" y="-790">Generate_ACK(),
+Delete_Message_In_Queue()</label>
+			<nail x="-969" y="-816"/>
+			<nail x="-612" y="-816"/>
+			<nail x="-612" y="-416"/>
+		</transition>
+		<transition>
+			<source ref="id13"/>
+			<target ref="id0"/>
+			<label kind="guard" x="-977" y="-706">CanAcceptLSU() &amp;&amp; !AppropriateLSA() &amp;&amp; OnRequestList()</label>
+			<label kind="synchronisation" x="-833" y="-672">unicast!</label>
+			<label kind="assignment" x="-901" y="-654">Bad_LSReq(),
+Increment_Sequence(),
+Generate_Exstart_DBD(),
+Delete_Message_In_Queue()</label>
+			<nail x="-969" y="-680"/>
+			<nail x="-612" y="-680"/>
+			<nail x="-612" y="-416"/>
+		</transition>
+		<transition>
+			<source ref="id13"/>
+			<target ref="id0"/>
+			<label kind="guard" x="-858" y="-442">!CanAcceptLSU()</label>
+			<label kind="assignment" x="-884" y="-408">Delete_Message_In_Queue()</label>
+			<nail x="-612" y="-416"/>
+		</transition>
+		<transition>
+			<source ref="id14"/>
+			<target ref="id0"/>
+			<label kind="guard" x="-85" y="-782">CanAcceptLSR() &amp;&amp; LSA_Exists()</label>
+			<label kind="synchronisation" x="-17" y="-748">unicast!</label>
+			<label kind="assignment" x="-59" y="-731">Generate_LSU(),
+Delete_Message_In_Queue()</label>
+			<nail x="-136" y="-756"/>
+			<nail x="195" y="-756"/>
+			<nail x="195" y="-229"/>
+			<nail x="-136" y="-229"/>
+		</transition>
+		<transition>
+			<source ref="id14"/>
+			<target ref="id0"/>
+			<label kind="guard" x="-93" y="-620">CanAcceptLSR() &amp;&amp; !LSA_Exists()</label>
+			<label kind="synchronisation" x="-25" y="-586">unicast!</label>
+			<label kind="assignment" x="-42" y="-561">Bad_LSReq(),
+Increment_Sequence(),
+Generate_Exstart_DBD(),
+Delete_Message_In_Queue()</label>
+			<nail x="-136" y="-595"/>
+			<nail x="195" y="-595"/>
+			<nail x="195" y="-229"/>
+			<nail x="-136" y="-229"/>
+		</transition>
+		<transition>
+			<source ref="id14"/>
+			<target ref="id0"/>
+			<label kind="guard" x="-68" y="-221">!CanAcceptLSR()</label>
+			<label kind="assignment" x="-110" y="-255">Delete_Message_In_Queue()</label>
+			<nail x="195" y="-442"/>
+			<nail x="195" y="-229"/>
+			<nail x="-136" y="-229"/>
+		</transition>
+		<transition>
+			<source ref="id0"/>
+			<target ref="id14"/>
+			<label kind="guard" x="-127" y="-348">LSRMessage()</label>
+			<nail x="-136" y="-229"/>
+		</transition>
+		<transition>
+			<source ref="id0"/>
+			<target ref="id13"/>
+			<label kind="guard" x="-884" y="-263">LSUMessage()</label>
+			<nail x="-969" y="-340"/>
+		</transition>
+		<transition>
+			<source ref="id12"/>
+			<target ref="id0"/>
+			<label kind="guard" x="1878" y="-816">Is_Duplicate()</label>
+			<label kind="assignment" x="1827" y="-782">Delete_Message_In_Queue()</label>
+			<nail x="2048" y="-340"/>
+			<nail x="2048" y="-790"/>
+			<nail x="221" y="-790"/>
+			<nail x="221" y="-102"/>
+		</transition>
+		<transition>
+			<source ref="id12"/>
+			<target ref="id0"/>
+			<label kind="guard" x="1632" y="-824">!Is_Duplicate()</label>
+			<label kind="synchronisation" x="1615" y="-782">unicast!</label>
+			<label kind="assignment" x="1564" y="-765">Sequence_Mismatch(),
+Increment_Sequence(),
+Generate_Exstart_DBD(),
+Delete_Message_In_Queue()</label>
+			<nail x="1785" y="-790"/>
+			<nail x="221" y="-790"/>
+			<nail x="221" y="-102"/>
+		</transition>
+		<transition>
+			<source ref="id11"/>
+			<target ref="id0"/>
+			<label kind="guard" x="1887" y="586">Is_Duplicate()</label>
+			<label kind="synchronisation" x="1904" y="544">unicast!</label>
+			<label kind="assignment" x="1836" y="501">Generate_Exchange_DBD(),
+Delete_Message_In_Queue()</label>
+			<nail x="2057" y="119"/>
+			<nail x="2057" y="578"/>
+			<nail x="119" y="578"/>
+			<nail x="-85" y="289"/>
+			<nail x="-85" y="-102"/>
+		</transition>
+		<transition>
+			<source ref="id11"/>
+			<target ref="id0"/>
+			<label kind="guard" x="1640" y="595">!Is_Duplicate()</label>
+			<label kind="synchronisation" x="1649" y="552">unicast!</label>
+			<label kind="assignment" x="1581" y="467">Sequence_Mismatch(),
+Increment_Sequence(),
+Generate_Exstart_DBD(),
+Delete_Message_In_Queue()</label>
+			<nail x="1785" y="578"/>
+			<nail x="119" y="578"/>
+			<nail x="-85" y="289"/>
+			<nail x="-85" y="-102"/>
+		</transition>
+		<transition>
+			<source ref="id10"/>
+			<target ref="id11"/>
+			<label kind="guard" x="1632" y="-76">!IsMaster()</label>
+			<nail x="1785" y="-93"/>
+		</transition>
+		<transition>
+			<source ref="id10"/>
+			<target ref="id12"/>
+			<label kind="guard" x="1632" y="-127">IsMaster()</label>
+			<nail x="1785" y="-93"/>
+		</transition>
+		<transition>
+			<source ref="id3"/>
+			<target ref="id10"/>
+			<label kind="guard" x="1181" y="17">NeighbourLoading() || NeighbourFull()</label>
+			<nail x="858" y="51"/>
+			<nail x="1521" y="51"/>
+		</transition>
+		<transition>
+			<source ref="id9"/>
+			<target ref="id0"/>
+			<label kind="guard" x="858" y="595">Neighbour_Finished_Sending() &amp;&amp; Last_Message()</label>
+			<label kind="synchronisation" x="1045" y="544">unicast!</label>
+			<label kind="assignment" x="968" y="450">Exchange_Done(),
+Generate_Exchange_DBD(),
+Record_Last_DBD_Message(),
+Delete_Message_In_Queue()</label>
+			<nail x="1215" y="408"/>
+			<nail x="1215" y="578"/>
+			<nail x="119" y="578"/>
+			<nail x="-85" y="289"/>
+			<nail x="-85" y="-102"/>
+		</transition>
+		<transition>
+			<source ref="id9"/>
+			<target ref="id0"/>
+			<label kind="guard" x="1232" y="595">(!Neighbour_Finished_Sending()) || (!Last_Message())</label>
+			<label kind="synchronisation" x="1419" y="552">unicast!</label>
+			<label kind="assignment" x="1317" y="493">Generate_Exchange_DBD(),
+Record_Last_DBD_Message(),
+Delete_Message_In_Queue()</label>
+			<nail x="1521" y="578"/>
+			<nail x="119" y="578"/>
+			<nail x="-85" y="289"/>
+			<nail x="-85" y="-102"/>
+		</transition>
+		<transition>
+			<source ref="id7"/>
+			<target ref="id9"/>
+			<label kind="guard" x="1130" y="93">!Message_Inconsistencies_Slave() &amp;&amp; !Is_Duplicate()</label>
+			<label kind="assignment" x="1189" y="136">Accept_Sequence(),
+Add_Reqs(),
+Remove_Acknowledged_Headers()</label>
+		</transition>
+		<transition>
+			<source ref="id8"/>
+			<target ref="id0"/>
+			<label kind="guard" x="1224" y="-824">!Finished_Sending() || !Neighbour_Finished_Sending()</label>
+			<label kind="synchronisation" x="1326" y="-782">unicast!</label>
+			<label kind="assignment" x="1275" y="-756">Generate_Exchange_DBD(),
+Record_Last_DBD_Message(),
+Delete_Message_In_Queue()</label>
+			<nail x="1513" y="-790"/>
+			<nail x="221" y="-790"/>
+			<nail x="221" y="-102"/>
+		</transition>
+		<transition>
+			<source ref="id8"/>
+			<target ref="id0"/>
+			<label kind="guard" x="841" y="-824">Finished_Sending() &amp;&amp; Neighbour_Finished_Sending()</label>
+			<label kind="assignment" x="926" y="-782">Exchange_Done(),
+Record_Last_DBD_Message(),
+Delete_Message_In_Queue()</label>
+			<nail x="1206" y="-518"/>
+			<nail x="1206" y="-790"/>
+			<nail x="221" y="-790"/>
+			<nail x="221" y="-102"/>
+		</transition>
+		<transition>
+			<source ref="id6"/>
+			<target ref="id8"/>
+			<label kind="guard" x="1113" y="-365">!Message_Inconsistencies_Master() &amp;&amp; !Is_Duplicate()</label>
+			<label kind="assignment" x="1172" y="-331">Increment_Sequence(),
+Add_Reqs(),
+Remove_Acknowledged_Headers()</label>
+		</transition>
+		<transition>
+			<source ref="id7"/>
+			<target ref="id0"/>
+			<label kind="guard" x="170" y="595">!Is_Duplicate() &amp;&amp; Message_Inconsistencies_Slave()</label>
+			<label kind="synchronisation" x="348" y="552">unicast!</label>
+			<label kind="assignment" x="280" y="467">Sequence_Mismatch(),
+Increment_Sequence(),
+Generate_Exstart_DBD(),
+Delete_Message_In_Queue()</label>
+			<nail x="569" y="382"/>
+			<nail x="569" y="578"/>
+			<nail x="119" y="578"/>
+			<nail x="-85" y="289"/>
+			<nail x="-85" y="-102"/>
+		</transition>
+		<transition>
+			<source ref="id6"/>
+			<target ref="id0"/>
+			<label kind="guard" x="263" y="-824">!Is_Duplicate() &amp;&amp; Message_Inconsistencies_Master()</label>
+			<label kind="synchronisation" x="365" y="-782">unicast!</label>
+			<label kind="assignment" x="306" y="-756">Sequence_Mismatch(),
+Increment_Sequence(),
+Generate_Exstart_DBD(),
+Delete_Message_In_Queue()</label>
+			<nail x="620" y="-510"/>
+			<nail x="620" y="-790"/>
+			<nail x="221" y="-790"/>
+			<nail x="221" y="-102"/>
+		</transition>
+		<transition>
+			<source ref="id4"/>
+			<target ref="id0"/>
+			<label kind="guard" x="526" y="297">IsSlaveExStart()</label>
+			<label kind="synchronisation" x="552" y="263">unicast!</label>
+			<label kind="assignment" x="475" y="153">Negotiation_Done(),
+Become_Slave(),
+Accept_Sequence(),
+Generate_Exchange_DBD(),
+Record_Last_DBD_Message(),
+Delete_Message_In_Queue()</label>
+			<nail x="679" y="289"/>
+			<nail x="-85" y="289"/>
+			<nail x="-85" y="-102"/>
+		</transition>
+		<transition>
+			<source ref="id4"/>
+			<target ref="id0"/>
+			<label kind="guard" x="314" y="297">IsMasterExStart()</label>
+			<label kind="synchronisation" x="348" y="263">unicast!</label>
+			<label kind="assignment" x="255" y="153">Negotiation_Done(),
+Increment_Sequence(),
+Add_Reqs(),
+Generate_Exchange_DBD(),
+Record_Last_DBD_Message(),
+Delete_Message_In_Queue()</label>
+			<nail x="467" y="93"/>
+			<nail x="467" y="289"/>
+			<nail x="-85" y="289"/>
+			<nail x="-85" y="-102"/>
+		</transition>
+		<transition>
+			<source ref="id7"/>
+			<target ref="id0"/>
+			<label kind="guard" x="688" y="595">Is_Duplicate()</label>
+			<label kind="synchronisation" x="697" y="544">unicast!</label>
+			<label kind="assignment" x="637" y="501">Generate_Exchange_DBD(),
+Delete_Message_In_Queue()</label>
+			<nail x="866" y="391"/>
+			<nail x="866" y="578"/>
+			<nail x="119" y="578"/>
+			<nail x="-85" y="289"/>
+			<nail x="-85" y="-102"/>
+		</transition>
+		<transition>
+			<source ref="id6"/>
+			<target ref="id0"/>
+			<label kind="guard" x="680" y="-824">Is_Duplicate()</label>
+			<label kind="assignment" x="654" y="-782">Delete_Message_In_Queue()</label>
+			<nail x="858" y="-510"/>
+			<nail x="858" y="-790"/>
+			<nail x="221" y="-790"/>
+			<nail x="221" y="-102"/>
+		</transition>
+		<transition>
+			<source ref="id5"/>
+			<target ref="id7"/>
+			<label kind="guard" x="1019" y="-17">!IsMaster()</label>
+		</transition>
+		<transition>
+			<source ref="id5"/>
+			<target ref="id6"/>
+			<label kind="guard" x="1028" y="-255">IsMaster()</label>
+		</transition>
+		<transition>
+			<source ref="id3"/>
+			<target ref="id5"/>
+			<label kind="guard" x="824" y="-136">NeighbourExchange()</label>
+		</transition>
+		<transition>
+			<source ref="id4"/>
+			<target ref="id0"/>
+			<label kind="guard" x="-42" y="297">!IsSlaveExStart() &amp;&amp; !IsMasterExStart()</label>
+			<label kind="assignment" x="0" y="255">Delete_Message_In_Queue()</label>
+			<nail x="238" y="93"/>
+			<nail x="238" y="289"/>
+			<nail x="-85" y="289"/>
+			<nail x="-85" y="-102"/>
+		</transition>
+		<transition>
+			<source ref="id3"/>
+			<target ref="id4"/>
+			<label kind="guard" x="577" y="0">NeighbourExStart()</label>
+		</transition>
+		<transition>
+			<source ref="id3"/>
+			<target ref="id3"/>
+			<label kind="guard" x="705" y="-306">NeighbourInit()</label>
+			<label kind="synchronisation" x="739" y="-289">unicast!</label>
+			<label kind="assignment" x="697" y="-263">Two_Way_Received(),
+Increment_Sequence(),
+Generate_Exstart_DBD()</label>
+			<nail x="679" y="-204"/>
+			<nail x="764" y="-204"/>
+			<nail x="764" y="-102"/>
+		</transition>
+		<transition>
+			<source ref="id3"/>
+			<target ref="id0"/>
+			<label kind="guard" x="391" y="-391">NeighbourDown() || NeighbourTwoWay()</label>
+			<label kind="assignment" x="476" y="-348">Delete_Message_In_Queue()</label>
+			<nail x="679" y="-323"/>
+			<nail x="323" y="-323"/>
+			<nail x="323" y="-102"/>
+		</transition>
+		<transition>
+			<source ref="id0"/>
+			<target ref="id3"/>
+			<label kind="guard" x="-178" y="-127">DBDMessage()</label>
+		</transition>
+		<transition>
+			<source ref="id2"/>
+			<target ref="id0"/>
+			<label kind="guard" x="-1394" y="-519">TwoWay() &amp;&amp; NeighbourInit()</label>
+			<label kind="synchronisation" x="-1317" y="-485">unicast!</label>
+			<label kind="assignment" x="-1377" y="-468">Two_Way_Received(),
+Delete_Message_In_Queue(),
+Increment_Sequence(),
+Generate_Exstart_DBD()</label>
+			<nail x="-1521" y="-485"/>
+			<nail x="-1037" y="-485"/>
+			<nail x="-1037" y="-102"/>
+		</transition>
+		<transition>
+			<source ref="id2"/>
+			<target ref="id0"/>
+			<label kind="guard" x="-1377" y="-357">TwoWay() &amp;&amp; !NeighbourInit()</label>
+			<label kind="assignment" x="-1360" y="-323">Two_Way_Received(),
+Delete_Message_In_Queue()</label>
+			<nail x="-1521" y="-332"/>
+			<nail x="-1037" y="-332"/>
+			<nail x="-1037" y="-102"/>
+		</transition>
+		<transition>
+			<source ref="id2"/>
+			<target ref="id0"/>
+			<label kind="guard" x="-1325" y="-246">!TwoWay()</label>
+			<label kind="assignment" x="-1351" y="-203">One_Way_Received(),
+Delete_Message_In_Queue()</label>
+			<nail x="-1521" y="-212"/>
+			<nail x="-1036" y="-212"/>
+			<nail x="-1036" y="-101"/>
+		</transition>
+		<transition>
+			<source ref="id0"/>
+			<target ref="id2"/>
+			<label kind="guard" x="-926" y="-144">HelloMessage()</label>
+			<label kind="assignment" x="-918" y="-85">Hello_Received()</label>
+		</transition>
+		<transition>
+			<source ref="id0"/>
+			<target ref="id0"/>
+			<label kind="guard" x="-1105" y="433">Can_Hello()</label>
+			<label kind="synchronisation" x="-1096" y="459">unicast!</label>
+			<label kind="assignment" x="-1122" y="484">Generate_Hello(),
+Next_Turn_Hello(),
+AttackerTurn = 1</label>
+			<nail x="-1088" y="374"/>
+			<nail x="-918" y="484"/>
+		</transition>
+		<transition>
+			<source ref="id1"/>
+			<target ref="id0"/>
+			<label kind="select" x="-1411" y="34">i: int[0,M-1]</label>
+			<label kind="assignment" x="-1428" y="102">Initialise_Neighbour(DOWN),
+NeighbourStructure.sequence = i,
+Initialise_LSDB(),
+Initialise_Turn()</label>
+		</transition>
+		<transition>
+			<source ref="id0"/>
+			<target ref="id0"/>
+			<label kind="guard" x="-1436" y="289">Queue_Position&lt;Queue_Size</label>
+			<label kind="synchronisation" x="-1368" y="314">unicast?</label>
+			<label kind="assignment" x="-1428" y="340">Add_Message_To_Queue(),
+Flush_Global_Message()</label>
+			<nail x="-1300" y="221"/>
+			<nail x="-1164" y="323"/>
+		</transition>
+	</template>
+	<system>// Place template instantiations here.
+
+// Honest Nodes
+Node1 = Node(0,1);
+Node2 = Node(1,0);
+
+// List one or more processes to be composed into a system.
+system Node1, Node2;</system>
+	<queries>
+		<query>
+			<formula>A[]!deadlock</formula>
+			<comment>The automaton never end up in a deadlocked state.</comment>
+		</query>
+		<query>
+			<formula>A[](!(Node1.NeighbourStructure.ns == FULL &amp;&amp; Node2.NeighbourStructure.ns == FULL) || LSBDs_Synchronised())</formula>
+			<comment>Whenever both nodes are in a full state, their LSDBs are synchronised.</comment>
+		</query>
+		<query>
+			<formula>A&lt;&gt;((Node1.NeighbourStructure.ns == FULL) &amp;&amp; (Node2.NeighbourStructure.ns == FULL))</formula>
+			<comment>All nodes eventually end up in the full state. If an attacker is in the system, this should verify as false. Selecting Get Trace will show successful attack interleaving.</comment>
+		</query>
+		<query>
+			<formula>E&lt;&gt;((Node1.NeighbourStructure.ns == FULL) &amp;&amp; (Node2.NeighbourStructure.ns == FULL))</formula>
+			<comment>Shows that if the attacker does not continuously inject messages, the nodes can still reach FULL.</comment>
+		</query>
+	</queries>
+</nta>

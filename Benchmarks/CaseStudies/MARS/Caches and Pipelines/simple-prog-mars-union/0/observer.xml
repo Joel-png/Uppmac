@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<nta>
+<declaration>
+broadcast chan Icache[2];
+int PC;
+</declaration>
+<template>
+<name x="5" y="5">observer</name>
+<declaration>
+//local variables for conds
+</declaration>
+<location id="node_0" x="-71" y="-225"><name>node_0</name></location>
+<location id="node_1" x="-71" y="-125"><name>node_1</name></location>
+<location id="endnode" x="200" y="-0"><name>endnode</name></location>
+<init ref="node_0"/>
+<transition>
+<source ref="node_0"/>
+<target ref="node_1"/>
+<label kind="guard"  x="-71" y="-190">cacheLine == 1</label>
+<label kind="synchronisation" x="-71" y="-175">Icache[M]?</label>
+</transition>
+<transition>
+<source ref="endnode"/>
+<target ref="endnode"/>
+<label kind="select">k:int[0,1]</label>
+<label kind="synchronisation">Icache[k]?</label>
+</transition>
+<transition>
+<source ref="node_0"/>
+<target ref="endnode"/>
+<label kind="select" x="-71" y="-15">k:int[0,1]</label>
+<label kind="guard"  x="-71" y="-25">true  &amp;&amp; !(cacheLine == 1)</label>
+<label kind="synchronisation" x="-71" y="-0">Icache[k]?</label>
+</transition>
+<transition>
+<source ref="node_1"/>
+<target ref="endnode"/>
+<label kind="select" x="-71" y="-15">k:int[0,1]</label>
+<label kind="guard"  x="-71" y="-25">true  &amp;&amp; (!(cacheLine ==1) || (( cacheLine == 1) &amp;&amp; ( k != M )))</label>
+<label kind="synchronisation" x="-71" y="-0">Icache[k]?</label>
+</transition>
+</template>
+<system>
+system observer;
+</system>
+</nta>

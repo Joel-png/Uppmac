@@ -1,0 +1,3138 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE nta PUBLIC '-//Uppaal Team//DTD Flat System 1.1//EN' 'http://www.it.uu.se/research/group/darts/uppaal/flat-1_2.dtd'>
+<nta>
+	<declaration>// Place global declarations here.
+
+broadcast chan Transaction;
+broadcast chan request;
+broadcast chan send; //Question: shall it be broadcast??
+const int N = 4;//max number of pools
+const int PEERS = 4; // maximum number of peers
+
+broadcast chan blockSolution;
+const int HASHSIZE = 210; //hashes are stored as integers
+const int MAX_TRANSACTION = 200;//maximum number of transactions
+const int MAX_BLOCK = 200; //maximum number of blocks
+const int MAX_INPUT_TRANSACTION = 3; //maximum number of input transactions
+const int MAX_OUTPUT_TRANSACTION = 3; //maximum number of output transactions
+const int MAX_BTC_AMOUNT = 12; //maximum amount (BTC)
+const int MAX_POOL_SIZE = 100; //maximum size of the Pool
+const int UNCONFIRMED = 0;
+const int CONFIRMED = 1;
+const int INVALID = 2;
+typedef int[1,N] id_t;//Pool ID
+typedef int[-1,HASHSIZE] BLOCKHASH; //first block will refer to -1
+typedef int[-1,MAX_TRANSACTION] TXNUMBER;//first transaction will refer to -1
+typedef int[0,MAX_INPUT_TRANSACTION] COUNT_TX_IN;//number of input transactions
+typedef int[0,MAX_OUTPUT_TRANSACTION] COUNT_TX_OUT;//number of output transactions
+typedef int[0,MAX_BTC_AMOUNT] AMOUNT;//Amount will be used in output transaction
+typedef int[0,PEERS+N] PEER;// there will be senders who do not take part in mining. These will just send transactions.
+typedef int[0,INVALID] STATUS; //Transaction status : UNCONFIRMED or CONFIRMED
+
+
+//output transaction structure
+typedef struct{
+PEER Address;
+AMOUNT value;
+}TXOUT;
+
+//input transaction structure
+typedef struct{
+TXNUMBER id;
+
+}TXIN;
+
+//Assumption: There is  one input and two output transaction
+typedef struct {
+TXNUMBER Id;
+COUNT_TX_OUT ouputCount;
+TXIN TxInput;
+TXOUT TxOutput[2];
+//COUNT_TX_IN inputCount;
+COUNT_TX_OUT ouputCount;
+STATUS status;	
+}Tx; //transaction
+
+
+//Assumption only one transaction will be included in one block
+typedef struct {
+BLOCKHASH num;
+BLOCKHASH prevBlocknum;	
+Tx tx;	
+}Block; //block details
+
+
+//Blockchain structure with maximum of 20 blocks
+typedef struct{
+Block chain[MAX_BLOCK];
+
+}BlockChain;
+
+//wallet will be used by peers to maintain unspent output from every transaction
+typedef struct{
+TXNUMBER Id;
+AMOUNT value;
+
+}Wallet;
+//Every transaction will have a unique number. Therefore stored here as global.
+TXNUMBER Tx_num = PEERS+1;
+
+//Every block will have a unique number interms of hash.
+BLOCKHASH Block_num = 2;
+
+Tx TxPool[MAX_POOL_SIZE]; //transaction pool. Peers will create transaction and place in this pool. Miners will use transaction for mining.
+Tx MPeerPool; //this is for MPeer and MPool
+
+//meta Tx TxGlobal;
+meta Block Chain;
+meta BLOCKHASH Blocknum;
+//meta Block orphanBlock;
+
+
+
+
+</declaration>
+	<template>
+		<name x="5" y="5">Pool</name>
+		<parameter>const id_t id,  const int &amp;rateX</parameter>
+		<declaration>// Place local declarations here.
+clock x;
+
+Tx localTx;
+//BlockChain chain[3];
+Block orphanBlock[MAX_BLOCK],confirmedBlock[MAX_BLOCK], sendBlock;
+BLOCKHASH localBlocknum, chain[HASHSIZE][4];
+bool requestOrphan = false, FoundBlock = false;
+//int count, CountFork;
+int countdoubleSpending=0;
+int indexLongestChain = 0;
+int lengthLongestChain = 1;
+void initial()
+{
+int i;
+chain[0][0] = 1;
+chain[0][1] = 0;
+chain[0][3] = 1;
+}
+
+
+bool checkTxPool()
+{
+    bool flag = false;
+    int i;
+    for( i = 0; i &lt; MAX_POOL_SIZE; i++)
+    {
+        if((TxPool[i].Id != 0 || TxPool[i].TxInput.id != 0 || TxPool[i].TxOutput[0].value !=0) &amp;&amp; TxPool[i].status == UNCONFIRMED)
+        {
+            flag = true;
+        }
+    }
+    return flag;
+}
+
+void getTransaction()
+{
+    int i;
+    for( i = 0; i &lt; MAX_POOL_SIZE; i++)
+    {
+        if((TxPool[i].Id != 0 || TxPool[i].TxInput.id != 0 || TxPool[i].TxOutput[0].value !=0) &amp;&amp; TxPool[i].status == UNCONFIRMED)
+        {
+            
+            localTx.Id = TxPool[i].Id;
+            localTx.TxInput.id = TxPool[i].TxInput.id;
+            localTx.TxOutput[0].Address = TxPool[i].TxOutput[0].Address;
+            localTx.TxOutput[0].value = TxPool[i].TxOutput[0].value;
+            localTx.TxOutput[1].Address = TxPool[i].TxOutput[1].Address;
+            localTx.TxOutput[1].value = TxPool[i].TxOutput[1].value;
+            TxPool[i].status = CONFIRMED;
+            i = MAX_POOL_SIZE;
+        }
+    }
+
+
+}
+
+void resetLocalTx()
+{
+    localTx.Id = 0;
+    localTx.TxInput.id = 0;
+    localTx.TxOutput[0].Address = 0;
+    localTx.TxOutput[0].value = 0;
+    localTx.TxOutput[1].Address = 0;
+    localTx.TxOutput[1].value = 0;
+    
+
+
+}
+
+
+//
+void removeTxPool()
+{
+    int i;
+    for( i = 0; i &lt; MAX_POOL_SIZE; i++)
+    {
+        if(TxPool[i].Id != 0 &amp;&amp; TxPool[i].Id == localTx.Id)
+        {
+            
+            TxPool[i].Id = 0;
+            TxPool[i].TxInput.id = 0;
+            TxPool[i].TxOutput[0].Address = 0;
+            TxPool[i].TxOutput[0].value = 0;
+            TxPool[i].TxOutput[1].Address = 0;
+            TxPool[i].TxOutput[1].value = 0;
+            TxPool[i].status  = 0;
+           // index = i;
+            i = MAX_POOL_SIZE;
+        }
+    }
+
+}
+
+int getfreeIndexChain()
+{
+    int i, index;
+    for (i = 0;i &lt; HASHSIZE; i++)
+    {
+        if(chain[i][0] == 0)
+        {//found a last free slot
+           index = i;
+           i = HASHSIZE; 
+        }
+    }
+    return index;
+
+}
+/*
+//this function compares the longest chain and returns the index of last block in the longest chain
+int getLongestChain()
+{
+    int index = 0, i,j,k;
+  int length = 0, counter = 0;
+  
+  for (i = getfreeIndexChain() - 1; i &gt; 0; i--)
+  {
+    k = i;
+    while(k &gt; 0)
+    {
+      for(j = k - 1 ; j &gt;= 0; j--)
+      {
+          if(chain[k][1] == chain[j][0])
+            {
+                counter++;
+                k = j;
+                j = 0;
+                
+            }
+            
+           if(k == 0)
+            {
+                if(counter &gt; length)
+                 {
+                     index = i;
+                     length = counter;
+                 }
+                 counter = 0;
+            }
+      }
+    }
+   
+  }
+  return index;  
+}
+*/
+/*
+//
+int getLongestChainLength()
+{
+   int index = 0, i,j,k;
+  int length = 0, counter = 0;
+ 
+  for (i = getfreeIndexChain() - 1; i &gt; 0; i--)
+  {
+    k = i;
+    while(k &gt; 0)
+    {
+      for(j = k - 1 ; j &gt;= 0; j--)
+      {
+          if(chain[k][1] == chain[j][0])
+            {
+                counter++;
+                k = j;
+                j = 0;
+                
+            }
+            
+           if(k == 0)
+            {
+                if(counter &gt; length)
+                 {
+                     
+                     length = counter;
+                 }
+                 counter = 0;
+            }
+      }
+    }
+   
+  }
+  return length;  
+}
+*/
+//
+
+int countBlocksChain()
+{
+    int index, i, j, count = 0;
+    i = indexLongestChain;
+    while(i &gt; 0)
+    {
+        if (chain[i][2] == id)
+                {
+                    count++;
+                } 
+        for(j=i; j &gt;=0;j--)
+        {
+            if(chain[i][1] == chain[j][0])
+            {
+                
+                
+                i = j;
+                j = 0;
+
+            }
+        }
+
+
+    }
+    return count;
+}
+
+int getfreeIndex()
+{
+    int i, index;
+    for (i = 0;i &lt; MAX_BLOCK; i++)
+    {
+        if(confirmedBlock[i].num == 0 )
+        {//found a last free slot
+           index = i;
+           i = MAX_BLOCK; 
+        }
+    }
+    return index;
+}
+//verify transactions to see whether the input of the transaction being included in one of the blocks has input transaction matching with other blocks in longest chain
+// TODO: include small things like ---- zero or negative value
+bool verifyTransaction()
+{
+    bool flag = false;
+    int i,j,k, index;
+    i = indexLongestChain;
+    index = getfreeIndex();
+    while(i &gt; 0)
+    {
+        for(k = 0;k &lt; index;k++)
+        {
+            if(chain[i][0] == confirmedBlock[k].num)
+            {
+                if(confirmedBlock[k].tx.TxInput.id == localTx.TxInput.id)
+                {
+                    if((confirmedBlock[k].tx.TxOutput[0].value + confirmedBlock[k].tx.TxOutput[1].value) == (localTx.TxOutput[0].value + localTx.TxOutput[1].value))
+                    {
+                    
+                    flag = true;
+                    k = 0;
+                    i = 1;
+                    }
+                } 
+            }
+
+        }
+        
+        for(j=i; j &gt;=0;j--)
+        {
+            if(chain[i][1] == chain[j][0])
+            {
+                
+                
+                i = j;
+                j = 0;
+
+            }
+        }
+
+
+    } 
+    
+    return flag;
+
+}
+//
+void updateTxStatus()
+{
+    int i;
+    for(i = 0;i &lt; MAX_POOL_SIZE; i++)
+        {
+            if(TxPool[i].Id == localTx.Id)
+            {
+                TxPool[i].status = INVALID;
+                i = MAX_POOL_SIZE;
+            }
+
+        }
+        removeTxPool();
+        resetLocalTx();
+
+
+}
+//this function checks a block whether present in chain based on the no. of confirmation (depth)
+
+bool checkBlockinChain(BLOCKHASH num)
+{
+    bool flag = false, flag2=false;
+    int index, i, j, count = 0;
+    i = indexLongestChain;
+    if(num != 0)
+    {
+    while(i &gt; 0)
+    {
+        
+        if (chain[i][0] == num)
+                {
+                   flag2 = true;
+                   i = 0;  
+                }
+        for(j=i; j &gt;=0;j--)
+        {
+            if(chain[i][1] == chain[j][0])
+            {
+                
+
+                i = j;
+                j = 0;
+
+            }
+        }
+
+
+    }
+      }
+    return flag2;
+}
+int countFork()
+{
+    int count = 0, i, j, lastIndex;
+    lastIndex = getfreeIndex();
+    for(i = lastIndex-1; i &gt; 0;i--)
+    {
+        if(!checkBlockinChain(chain[i][0]))
+        {
+            for(j = i -1; j &gt;=0;j--)
+            {
+                if(/*checkBlockinChain(chain[j][0]) &amp;&amp;*/ chain[i][1] == chain[j][0])
+                    {
+                        count++;
+                        j = 0;
+                    }
+            }
+        }
+    }
+    return count;
+}
+ //return index of a block in chain
+int getIndexBlockChain(BLOCKHASH num)
+{
+    int i, index;
+    for (i = 0; i &lt; HASHSIZE; i++)
+    {
+        if(chain[i][0] == num)
+        {
+            index = i;
+            i = HASHSIZE;
+        }
+
+    }
+
+    return index;
+
+
+}
+//
+void updateBlockChain()
+{
+  int  i, j, index ;
+
+    index = getfreeIndex();
+    //creating block and adding transaction
+    confirmedBlock[index].num = Block_num;
+    confirmedBlock[index].prevBlocknum = chain[indexLongestChain][0];
+    confirmedBlock[index].tx.Id = localTx.Id;
+    confirmedBlock[index].tx.TxInput.id = localTx.TxInput.id;
+    confirmedBlock[index].tx.TxOutput[0].Address = localTx.TxOutput[0].Address;
+    confirmedBlock[index].tx.TxOutput[0].value = localTx.TxOutput[0].value;
+    confirmedBlock[index].tx.TxOutput[1].Address = localTx.TxOutput[1].Address;
+    confirmedBlock[index].tx.TxOutput[1].value = localTx.TxOutput[1].value;
+
+    //update on global variable
+    Chain.num = Block_num;
+    Chain.prevBlocknum = confirmedBlock[index].prevBlocknum;
+    Chain.tx.Id = confirmedBlock[index].tx.Id;
+    Chain.tx.TxInput.id = confirmedBlock[index].tx.TxInput.id;
+    Chain.tx.TxOutput[0].Address = confirmedBlock[index].tx.TxOutput[0].Address ;
+    Chain.tx.TxOutput[0].value = confirmedBlock[index].tx.TxOutput[0].value;
+    Chain.tx.TxOutput[1].Address = confirmedBlock[index].tx.TxOutput[1].Address;
+    Chain.tx.TxOutput[1].value = confirmedBlock[index].tx.TxOutput[1].value;
+    
+    //updating block number in chain
+    index = getfreeIndexChain();
+    chain[index][0] = Chain.num;
+    chain[index][1] = Chain.prevBlocknum;
+    chain[index][2] = id;
+    chain[index][3] = chain[indexLongestChain][3]+1;
+    if (lengthLongestChain &lt; chain[index][3])
+    {
+        lengthLongestChain = chain[index][3];
+        indexLongestChain = index;    
+    }
+    //update global variable block hash
+    Block_num++;
+    //remove transaction from pool
+    removeTxPool();
+    //reset localTx
+    resetLocalTx();
+    
+    //count = countBlocksChain();
+    //CountFork = countFork();
+}
+//requesting parent of orphan block
+void requestBlock()
+{
+    int i,j;
+    bool flag = false;
+    BLOCKHASH num;
+    for(j = 0; j &lt; MAX_BLOCK;j++)
+    {
+        if(orphanBlock[j].num != 0)
+        {
+           num = orphanBlock[j].prevBlocknum; 
+           j = MAX_BLOCK;
+
+        }
+
+    }
+   
+    for(i = 0;i &lt; MAX_BLOCK; i++)
+    {
+        if(orphanBlock[i].num != 0)
+        {
+            if(orphanBlock[i].prevBlocknum &lt; num)
+            {
+                num = orphanBlock[i].prevBlocknum;
+            }
+
+        }
+
+    }
+    
+    Blocknum = num;
+
+}
+
+//check any orphans
+bool checkOrphan()
+{
+    int i;
+    bool flag = false;
+    for(i = 0;i &lt; MAX_BLOCK;i++)
+    {
+        if(orphanBlock[i].num !=0)
+        {
+            flag = true;
+            i = MAX_BLOCK;
+        } 
+    }
+
+return flag;
+}
+
+void checkBlock()
+{
+    int i;
+    for(i = MAX_BLOCK-1; i&gt;=0;i--)
+    {
+        if(confirmedBlock[i].num == localBlocknum)
+        {
+            sendBlock.num = confirmedBlock[i].num;
+            sendBlock.prevBlocknum = confirmedBlock[i].prevBlocknum;
+            sendBlock.tx.Id = confirmedBlock[i].tx.Id;
+            sendBlock.tx.TxInput.id = confirmedBlock[i].tx.TxInput.id;
+            sendBlock.tx.TxOutput[0].Address = confirmedBlock[i].tx.TxOutput[0].Address;
+            sendBlock.tx.TxOutput[0].value = confirmedBlock[i].tx.TxOutput[0].value;
+            sendBlock.tx.TxOutput[1].Address = confirmedBlock[i].tx.TxOutput[1].Address;
+            sendBlock.tx.TxOutput[1].value = confirmedBlock[i].tx.TxOutput[1].value;
+            i = 0;
+        }
+       
+    }
+
+
+}
+bool requestedBlock()
+{
+    int i;
+    bool flag = false;
+    for(i = 0; i&lt;getfreeIndexChain() - 1;i++)
+    {
+        if(chain[i][0] == Chain.num)
+        {
+            flag = true;
+            i = HASHSIZE;
+        }
+
+    }
+
+   
+
+    return flag;
+
+}
+
+void sendRequetedBlock()
+{
+    Chain.num = sendBlock.num;
+    Chain.prevBlocknum = sendBlock.prevBlocknum;
+    Chain.tx.Id = sendBlock.tx.Id;
+    Chain.tx.TxInput.id = sendBlock.tx.TxInput.id;
+    Chain.tx.TxOutput[0].Address = sendBlock.tx.TxOutput[0].Address;
+    Chain.tx.TxOutput[0].value = sendBlock.tx.TxOutput[0].value;
+    Chain.tx.TxOutput[1].Address = sendBlock.tx.TxOutput[1].Address;
+    Chain.tx.TxOutput[1].value = sendBlock.tx.TxOutput[1].value;
+    
+    sendBlock.num = 0;
+    sendBlock.prevBlocknum = 0;
+    sendBlock.tx.Id = 0;
+    sendBlock.tx.TxInput.id = 0;
+    sendBlock.tx.TxOutput[0].Address = 0;
+    sendBlock.tx.TxOutput[0].value = 0;
+    sendBlock.tx.TxOutput[1].Address = 0;
+    sendBlock.tx.TxOutput[1].value = 0;
+
+}
+//removes orphan block
+void removeBlock(BLOCKHASH num)
+{
+    int i;
+    for(i = 0;i &lt; MAX_BLOCK;i++)
+    {
+        if(orphanBlock[i].num == num)
+        {
+            orphanBlock[i].num = 0;
+            orphanBlock[i].prevBlocknum = 0;
+            orphanBlock[i].tx.Id = 0;
+            orphanBlock[i].tx.TxInput.id = 0;
+            orphanBlock[i].tx.TxOutput[0].Address = 0;
+            orphanBlock[i].tx.TxOutput[0].value = 0;
+            orphanBlock[i].tx.TxOutput[1].Address = 0;
+            orphanBlock[i].tx.TxOutput[1].value = 0;
+            //i = MAX_BLOCK;
+        } 
+    }
+}
+
+bool checkOrphanBlock()
+{
+    bool flag = false;
+     int i;
+    for(i = 0;i &lt; MAX_BLOCK;i++)
+    {
+        if(orphanBlock[i].num == Chain.num)
+        {
+            flag = true;
+            i = MAX_BLOCK;
+        } 
+    }
+    return flag;
+}
+
+bool findBlock(BLOCKHASH num)
+{
+    bool flag = false;
+    int i;
+    for(i = 0;i &lt; HASHSIZE; i++)
+    {
+        if(chain[i][0] == num)
+        {
+            flag = true;
+            i = HASHSIZE;
+        }
+    }
+
+    return flag;
+}
+void processOrphans()
+{
+    int i,j, index,index2;
+    bool flag = false;
+    for(j = 0; j &lt; MAX_BLOCK;j++)
+    {
+         if(orphanBlock[j].num != 0 &amp;&amp; findBlock(orphanBlock[j].prevBlocknum))
+         {
+            index = getfreeIndex();
+            confirmedBlock[index].num = orphanBlock[j].num;
+            confirmedBlock[index].prevBlocknum = orphanBlock[j].prevBlocknum;
+            confirmedBlock[index].tx.Id = orphanBlock[j].tx.Id;
+            confirmedBlock[index].tx.TxInput.id = orphanBlock[j].tx.TxInput.id;
+            confirmedBlock[index].tx.TxOutput[0].Address = orphanBlock[j].tx.TxOutput[0].Address;
+            confirmedBlock[index].tx.TxOutput[0].value = orphanBlock[j].tx.TxOutput[0].value;
+            confirmedBlock[index].tx.TxOutput[1].Address = orphanBlock[j].tx.TxOutput[1].Address;
+            confirmedBlock[index].tx.TxOutput[1].value = orphanBlock[j].tx.TxOutput[1].value;
+            
+            //removes orphan block if any
+            removeBlock(orphanBlock[j].num);
+
+            //add in chain
+            index2 = getfreeIndexChain();
+            chain[index2][0] = confirmedBlock[index].num;
+            chain[index2][1] = confirmedBlock[index].prevBlocknum;
+            chain[index2][3] = chain[getIndexBlockChain(confirmedBlock[index].prevBlocknum)][3]+1;
+        if (lengthLongestChain &lt; chain[index][3])
+        {
+            lengthLongestChain = chain[index][3];
+            indexLongestChain = index2;    
+        }
+            }      
+    }
+//CountFork = countFork();
+     if(!checkOrphan())
+    {
+        requestOrphan = false;
+    }
+
+}
+//count pairs of double spent transactions
+int countDoubleSpending()
+{
+   int j,k,index, count = 0;
+   bool flag = false;
+   index = getfreeIndex();
+   for(j=0;j &lt; index;j++)
+    {
+        if (checkBlockinChain(confirmedBlock[j].num))
+        {
+            for(k = 1;k &lt; index-1;k++)
+            {
+                if(confirmedBlock[j].tx.TxInput.id == confirmedBlock[k].tx.TxInput.id &amp;&amp; confirmedBlock[j].num != confirmedBlock[k].num )
+                {
+                    if((confirmedBlock[j].tx.TxOutput[0].value + confirmedBlock[j].tx.TxOutput[1].value) == (confirmedBlock[k].tx.TxOutput[0].value + confirmedBlock[k].tx.TxOutput[1].value))
+                    {
+                    count++;
+                    }
+                }
+
+            }
+        }
+    } 
+    
+    return count;
+}
+
+void addBlock()
+{
+    int i, index, j;
+    bool flag = false;
+     if (!requestedBlock())
+    {
+    for(i = 0;i &lt; HASHSIZE; i++)
+    {
+        if(chain[i][0] == Chain.prevBlocknum)
+        {
+            flag = true;
+            i = HASHSIZE;
+        }
+    }
+    
+    if(localTx.Id!=0)
+    {
+        for(i = 0;i &lt; MAX_POOL_SIZE; i++)
+        {
+            if(TxPool[i].Id == localTx.Id)
+            {
+                TxPool[i].status = UNCONFIRMED;
+                i = MAX_POOL_SIZE;
+            }
+
+        }
+        resetLocalTx();
+    }
+    
+    if(flag == true) //parent is in the chain
+    {
+         index = getfreeIndex();
+        //add in confirmed list of blocks
+         confirmedBlock[index].num = Chain.num;
+         confirmedBlock[index].prevBlocknum = Chain.prevBlocknum;
+         confirmedBlock[index].tx.Id = Chain.tx.Id;
+         confirmedBlock[index].tx.TxInput.id = Chain.tx.TxInput.id;
+         confirmedBlock[index].tx.TxOutput[0].Address = Chain.tx.TxOutput[0].Address;
+         confirmedBlock[index].tx.TxOutput[0].value = Chain.tx.TxOutput[0].value;
+         confirmedBlock[index].tx.TxOutput[1].Address = Chain.tx.TxOutput[1].Address;
+         confirmedBlock[index].tx.TxOutput[1].value = Chain.tx.TxOutput[1].value;
+
+        
+        //updating block number in chain
+        index = getfreeIndexChain();
+        chain[index][0] = Chain.num;
+        chain[index][1] = Chain.prevBlocknum;
+         chain[index][3] = chain[getIndexBlockChain(Chain.prevBlocknum)][3]+1;
+    if (lengthLongestChain &lt; chain[index][3])
+    {
+        lengthLongestChain = chain[index][3];
+        indexLongestChain = index;    
+    }
+    }
+    else //its an orphan block
+    {
+        for(j = 0;j &lt; MAX_BLOCK;j++)
+        {
+            if(orphanBlock[j].num == 0)
+            {
+                orphanBlock[j].num = Chain.num;
+                orphanBlock[j].prevBlocknum = Chain.prevBlocknum;
+                orphanBlock[j].tx.Id = Chain.tx.Id;
+                orphanBlock[j].tx.TxInput.id = Chain.tx.TxInput.id;
+                orphanBlock[j].tx.TxOutput[0].Address = Chain.tx.TxOutput[0].Address;
+                orphanBlock[j].tx.TxOutput[0].value = Chain.tx.TxOutput[0].value;
+                orphanBlock[j].tx.TxOutput[1].Address = Chain.tx.TxOutput[1].Address;
+                orphanBlock[j].tx.TxOutput[1].value = Chain.tx.TxOutput[1].value;
+                j = MAX_BLOCK;
+             } 
+        }
+    }
+
+//countdoubleSpending = countDoubleSpending();
+//CountFork = countFork();
+    }
+}
+//This function checks for double spending at forks
+bool checkDoubleSpending()
+{
+   int j,k,index;
+   bool flag = false;
+   index = getfreeIndex();
+   for(j=0;j &lt; index;j++)
+    {
+        if (checkBlockinChain(confirmedBlock[j].num))
+        {
+            for(k = 1;k &lt; index-1;k++)
+            {
+                if(confirmedBlock[j].tx.TxInput.id == confirmedBlock[k].tx.TxInput.id &amp;&amp; confirmedBlock[j].num != confirmedBlock[k].num)
+                {
+                   if((confirmedBlock[j].tx.TxOutput[0].value + confirmedBlock[j].tx.TxOutput[1].value) == (confirmedBlock[k].tx.TxOutput[0].value + confirmedBlock[k].tx.TxOutput[1].value))
+                    {
+                    
+                    flag = true;
+                    k = index;
+                    j = index;
+                    }
+                }
+
+            }
+        }
+    } 
+    
+    return flag;
+}
+// counts orphan blocks
+int countOrphans()
+{
+    int i, count = 0;
+    
+    for(i = 0;i &lt; MAX_BLOCK;i++)
+    {
+        if(orphanBlock[i].num !=0)
+        {
+            count++;
+        } 
+    }
+
+    return count;
+
+
+
+
+}</declaration>
+		<location id="id0" x="-2286" y="-2210">
+			<name x="-2303" y="-2193">Verify</name>
+			<committed/>
+		</location>
+		<location id="id1" x="-2763" y="-2253">
+			<name x="-2773" y="-2287">Initial</name>
+			<committed/>
+		</location>
+		<location id="id2" x="-2125" y="-2210">
+			<name x="-2116" y="-2244">Mine</name>
+			<label kind="exponentialrate" x="-2125" y="-2201">1:rateX</label>
+		</location>
+		<location id="id3" x="-2465" y="-2210">
+			<name x="-2499" y="-2278">Wait</name>
+			<label kind="invariant" x="-2465" y="-2193">x&lt;= 1</label>
+		</location>
+		<init ref="id1"/>
+		<transition>
+			<source ref="id0"/>
+			<target ref="id3"/>
+			<label kind="guard" x="-2432" y="-2304">verifyTransaction()</label>
+			<label kind="assignment" x="-2431" y="-2278">updateTxStatus(),
+x=0</label>
+			<nail x="-2321" y="-2278"/>
+			<nail x="-2432" y="-2278"/>
+		</transition>
+		<transition>
+			<source ref="id0"/>
+			<target ref="id2"/>
+			<label kind="guard" x="-2278" y="-2244">!verifyTransaction()</label>
+			<label kind="assignment" x="-2252" y="-2210">x=0</label>
+		</transition>
+		<transition>
+			<source ref="id3"/>
+			<target ref="id3"/>
+			<label kind="guard" x="-2567" y="-2473">checkOrphan()</label>
+			<label kind="assignment" x="-2567" y="-2456">processOrphans(),
+x=0</label>
+			<nail x="-2584" y="-2406"/>
+			<nail x="-2499" y="-2431"/>
+		</transition>
+		<transition>
+			<source ref="id3"/>
+			<target ref="id3"/>
+			<label kind="guard" x="-2576" y="-1972">requestOrphan</label>
+			<label kind="synchronisation" x="-2576" y="-1955">send?</label>
+			<label kind="assignment" x="-2576" y="-1938">addBlock(),
+processOrphans(),
+x = 0</label>
+			<nail x="-2567" y="-1989"/>
+			<nail x="-2507" y="-1972"/>
+		</transition>
+		<transition>
+			<source ref="id3"/>
+			<target ref="id3"/>
+			<label kind="guard" x="-2762" y="-2431">sendBlock.num != 0</label>
+			<label kind="synchronisation" x="-2762" y="-2414">send!</label>
+			<label kind="assignment" x="-2762" y="-2397">sendRequetedBlock(),
+x = 0</label>
+			<nail x="-2661" y="-2346"/>
+			<nail x="-2610" y="-2397"/>
+		</transition>
+		<transition>
+			<source ref="id3"/>
+			<target ref="id3"/>
+			<label kind="synchronisation" x="-2745" y="-2023">request?</label>
+			<label kind="assignment" x="-2746" y="-2006">localBlocknum = Blocknum,
+checkBlock(),
+x = 0</label>
+			<nail x="-2601" y="-2108"/>
+			<nail x="-2669" y="-2049"/>
+			<nail x="-2618" y="-2006"/>
+		</transition>
+		<transition>
+			<source ref="id3"/>
+			<target ref="id3"/>
+			<label kind="guard" x="-2822" y="-2116">checkOrphan()</label>
+			<label kind="synchronisation" x="-2822" y="-2099">request!</label>
+			<label kind="assignment" x="-2822" y="-2082">requestBlock(),
+requestOrphan = true,
+x = 0</label>
+			<nail x="-2720" y="-2117"/>
+			<nail x="-2686" y="-2066"/>
+			<nail x="-2678" y="-2066"/>
+		</transition>
+		<transition>
+			<source ref="id3"/>
+			<target ref="id3"/>
+			<label kind="synchronisation" x="-2822" y="-2210">blockSolution?</label>
+			<label kind="assignment" x="-2822" y="-2193">x=0,
+addBlock()</label>
+			<nail x="-2720" y="-2142"/>
+			<nail x="-2720" y="-2210"/>
+		</transition>
+		<transition>
+			<source ref="id3"/>
+			<target ref="id3"/>
+			<label kind="guard" x="-2796" y="-2321">!checkTxPool()</label>
+			<label kind="assignment" x="-2796" y="-2303">x=0</label>
+			<nail x="-2703" y="-2278"/>
+			<nail x="-2669" y="-2338"/>
+		</transition>
+		<transition>
+			<source ref="id1"/>
+			<target ref="id3"/>
+			<label kind="assignment" x="-2720" y="-2244">initial()</label>
+		</transition>
+		<transition>
+			<source ref="id2"/>
+			<target ref="id3"/>
+			<label kind="synchronisation" x="-2346" y="-2057">blockSolution?</label>
+			<label kind="assignment" x="-2346" y="-2032">x=0,
+addBlock()</label>
+			<nail x="-2125" y="-2031"/>
+			<nail x="-2465" y="-2032"/>
+		</transition>
+		<transition>
+			<source ref="id2"/>
+			<target ref="id3"/>
+			<label kind="synchronisation" x="-2312" y="-2397">blockSolution!</label>
+			<label kind="assignment" x="-2312" y="-2371">updateBlockChain(),
+FoundBlock = true,
+x = 0</label>
+			<nail x="-2125" y="-2371"/>
+			<nail x="-2465" y="-2372"/>
+		</transition>
+		<transition>
+			<source ref="id3"/>
+			<target ref="id0"/>
+			<label kind="guard" x="-2422" y="-2210">checkTxPool()</label>
+			<label kind="assignment" x="-2422" y="-2193">x=0,
+getTransaction()</label>
+			<nail x="-2355" y="-2210"/>
+		</transition>
+	</template>
+	<template>
+		<name>Peer</name>
+		<parameter>const PEER id, const int &amp;confirmation_no</parameter>
+		<declaration>clock x1;
+
+Wallet wallet[MAX_TRANSACTION];
+BLOCKHASH chain[HASHSIZE][3];
+Block confirmedBlock[MAX_BLOCK];
+int [0, MAX_TRANSACTION]index = 0;
+int indexLongestChain = 0;
+int lengthLongestChain = 1;
+void initial()
+{
+    int i;
+    wallet[0].Id = id;
+    wallet[0].value = 10; //initially all peers have 10 BTC
+   
+
+  /*  for(i = 1;i &lt; MAX_TRANSACTION; i++)//other locations are initialised to 0.
+    {
+        wallet[i].Id = 0;
+        wallet[i].value = 0;
+    }
+ */   
+    //Chain is initialised
+    chain[0][0] = 1;
+    chain[0][1] = 0;
+   
+
+}
+//
+ //return index of a block in chain
+int getIndexBlockChain(BLOCKHASH num)
+{
+    int i, index;
+    for (i = 0; i &lt; HASHSIZE; i++)
+    {
+        if(chain[i][0] == num)
+        {
+            index = i;
+            i = HASHSIZE;
+        }
+
+    }
+
+    return index;
+
+
+}
+//
+int getfreeIndexChain()
+{
+    int i, index;
+    for (i = 0;i &lt; HASHSIZE; i++)
+    {
+        if(chain[i][0] == 0)
+        {//found a last free slot
+           index = i;
+           i = HASHSIZE; 
+        }
+    }
+    return index;
+
+}
+
+//this function compares the longest chain and returns the index of last block in the longest chain
+int getLongestChain()
+{
+    int index = 0, i,j,k;
+  int length = 0, counter = 0;
+  
+  for (i = getfreeIndexChain() - 1; i &gt; 0; i--)
+  {
+    k = i;
+    while(k &gt; 0)
+    {
+      for(j = k - 1 ; j &gt;= 0; j--)
+      {
+          if(chain[k][1] == chain[j][0])
+            {
+                counter++;
+                k = j;
+                j = 0;
+                
+            }
+            
+           if(k == 0)
+            {
+                if(counter &gt; length)
+                 {
+                     index = i;
+                     length = counter;
+                 }
+                 counter = 0;
+            }
+      }
+    }
+   
+  }
+  return index;  
+}
+
+//
+int getLongestChainLength()
+{
+   int index = 0, i,j,k;
+  int length = 0, counter = 0;
+ 
+  for (i = getfreeIndexChain() - 1; i &gt; 0; i--)
+  {
+    k = i;
+    while(k &gt; 0)
+    {
+      for(j = k - 1 ; j &gt;= 0; j--)
+      {
+          if(chain[k][1] == chain[j][0])
+            {
+                counter++;
+                k = j;
+                j = 0;
+                
+            }
+            
+           if(k == 0)
+            {
+                if(counter &gt; length)
+                 {
+                     
+                     length = counter;
+                 }
+                 counter = 0;
+            }
+      }
+    }
+   
+  }
+  return length;  
+}
+//check  a trasnaction in wallet
+bool checkTxinWallet(TXNUMBER txid)
+{
+    int i;
+    bool flag = false;
+    for(i = 0; i &lt; MAX_TRANSACTION; i++)
+    {
+        if(wallet[i].Id == txid)
+        {
+            flag = true;
+            i = MAX_TRANSACTION;
+        }
+    }
+    
+    return flag;
+
+}
+
+//this function checks a block whether present in chain based on the no. of confirmation (depth)
+
+bool checkBlockinChain(BLOCKHASH num)
+{
+    bool flag = false, flag2=false;
+    int index, i, j, count = 0;
+    i = indexLongestChain;
+    
+    while(i &gt; 0)
+    {
+        
+        if (chain[i][0] == num)
+                {
+                   flag2 = true;
+                   i = 0;  
+                }
+        for(j=i; j &gt;=0;j--)
+        {
+            if(chain[i][1] == chain[j][0])
+            {
+                
+                count++;
+                 
+                i = j;
+                j = 0;
+
+            }
+        }
+
+
+    }
+    if(flag2==true &amp;&amp; count &gt;= confirmation_no  )
+    {
+        flag = true;
+    }
+    return flag;
+}
+//checks the block if there is any output transaction for this peer and it has not been included in wallet (with the no of confirmation)
+bool checkTxOutput()
+{
+    bool flag = false;
+    int i, j, index;
+    index = indexLongestChain; 
+    for(i = 0; i &lt; MAX_BLOCK; i++)
+    {
+        if((confirmedBlock[i].tx.TxOutput[0].Address == id || confirmedBlock[i].tx.TxOutput[1].Address == id)&amp;&amp; (!checkTxinWallet(confirmedBlock[i].tx.Id)))
+        {
+           // if (checkBlockinChain(confirmedBlock[i].num)==true)//check whether this block is in the longest chain
+           // {
+                flag = true;
+                i = MAX_BLOCK;
+            //}
+        }
+
+    }
+
+    return flag;
+}
+//searches the block for output transaction which has this peers output
+BLOCKHASH searchTxOutput()
+{
+    BLOCKHASH block = -1;
+    int i, j, index, index2;
+    index = indexLongestChain; 
+    for(i = 0; i &lt; MAX_BLOCK; i++)
+    {
+        if((confirmedBlock[i].tx.TxOutput[0].Address == id || confirmedBlock[i].tx.TxOutput[1].Address == id )&amp;&amp; (!checkTxinWallet(confirmedBlock[i].tx.Id)))
+        {
+            //if (checkBlockinChain(confirmedBlock[i].num))//check whether this block is in the longest chain
+            //{
+                block = confirmedBlock[i].num;
+                i = MAX_BLOCK;
+            //}
+        }
+
+    }
+
+    return block;
+}
+//check chain and update wallet
+void updateWallet()
+{
+    int index = -1, i, index2;
+    BLOCKHASH block;
+    block = searchTxOutput();
+    for(i = 0; i &lt; MAX_TRANSACTION; i++)
+    {
+        if(wallet[i].Id == 0)//there is a free space
+        {
+            index = i;
+            i = MAX_TRANSACTION;
+        }
+
+    }
+
+    for(i = 0; i &lt; MAX_BLOCK; i++)
+    {
+        if(confirmedBlock[i].num == block)
+        {
+            index2 = i;
+            i = MAX_BLOCK;
+        }
+
+    }
+    //TxPool[j].TxInput.id = wallet[index].Id;
+    //update wallet
+    if(index != -1)
+    {
+        wallet[index].Id = confirmedBlock[index2].tx.Id;
+        if(confirmedBlock[index2].tx.TxOutput[0].Address == id)
+        {
+            wallet[index].value = confirmedBlock[index2].tx.TxOutput[0].value;
+        }
+        if(confirmedBlock[index2].tx.TxOutput[1].Address == id)
+        {
+            wallet[index].value += confirmedBlock[index2].tx.TxOutput[1].value;
+        }
+    }
+
+
+
+}
+
+//create transaction
+void create_Transaction(PEER Add)
+{
+  int i, index = -1, j;
+  for(i = 0;i &lt; MAX_TRANSACTION; i++)
+    {
+        if(wallet[i].value &gt;=1)
+        {  
+           index = i;
+           
+           i = MAX_TRANSACTION;
+        }    
+
+    } 
+    
+    for(j = 0;j &lt; MAX_POOL_SIZE; j++)
+    {
+        if(TxPool[j].Id ==0 &amp;&amp; TxPool[j].TxOutput[0].value ==0)
+      {  
+           TxPool[j].Id = Tx_num;
+           TxPool[j].TxInput.id = wallet[index].Id;
+           TxPool[j].TxOutput[0].Address = Add;
+           TxPool[j].TxOutput[0].value = 1;
+           TxPool[j].status = UNCONFIRMED;
+           wallet[index].value = wallet[index].value - TxPool[j].TxOutput[0].value;
+           if( wallet[index].value &gt; 1)
+           {
+               TxPool[j].TxOutput[1].Address = id; //change
+               TxPool[j].TxOutput[1].value = wallet[index].value;
+               wallet[index].value = 0;
+           }
+           Tx_num = (Tx_num + 1);
+           
+           j = MAX_POOL_SIZE;
+        }    
+
+    } 
+
+}
+
+//check whether peer has bitcoins to do any transaction
+bool checkWallet()
+{
+    bool flag = false;
+    int i = 0;
+    for(i = 0;i &lt; MAX_TRANSACTION; i++)
+    {
+        if(wallet[i].value &gt;=1)
+        {
+            flag = true;
+            //index = i;
+            i = MAX_TRANSACTION;
+        }    
+
+    }
+
+    return flag;
+}
+
+//
+int getfreeIndex()
+{
+    int i, index;
+    for (i = 0;i &lt; MAX_BLOCK; i++)
+    {
+        if(confirmedBlock[i].num == 0)
+        {//found a last free slot
+           index = i;
+           i = MAX_BLOCK; 
+        }
+    }
+    return index;
+}
+
+
+
+void addBlock()
+{
+    int i, index, j;
+    bool flag = false;
+    for(i = 0;i &lt; HASHSIZE; i++)
+    {
+        if(chain[i][0] == Chain.prevBlocknum)
+        {
+            flag = true;
+            i = HASHSIZE;
+        }
+    }
+    
+    if(flag == true) //parent is in the chain
+    {
+         index = getfreeIndex();
+        //add in confirmed list of blocks
+         confirmedBlock[index].num = Chain.num;
+         confirmedBlock[index].prevBlocknum = Chain.prevBlocknum;
+         confirmedBlock[index].tx.Id = Chain.tx.Id;
+         confirmedBlock[index].tx.TxInput.id = Chain.tx.TxInput.id;
+         confirmedBlock[index].tx.TxOutput[0].Address = Chain.tx.TxOutput[0].Address;
+         confirmedBlock[index].tx.TxOutput[0].value = Chain.tx.TxOutput[0].value;
+         confirmedBlock[index].tx.TxOutput[1].Address = Chain.tx.TxOutput[1].Address;
+         confirmedBlock[index].tx.TxOutput[1].value = Chain.tx.TxOutput[1].value;
+
+        
+        //updating block number in chain
+        index = getfreeIndexChain();
+        chain[index][0] = Chain.num;
+        chain[index][1] = Chain.prevBlocknum;
+        chain[index][2] = chain[getIndexBlockChain(Chain.prevBlocknum)][2]+1;
+    if (lengthLongestChain &lt; chain[index][2])
+    {
+        lengthLongestChain = chain[index][2];
+        indexLongestChain = index;    
+    }
+    }
+   
+}
+</declaration>
+		<location id="id4" x="-816" y="-102">
+			<name x="-826" y="-136">Initial</name>
+			<committed/>
+		</location>
+		<location id="id5" x="-680" y="-102">
+			<name x="-714" y="-93">Wait</name>
+			<label kind="exponentialrate" x="-690" y="-68">1:1</label>
+		</location>
+		<init ref="id4"/>
+		<transition>
+			<source ref="id5"/>
+			<target ref="id5"/>
+			<label kind="guard" x="-765" y="-382">Tx_num == MAX_TRANSACTION</label>
+			<label kind="assignment" x="-714" y="-331">x1=0</label>
+			<nail x="-756" y="-340"/>
+			<nail x="-646" y="-357"/>
+		</transition>
+		<transition>
+			<source ref="id5"/>
+			<target ref="id5"/>
+			<label kind="guard" x="-433" y="-8">checkTxOutput()</label>
+			<label kind="assignment" x="-433" y="8">updateWallet(),
+x1=0</label>
+			<nail x="-425" y="-25"/>
+			<nail x="-467" y="51"/>
+		</transition>
+		<transition>
+			<source ref="id5"/>
+			<target ref="id5"/>
+			<label kind="guard" x="-374" y="-110">!checkWallet()</label>
+			<label kind="assignment" x="-374" y="-93">x1=0</label>
+			<nail x="-391" y="-136"/>
+			<nail x="-408" y="-51"/>
+		</transition>
+		<transition>
+			<source ref="id5"/>
+			<target ref="id5"/>
+			<label kind="synchronisation" x="-510" y="-382">blockSolution?</label>
+			<label kind="assignment" x="-510" y="-365">addBlock(),
+x1=0</label>
+			<nail x="-569" y="-357"/>
+			<nail x="-467" y="-297"/>
+		</transition>
+		<transition>
+			<source ref="id4"/>
+			<target ref="id5"/>
+			<label kind="assignment" x="-765" y="-93">initial()</label>
+		</transition>
+		<transition>
+			<source ref="id5"/>
+			<target ref="id5"/>
+			<label kind="select" x="-399" y="-280">add:int[1,PEERS-1]</label>
+			<label kind="guard" x="-399" y="-263">checkWallet() &amp;&amp; Tx_num &lt; MAX_TRANSACTION-1</label>
+			<label kind="assignment" x="-399" y="-246">create_Transaction(add),
+x1 = 0</label>
+			<nail x="-399" y="-170"/>
+			<nail x="-450" y="-280"/>
+		</transition>
+	</template>
+	<template>
+		<name>MPeer</name>
+		<parameter>const PEER id</parameter>
+		<declaration>clock x1;
+
+Wallet wallet[MAX_TRANSACTION];
+BLOCKHASH chain[HASHSIZE][3];
+Block confirmedBlock[MAX_BLOCK];
+int [0, MAX_TRANSACTION]index = 0;
+int lengthLongestChain =0;//testing purpose
+int freeIndexInCHain;
+int indexLongestChain = 0;
+int counter = 0;
+void initial()
+{
+    int i;
+    wallet[0].Id = id;
+    wallet[0].value = 10; //initially all peers have 10 BTC
+   
+/*
+    for(i = 1;i &lt; MAX_TRANSACTION; i++)//other locations are initialised to 0.
+    {
+        wallet[i].Id = 0;
+        wallet[i].value = 0;
+    }
+ */   
+    //Chain is initialised
+    chain[0][0] = 1;
+    chain[0][1] = 0;
+   
+
+}
+
+ //return index of a block in chain
+int getIndexBlockChain(BLOCKHASH num)
+{
+    int i, index;
+    for (i = 0; i &lt; HASHSIZE; i++)
+    {
+        if(chain[i][0] == num)
+        {
+            index = i;
+            i = HASHSIZE;
+        }
+
+    }
+
+    return index;
+
+
+}
+
+//
+
+int getfreeIndexChain()
+{
+    int i, index;
+    for (i = 0;i &lt; HASHSIZE; i++)
+    {
+        if(chain[i][0] == 0)
+        {//found a last free slot
+           index = i;
+           i = HASHSIZE; 
+        }
+    }
+    return index;
+
+}
+//this function compares the longest chain and returns the index of last block in the longest chain
+int getLongestChain()
+{
+    int index = 0, i,j,k;
+  int length = 0, counter = 0;
+  
+  for (i = getfreeIndexChain() - 1; i &gt; 0; i--)
+  {
+    k = i;
+    while(k &gt; 0)
+    {
+      for(j = k - 1 ; j &gt;= 0; j--)
+      {
+          if(chain[k][1] == chain[j][0])
+            {
+                counter++;
+                k = j;
+                j = 0;
+                
+            }
+            
+           if(k == 0)
+            {
+                if(counter &gt; length)
+                 {
+                     index = i;
+                     length = counter;
+                 }
+                 counter = 0;
+            }
+      }
+    }
+   
+  }
+  return index;  
+}
+
+//
+int getLongestChainLength()
+{
+   int index = 0, i,j,k;
+  int length = 0, counter = 0;
+ 
+  for (i = getfreeIndexChain() - 1; i &gt; 0; i--)
+  {
+    k = i;
+    while(k &gt; 0)
+    {
+      for(j = k - 1 ; j &gt;= 0; j--)
+      {
+          if(chain[k][1] == chain[j][0])
+            {
+                counter++;
+                k = j;
+                j = 0;
+                
+            }
+            
+           if(k == 0)
+            {
+                if(counter &gt; length)
+                 {
+                     
+                     length = counter;
+                 }
+                 counter = 0;
+            }
+      }
+    }
+   
+  }
+  return length;  
+}
+//check for two longest chain
+bool compareChains()
+{
+    int length, index, lastIndex, freeIndex, i, j,k, counter = 0;
+    bool flag = false, flag2 = false;
+    freeIndex = getfreeIndexChain();
+    length = getLongestChainLength();
+    index = getLongestChain();
+    
+    if (freeIndex == index+1)//then last element is part of the longest chain
+    {
+      for (i = index - 1; i &gt; 0; i--)
+  {
+    k = i;
+    while(k &gt; 0)
+    {
+      for(j = k - 1 ; j &gt;= 0; j--)
+      {
+          if(chain[k][1] == chain[j][0])
+            {
+                counter++;
+                k = j;
+                j = 0;
+                
+            }
+            
+           if(k == 0)
+            {
+                if(counter == length)
+                 {
+                     flag2 = true;
+                    i = 0;
+                    
+                     //length = counter;
+                 }
+                 counter = 0;
+            }
+      }
+    }
+   
+  }
+   
+      } else
+    {
+         for (i = getfreeIndexChain() - 1; i &gt; 0; i--)
+  {
+    k = i;
+    while(k &gt; 0)
+    {
+      for(j = k - 1 ; j &gt;= 0; j--)
+      {
+          if(chain[k][1] == chain[j][0])
+            {
+                counter++;
+                k = j;
+                j = 0;
+                
+            }
+            
+           if(k == 0)
+            {
+                if(counter == length)
+                 {
+                     flag2 = true;
+                     lastIndex = i;
+                     i = 0;
+                   
+                    // length = counter;
+                 }
+                 counter = 0;
+            }
+      }
+    }
+   
+  
+    }
+    }
+if(lastIndex != index &amp;&amp; flag2 == true)
+{
+    flag = true;
+}   
+
+
+return flag;
+}
+//
+//check  a trasnaction in wallet
+bool checkTxinWallet(TXNUMBER txid)
+{
+    int i;
+    bool flag = false;
+    for(i = 0; i &lt; MAX_TRANSACTION; i++)
+    {
+        if(wallet[i].Id == txid)
+        {
+            flag = true;
+            i = MAX_TRANSACTION;
+        }
+    }
+    
+    return flag;
+
+}
+
+//this function checks a block whether present in chain based on the no. of confirmation (depth)
+
+bool checkBlockinChain(BLOCKHASH num)
+{
+    bool flag = false, flag2=false;
+    int index, i, j, count = 0;
+    i = getLongestChain();
+    
+    while(i &gt; 0)
+    {
+        
+        if (chain[i][0] == num)
+                {
+                   flag2 = true;
+                   i = 0;  
+                }
+        for(j=i; j &gt;=0;j--)
+        {
+            if(chain[i][1] == chain[j][0])
+            {
+                
+                count++;
+                 
+                i = j;
+                j = 0;
+
+            }
+        }
+
+
+    }
+    if(flag2==true &amp;&amp; count  )
+    {
+        flag = true;
+    }
+    return flag;
+}
+//checks the block if there is any output transaction for this peer and it has not been included in wallet (with the no of confirmation)
+bool checkTxOutput()
+{
+    bool flag = false;
+    int i, j, index;
+    index = getLongestChain(); 
+    for(i = 0; i &lt; MAX_BLOCK; i++)
+    {
+        if((confirmedBlock[i].tx.TxOutput[0].Address == id || confirmedBlock[i].tx.TxOutput[1].Address == id)&amp;&amp; (!checkTxinWallet(confirmedBlock[i].tx.Id)))
+        {
+            if (checkBlockinChain(confirmedBlock[i].num)==true)//check whether this block is in the longest chain
+            {
+                flag = true;
+                i = MAX_BLOCK;
+            }
+        }
+
+    }
+
+    return flag;
+}
+//searches the block for output transaction which has this peers output
+BLOCKHASH searchTxOutput()
+{
+    BLOCKHASH block = -1;
+    int i, j, index, index2;
+    index = getLongestChain(); 
+    for(i = 0; i &lt; MAX_BLOCK; i++)
+    {
+        if((confirmedBlock[i].tx.TxOutput[0].Address == id || confirmedBlock[i].tx.TxOutput[1].Address == id )&amp;&amp; (!checkTxinWallet(confirmedBlock[i].tx.Id)))
+        {
+            if (checkBlockinChain(confirmedBlock[i].num))//check whether this block is in the longest chain
+            {
+                block = confirmedBlock[i].num;
+                i = MAX_BLOCK;
+            }
+        }
+
+    }
+
+    return block;
+}
+//check chain and update wallet
+void updateWallet()
+{
+    int index = -1, i, index2;
+    BLOCKHASH block;
+    block = searchTxOutput();
+    for(i = 0; i &lt; MAX_TRANSACTION; i++)
+    {
+        if(wallet[i].Id == 0)//there is a free space
+        {
+            index = i;
+            i = MAX_TRANSACTION;
+        }
+
+    }
+
+    for(i = 0; i &lt; MAX_BLOCK; i++)
+    {
+        if(confirmedBlock[i].num == block)
+        {
+            index2 = i;
+            i = MAX_BLOCK;
+        }
+
+    }
+    
+    //update wallet
+    if(index != -1)
+    {
+        wallet[index].Id = confirmedBlock[index2].tx.Id;
+        if(confirmedBlock[index2].tx.TxOutput[0].Address == id)
+        {
+            wallet[index].value = confirmedBlock[index2].tx.TxOutput[0].value;
+        }
+        if(confirmedBlock[index2].tx.TxOutput[1].Address == id)
+        {
+            wallet[index].value += confirmedBlock[index2].tx.TxOutput[1].value;
+        }
+    }
+
+
+
+}
+
+//check whether peer has bitcoins to do any transaction
+bool checkWallet()
+{
+    bool flag = false;
+    int i = 0;
+    for(i = 0;i &lt; MAX_TRANSACTION; i++)
+    {
+        if(wallet[i].value &gt;=1)
+        {
+            flag = true;
+            //index = i;
+            i = MAX_TRANSACTION;
+        }    
+
+    }
+
+    return flag;
+}
+
+//
+int getfreeIndex()
+{
+    int i, index;
+    for (i = 0;i &lt; MAX_BLOCK; i++)
+    {
+        if(confirmedBlock[i].num == 0)
+        {//found a last free slot
+           index = i;
+           i = MAX_BLOCK; 
+        }
+    }
+    return index;
+}
+
+
+
+
+void addBlock()
+{
+    int i, index, j;
+    bool flag = false;
+    for(i = 0;i &lt; HASHSIZE; i++)
+    {
+        if(chain[i][0] == Chain.prevBlocknum)
+        {
+            flag = true;
+            i = HASHSIZE;
+        }
+    }
+    
+    if(flag == true) //parent is in the chain
+    {
+         index = getfreeIndex();
+        //add in confirmed list of blocks
+         confirmedBlock[index].num = Chain.num;
+         confirmedBlock[index].prevBlocknum = Chain.prevBlocknum;
+         confirmedBlock[index].tx.Id = Chain.tx.Id;
+         confirmedBlock[index].tx.TxInput.id = Chain.tx.TxInput.id;
+         confirmedBlock[index].tx.TxOutput[0].Address = Chain.tx.TxOutput[0].Address;
+         confirmedBlock[index].tx.TxOutput[0].value = Chain.tx.TxOutput[0].value;
+         confirmedBlock[index].tx.TxOutput[1].Address = Chain.tx.TxOutput[1].Address;
+         confirmedBlock[index].tx.TxOutput[1].value = Chain.tx.TxOutput[1].value;
+
+        
+        //updating block number in chain
+        index = getfreeIndexChain();
+        chain[index][0] = Chain.num;
+        chain[index][1] = Chain.prevBlocknum;
+        chain[index][2] = chain[getIndexBlockChain(Chain.prevBlocknum)][2]+1;
+    if (lengthLongestChain &lt; chain[index][2])
+    {
+        lengthLongestChain = chain[index][2];
+        indexLongestChain = index;    
+    }
+    }
+   
+}
+
+
+
+
+
+//create transaction
+void create_Transaction(PEER Add)
+{
+  int i, index = -1, j;
+  for(i = 0;i &lt; MAX_POOL_SIZE; i++)
+    {
+        if(wallet[i].value &gt;=0)
+        {  
+           index = i;
+           
+           i = MAX_POOL_SIZE;
+        }    
+
+    } 
+
+    for(j = 0;j &lt; MAX_POOL_SIZE; j++)
+    {
+        if(TxPool[j].Id ==0 &amp;&amp; TxPool[j].TxOutput[0].value ==0)
+      {  
+           TxPool[j].Id = Tx_num;
+           TxPool[j].TxInput.id = wallet[index].Id;
+           TxPool[j].TxOutput[0].Address = Add;
+           TxPool[j].TxOutput[0].value = 1;
+           TxPool[j].status = UNCONFIRMED;
+           //wallet[index].value = wallet[index].value - TxPool[j].TxOutput[0].value;
+           if( wallet[index].value &gt; 1)
+           {
+               TxPool[j].TxOutput[1].Address = id; //change
+               TxPool[j].TxOutput[1].value = wallet[index].value;
+               //wallet[index].value = 0; //the value  is never set to 0
+           }
+           Tx_num = (Tx_num + 1);
+           
+           j = MAX_POOL_SIZE;
+        }    
+
+    } 
+
+}
+
+void createDuplicateTransaction()
+{
+     MPeerPool.Id = Tx_num;
+     MPeerPool.TxInput.id = wallet[index].Id;
+     MPeerPool.TxOutput[0].Address = id;
+     MPeerPool.TxOutput[0].value = wallet[0].value;
+     MPeerPool.status = UNCONFIRMED;
+     Tx_num = (Tx_num + 1);
+}
+
+</declaration>
+		<location id="id6" x="-816" y="-102">
+			<name x="-826" y="-136">Initial</name>
+			<committed/>
+		</location>
+		<location id="id7" x="-680" y="-102">
+			<name x="-714" y="-93">Wait</name>
+			<label kind="exponentialrate" x="-690" y="-68">1:1</label>
+		</location>
+		<init ref="id6"/>
+		<transition>
+			<source ref="id7"/>
+			<target ref="id7"/>
+			<label kind="guard" x="-680" y="-399">counter == 1</label>
+			<label kind="assignment" x="-671" y="-365">x1=0</label>
+			<nail x="-680" y="-374"/>
+			<nail x="-586" y="-357"/>
+		</transition>
+		<transition>
+			<source ref="id7"/>
+			<target ref="id7"/>
+			<label kind="guard" x="-450" y="17">checkTxOutput()</label>
+			<label kind="assignment" x="-450" y="34">updateWallet(),
+x1=0</label>
+			<nail x="-425" y="-25"/>
+			<nail x="-467" y="51"/>
+		</transition>
+		<transition>
+			<source ref="id7"/>
+			<target ref="id7"/>
+			<label kind="guard" x="-391" y="-110">!checkWallet()</label>
+			<label kind="assignment" x="-586" y="-110">x1=0</label>
+			<nail x="-399" y="-136"/>
+			<nail x="-416" y="-51"/>
+		</transition>
+		<transition>
+			<source ref="id7"/>
+			<target ref="id7"/>
+			<label kind="synchronisation" x="-501" y="-374">blockSolution?</label>
+			<label kind="assignment" x="-501" y="-357">addBlock(),
+x1=0</label>
+			<nail x="-552" y="-348"/>
+			<nail x="-459" y="-289"/>
+		</transition>
+		<transition>
+			<source ref="id6"/>
+			<target ref="id7"/>
+			<label kind="assignment" x="-765" y="-93">initial()</label>
+		</transition>
+		<transition>
+			<source ref="id7"/>
+			<target ref="id7"/>
+			<label kind="select" x="-399" y="-272">add:int[1,PEERS]</label>
+			<label kind="guard" x="-399" y="-255">checkWallet() &amp;&amp; Tx_num &lt; MAX_TRANSACTION-1 &amp;&amp; counter &lt;1</label>
+			<label kind="assignment" x="-399" y="-238">create_Transaction(add),
+createDuplicateTransaction(),
+x1 = 0,
+counter++</label>
+			<nail x="-399" y="-153"/>
+			<nail x="-434" y="-280"/>
+		</transition>
+	</template>
+	<template>
+		<name>MPool</name>
+		<parameter>const id_t ID,   const int &amp;rateX, const int &amp;confirmation_no</parameter>
+		<declaration>// Place local declarations here.
+clock x;
+
+Tx localTx;
+//BlockChain chain[3];
+Block orphanBlock[MAX_BLOCK],confirmedBlock[MAX_BLOCK], sendBlock;
+BLOCKHASH localBlocknum, chain[HASHSIZE][4], racePrevBlock, MPrevBlock, MBlock;
+int  indexMBlock = -1;
+int indexLongestChain = 0;
+int lengthLongestChain = 1;
+int raceLength = 0;
+int racePrevBlockIndex = 0;
+
+
+int countSuccessor = 0;
+bool raceFlag = false, raceflag = false, requestOrphan = false;
+
+void initial()
+{
+chain[0][0] = 1;
+chain[0][1] = 0;
+chain[0][3] = 1;
+
+
+}
+void removeTxPool()
+{
+    int i;
+    for( i = 0; i &lt; MAX_POOL_SIZE; i++)
+    {
+        if(TxPool[i].Id != 0 &amp;&amp; TxPool[i].Id == localTx.Id)
+        {
+            
+            TxPool[i].Id = 0;
+            TxPool[i].TxInput.id = 0;
+            TxPool[i].TxOutput[0].Address = 0;
+            TxPool[i].TxOutput[0].value = 0;
+            TxPool[i].TxOutput[1].Address = 0;
+            TxPool[i].TxOutput[1].value = 0;
+            TxPool[i].status = 0;
+           // index = i;
+            i = MAX_POOL_SIZE;
+        }
+    }
+
+}
+//
+void resetMPeerPool()
+{
+     MPeerPool.Id = 0;
+     MPeerPool.TxInput.id = 0;
+     MPeerPool.TxOutput[0].Address = 0;
+     MPeerPool.TxOutput[0].value = 0;
+     MPeerPool.status = UNCONFIRMED;
+
+}
+bool checkTxPool()
+{
+    bool flag = false;
+    int i;
+    for( i = 0; i &lt; MAX_POOL_SIZE; i++)
+    {
+        if((TxPool[i].Id != 0 || TxPool[i].TxInput.id != 0 || TxPool[i].TxOutput[0].value !=0) &amp;&amp; TxPool[i].status == UNCONFIRMED)
+        {
+            flag = true;
+        }
+    }
+    return flag;
+}
+
+void getTransaction()
+{
+    int i;
+    for( i = 0; i &lt; MAX_POOL_SIZE; i++)
+    {
+        if((TxPool[i].Id != 0 || TxPool[i].TxInput.id != 0 || TxPool[i].TxOutput[0].value !=0) &amp;&amp; TxPool[i].status == UNCONFIRMED)
+        {
+            
+            localTx.Id = TxPool[i].Id;
+            localTx.TxInput.id = TxPool[i].TxInput.id;
+            localTx.TxOutput[0].Address = TxPool[i].TxOutput[0].Address;
+            localTx.TxOutput[0].value = TxPool[i].TxOutput[0].value;
+            localTx.TxOutput[1].Address = TxPool[i].TxOutput[1].Address;
+            localTx.TxOutput[1].value = TxPool[i].TxOutput[1].value;
+            TxPool[i].status = CONFIRMED;
+            i = MAX_POOL_SIZE;
+        }
+    }
+
+
+}
+
+//return index of a block in chain
+int getIndexBlockChain(BLOCKHASH num)
+{
+    int i, index;
+    for (i = 0; i &lt; HASHSIZE; i++)
+    {
+        if(chain[i][0] == num)
+        {
+            index = i;
+            i = HASHSIZE;
+        }
+
+    }
+
+    return index;
+
+
+}
+
+void resetLocalTx()
+{
+    localTx.Id = 0;
+    localTx.TxInput.id = 0;
+    localTx.TxOutput[0].Address = 0;
+    localTx.TxOutput[0].value = 0;
+    localTx.TxOutput[1].Address = 0;
+    localTx.TxOutput[1].value = 0;
+    
+
+
+}
+//
+
+int getfreeIndexChain()
+{
+    int i, index;
+    for (i = 0;i &lt; HASHSIZE; i++)
+    {
+        if(chain[i][0] == 0)
+        {//found a last free slot
+           index = i;
+           i = HASHSIZE; 
+        }
+    }
+    return index;
+
+}
+/*
+//this function compares the longest chain and returns the index of last block in the longest chain
+int getLongestChain()
+{
+    int index = 0, i,j,k;
+  int length = 0, counter = 0;
+  
+  for (i = getfreeIndexChain() - 1; i &gt; 0; i--)
+  {
+    k = i;
+    while(k &gt; 0)
+    {
+      for(j = k - 1 ; j &gt;= 0; j--)
+      {
+          if(chain[k][1] == chain[j][0])
+            {
+                counter++;
+                k = j;
+                j = 0;
+                
+            }
+            
+           if(k == 0)
+            {
+                if(counter &gt; length)
+                 {
+                     index = i;
+                     length = counter;
+                 }
+                 counter = 0;
+            }
+      }
+    }
+   
+  }
+  return index;  
+}
+*/
+/*
+//
+int getLongestChainLength()
+{
+   int index = 0, i,j,k;
+  int length = 0, counter = 0;
+ 
+  for (i = getfreeIndexChain() - 1; i &gt; 0; i--)
+  {
+    k = i;
+    while(k &gt; 0)
+    {
+      for(j = k - 1 ; j &gt;= 0; j--)
+      {
+          if(chain[k][1] == chain[j][0])
+            {
+                counter++;
+                k = j;
+                j = 0;
+                
+            }
+            
+           if(k == 0)
+            {
+                if(counter &gt; length)
+                 {
+                     
+                     length = counter;
+                 }
+                 counter = 0;
+            }
+      }
+    }
+   
+  }
+  return length;  
+}
+*/
+int countBlocksChain()
+{
+    int index, i, j, count = 0;
+    i = indexLongestChain;
+    while(i &gt; 0)
+    {
+        if (chain[i][2] == ID)
+                {
+                    count++;
+                } 
+        for(j=i; j &gt;=0;j--)
+        {
+            if(chain[i][1] == chain[j][0])
+            {
+                
+                
+                i = j;
+                j = 0;
+
+            }
+        }
+
+
+    }
+    return count;
+}
+
+int getfreeIndex()
+{
+    int i, index;
+    for (i = 0;i &lt; MAX_BLOCK; i++)
+    {
+        if(confirmedBlock[i].num == 0 )
+        {//found a last free slot
+           index = i;
+           i = MAX_BLOCK; 
+        }
+    }
+    return index;
+}
+//this function returns index of MTx
+int findTx()
+{
+    int i, index, index2 = -1;
+    bool flag = false;
+    index = getfreeIndex();
+    for(i = 0; i &lt; index; i++)
+    {
+        if(confirmedBlock[i].tx.TxInput.id == MPeerPool.TxInput.id)
+        {
+            index2 = i;
+            i = index;
+        }
+
+
+    }
+    
+    return index2;
+
+
+
+}
+void getMTransaction()
+{   
+    int i,index;        
+    localTx.Id = MPeerPool.Id;
+    localTx.TxInput.id = MPeerPool.TxInput.id;
+    localTx.TxOutput[0].Address = MPeerPool.TxOutput[0].Address;
+    localTx.TxOutput[0].value = MPeerPool.TxOutput[0].value;
+    localTx.TxOutput[1].Address = MPeerPool.TxOutput[1].Address;
+    localTx.TxOutput[1].value = MPeerPool.TxOutput[1].value;
+    raceFlag = true;
+    raceflag = true;
+    
+    racePrevBlock = confirmedBlock[findTx()].prevBlocknum;
+    MPrevBlock = confirmedBlock[findTx()].prevBlocknum;
+    for(i = 0;i &lt; HASHSIZE;i++)
+    {
+        if(chain[i][0] == racePrevBlock)
+        {
+            index = i;
+            i = HASHSIZE;
+        }
+    }
+    racePrevBlockIndex = index;
+    
+}
+//counts block ahead of Mtx
+int countMTxSuccesorBlock()
+{
+    int count = 0;
+    int i, j, index, index2;
+    bool flag = false;
+    index = indexLongestChain;
+    index2 = findTx();
+    
+    i = index;
+    if(index2 != -1)
+    {
+    while (i &gt; 0)
+    {
+         
+        for(j=i; j &gt;=0;j--)
+        {
+            if(chain[i][1] == chain[j][0])
+            {
+                
+                i = j;
+                j = 0;
+                if (confirmedBlock[index2].num == chain[i][0])
+                {
+
+                    i = 0;
+                    j = 0;
+                    flag = true;
+                }
+                count++;
+
+            }
+        }
+       
+        
+    }
+    }
+    if (flag ==false)
+    {
+        count = 0;
+    }
+
+    return count;
+}
+//verify transactions to see whether the input of the transaction being included in one of the blocks has input transaction matching with other blocks in longest chain
+// TODO: include small things like ---- zero or negative value
+bool verifyTransaction(TXNUMBER Id)
+{
+    bool flag = false;
+    int i,j,k, index;
+    i = indexLongestChain;
+    index = getfreeIndex();
+    while(i &gt; 0)
+    {
+        for(k = 0;k &lt; index;k++)
+        {
+            if(chain[i][0] == confirmedBlock[k].num)
+            {
+                if(confirmedBlock[k].tx.TxInput.id == Id)
+                {
+                  // if((confirmedBlock[k].tx.TxOutput[0].value + confirmedBlock[k].tx.TxOutput[1].value) == (localTx.TxOutput[0].value + localTx.TxOutput[1].value))
+                  //  {
+                    
+                    flag = true;
+                    k = 0;
+                    i = 1;
+                  //  }
+                } 
+            }
+
+        }
+        
+        for(j=i; j &gt;=0;j--)
+        {
+            if(chain[i][1] == chain[j][0])
+            {
+                
+                
+                i = j;
+                j = 0;
+
+            }
+        }
+
+
+    } 
+    
+    return flag;
+
+}
+//
+void updateTxStatus()
+{
+    int i;
+    for(i = 0;i &lt; MAX_POOL_SIZE; i++)
+        {
+            if(TxPool[i].Id == localTx.Id)
+            {
+                TxPool[i].status = INVALID;
+                i = MAX_POOL_SIZE;
+            }
+
+        }
+        resetLocalTx();
+
+
+}
+
+//this function finds a transaction
+bool findTransaction()
+{
+    int i, index;
+    bool flag = false;
+    index = getfreeIndex();
+    for(i = 0; i &lt; index; i++)
+    {
+        if(confirmedBlock[i].tx.TxInput.id == MPeerPool.TxInput.id)
+        {
+            flag = true;
+            i = index;
+        }
+
+
+    }
+    
+    return flag;
+
+
+}
+
+
+//this function checks a block whether present in chain based on the no. of confirmation (depth)
+bool checkBlockinChain(BLOCKHASH num)
+{
+    bool flag = false, flag2=false;
+    int index, i, j, count = 0;
+    i = indexLongestChain;
+    if (num != 0)
+    {
+    while(i &gt; 0)
+    {
+        
+        if (chain[i][0] == num)
+                {
+                   flag2 = true;
+                   i = 0; 
+                   //j = -1; 
+                    
+                }
+        for(j=i; j &gt;=0;j--)
+        {
+            if(chain[i][1] == chain[j][0])
+            {
+                
+
+                i = j;
+                j = 0;
+
+            }
+        }
+
+
+    }
+    }
+    return flag2;
+}
+int countFork()
+{
+    int count = 0, i, j, lastIndex;
+    lastIndex = getfreeIndex();
+    for(i = lastIndex-1; i &gt; 0;i--)
+    {
+        if(!checkBlockinChain(chain[i][0]))
+        {
+            for(j = i -1; j &gt;=0;j--)
+            {
+                if(/*checkBlockinChain(chain[j][0]) &amp;&amp; */chain[i][1] == chain[j][0])
+                    {
+                        count++;
+                        j = 0;
+                    }
+            }
+        }
+    }
+    return count;
+}
+//
+void updateBlockChain()
+{
+  int  i, j, index ;
+
+    index = getfreeIndex();
+    //creating block and adding transaction
+    confirmedBlock[index].num = Block_num;
+     if(MPrevBlock == racePrevBlock &amp;&amp; MPrevBlock != 0)
+    {
+
+        MBlock = Block_num;
+    }
+    if(raceFlag == false)
+    {
+        confirmedBlock[index].prevBlocknum = chain[indexLongestChain][0];
+    }
+    else
+    {
+        raceflag = false;
+        confirmedBlock[index].prevBlocknum = racePrevBlock;
+        racePrevBlock = Block_num;
+        if (raceLength &gt; (lengthLongestChain))
+        {
+            raceFlag = false;
+        }
+        
+    }
+   
+    confirmedBlock[index].tx.Id = localTx.Id;
+    confirmedBlock[index].tx.TxInput.id = localTx.TxInput.id;
+    confirmedBlock[index].tx.TxOutput[0].Address = localTx.TxOutput[0].Address;
+    confirmedBlock[index].tx.TxOutput[0].value = localTx.TxOutput[0].value;
+    confirmedBlock[index].tx.TxOutput[1].Address = localTx.TxOutput[1].Address;
+    confirmedBlock[index].tx.TxOutput[1].value = localTx.TxOutput[1].value;
+
+    //update on global variable
+    Chain.num = Block_num;
+    Chain.prevBlocknum = confirmedBlock[index].prevBlocknum;
+    Chain.tx.Id = confirmedBlock[index].tx.Id;
+    Chain.tx.TxInput.id = confirmedBlock[index].tx.TxInput.id;
+    Chain.tx.TxOutput[0].Address = confirmedBlock[index].tx.TxOutput[0].Address ;
+    Chain.tx.TxOutput[0].value = confirmedBlock[index].tx.TxOutput[0].value;
+    Chain.tx.TxOutput[1].Address = confirmedBlock[index].tx.TxOutput[1].Address;
+    Chain.tx.TxOutput[1].value = confirmedBlock[index].tx.TxOutput[1].value;
+    
+    //updating block number in chain
+    index = getfreeIndexChain();
+    chain[index][0] = Chain.num;
+    chain[index][1] = Chain.prevBlocknum;
+    chain[index][2] = ID;
+    if(raceFlag == false)
+    {
+        chain[index][3] = chain[indexLongestChain][3]+1;
+    }else
+    {
+        chain[index][3] = chain[racePrevBlockIndex][3]+1;
+        racePrevBlockIndex = index;
+        raceLength = chain[index][3];
+    }
+    if (lengthLongestChain &lt; chain[index][3])
+    {
+        lengthLongestChain = chain[index][3];
+        indexLongestChain = index;    
+    }
+    //update global variable block hash
+    Block_num++;
+    //remove transaction from pool
+    removeTxPool();
+    //reset localTx
+    resetLocalTx();
+    
+    //count = countBlocksChain();
+    //CountFork = countFork();
+   // countSuccessor = countMTxSuccesorBlock();
+}
+//requesting parent of orphan block
+void requestBlock()
+{
+    int i,j;
+    bool flag = false;
+    BLOCKHASH num;
+    for(j = 0; j &lt; MAX_BLOCK;j++)
+    {
+        if(orphanBlock[j].num != 0)
+        {
+           num = orphanBlock[j].prevBlocknum; 
+           j = MAX_BLOCK;
+
+        }
+
+    }
+   
+    for(i = 0;i &lt; MAX_BLOCK; i++)
+    {
+        if(orphanBlock[i].num != 0)
+        {
+            if(orphanBlock[i].prevBlocknum &lt; num)
+            {
+                num = orphanBlock[i].prevBlocknum;
+            }
+
+        }
+
+    }
+    
+    Blocknum = num;
+
+}
+
+//check any orphans
+bool checkOrphan()
+{
+    int i;
+    bool flag = false;
+    for(i = 0;i &lt; MAX_BLOCK;i++)
+    {
+        if(orphanBlock[i].num !=0)
+        {
+            flag = true;
+            i = MAX_BLOCK;
+        } 
+    }
+
+return flag;
+}
+
+void checkBlock()
+{
+    int i;
+    for(i = MAX_BLOCK-1; i&gt;=0;i--)
+    {
+        if(confirmedBlock[i].num == localBlocknum)
+        {
+            sendBlock.num = confirmedBlock[i].num;
+            sendBlock.prevBlocknum = confirmedBlock[i].prevBlocknum;
+            sendBlock.tx.Id = confirmedBlock[i].tx.Id;
+            sendBlock.tx.TxInput.id = confirmedBlock[i].tx.TxInput.id;
+            sendBlock.tx.TxOutput[0].Address = confirmedBlock[i].tx.TxOutput[0].Address;
+            sendBlock.tx.TxOutput[0].value = confirmedBlock[i].tx.TxOutput[0].value;
+            sendBlock.tx.TxOutput[1].Address = confirmedBlock[i].tx.TxOutput[1].Address;
+            sendBlock.tx.TxOutput[1].value = confirmedBlock[i].tx.TxOutput[1].value;
+            i = 0;
+        }
+       
+    }
+
+
+}
+bool requestedBlock()
+{
+    int i;
+    bool flag = false;
+    for(i = 0; i&lt;getfreeIndexChain() - 1;i++)
+    {
+        if(chain[i][0] == Chain.num)
+        {
+            flag = true;
+            i = HASHSIZE;
+        }
+
+    }
+
+   
+
+    return flag;
+
+}
+
+void sendRequetedBlock()
+{
+    Chain.num = sendBlock.num;
+    Chain.prevBlocknum = sendBlock.prevBlocknum;
+    Chain.tx.Id = sendBlock.tx.Id;
+    Chain.tx.TxInput.id = sendBlock.tx.TxInput.id;
+    Chain.tx.TxOutput[0].Address = sendBlock.tx.TxOutput[0].Address;
+    Chain.tx.TxOutput[0].value = sendBlock.tx.TxOutput[0].value;
+    Chain.tx.TxOutput[1].Address = sendBlock.tx.TxOutput[1].Address;
+    Chain.tx.TxOutput[1].value = sendBlock.tx.TxOutput[1].value;
+    
+    sendBlock.num = 0;
+    sendBlock.prevBlocknum = 0;
+    sendBlock.tx.Id = 0;
+    sendBlock.tx.TxInput.id = 0;
+    sendBlock.tx.TxOutput[0].Address = 0;
+    sendBlock.tx.TxOutput[0].value = 0;
+    sendBlock.tx.TxOutput[1].Address = 0;
+    sendBlock.tx.TxOutput[1].value = 0;
+
+}
+//removes orphan block
+void removeBlock(BLOCKHASH num)
+{
+    int i;
+    for(i = 0;i &lt; MAX_BLOCK;i++)
+    {
+        if(orphanBlock[i].num == num)
+        {
+            orphanBlock[i].num = 0;
+            orphanBlock[i].prevBlocknum = 0;
+            orphanBlock[i].tx.Id = 0;
+            orphanBlock[i].tx.TxInput.id = 0;
+            orphanBlock[i].tx.TxOutput[0].Address = 0;
+            orphanBlock[i].tx.TxOutput[0].value = 0;
+            orphanBlock[i].tx.TxOutput[1].Address = 0;
+            orphanBlock[i].tx.TxOutput[1].value = 0;
+            //i = MAX_BLOCK;
+        } 
+    }
+}
+
+bool checkOrphanBlock()
+{
+    bool flag = false;
+     int i;
+    for(i = 0;i &lt; MAX_BLOCK;i++)
+    {
+        if(orphanBlock[i].num == Chain.num)
+        {
+            flag = true;
+            i = MAX_BLOCK;
+        } 
+    }
+    return flag;
+}
+
+bool findBlock(BLOCKHASH num)
+{
+    bool flag = false;
+    int i;
+    for(i = 0;i &lt; HASHSIZE; i++)
+    {
+        if(chain[i][0] == num)
+        {
+            flag = true;
+            i = HASHSIZE;
+        }
+    }
+
+    return flag;
+}
+void processOrphans()
+{
+    int i,j, index,index2;
+    bool flag = false;
+    for(j = 0; j &lt; MAX_BLOCK;j++)
+    {
+         if(orphanBlock[j].num != 0 &amp;&amp; findBlock(orphanBlock[j].prevBlocknum))
+         {
+            index = getfreeIndex();
+            confirmedBlock[index].num = orphanBlock[j].num;
+            confirmedBlock[index].prevBlocknum = orphanBlock[j].prevBlocknum;
+            confirmedBlock[index].tx.Id = orphanBlock[j].tx.Id;
+            confirmedBlock[index].tx.TxInput.id = orphanBlock[j].tx.TxInput.id;
+            confirmedBlock[index].tx.TxOutput[0].Address = orphanBlock[j].tx.TxOutput[0].Address;
+            confirmedBlock[index].tx.TxOutput[0].value = orphanBlock[j].tx.TxOutput[0].value;
+            confirmedBlock[index].tx.TxOutput[1].Address = orphanBlock[j].tx.TxOutput[1].Address;
+            confirmedBlock[index].tx.TxOutput[1].value = orphanBlock[j].tx.TxOutput[1].value;
+            
+            //removes orphan block if any
+            removeBlock(orphanBlock[j].num);
+
+            //add in chain
+            index2 = getfreeIndexChain();
+            chain[index2][0] = confirmedBlock[index].num;
+            chain[index2][1] = confirmedBlock[index].prevBlocknum;
+            chain[index2][3] = chain[getIndexBlockChain(confirmedBlock[index].prevBlocknum)][3]+1;
+        if (lengthLongestChain &lt; chain[index][3])
+        {
+            lengthLongestChain = chain[index][3];
+            indexLongestChain = index2;    
+        }
+            }      
+    }
+   // CountFork = countFork();
+    if(!checkOrphan())
+    {
+        requestOrphan = false;
+    }
+}
+
+
+void addBlock()
+{
+    int i, index, j, k;
+    bool flag = false;
+    if (!requestedBlock())
+    {
+    for(i = 0;i &lt; HASHSIZE; i++)
+    {
+        if(chain[i][0] == Chain.prevBlocknum)
+        {
+            flag = true;
+            i = HASHSIZE;
+        }
+    }
+    
+    if(localTx.Id!=0)
+    {
+        for(i = 0;i &lt; MAX_POOL_SIZE; i++)
+        {
+            if(TxPool[i].Id == localTx.Id)
+            {
+                TxPool[i].status = UNCONFIRMED;
+                i = MAX_POOL_SIZE;
+            }
+
+        }
+        resetLocalTx();
+    }
+    
+    if(flag == true) //parent is in the chain
+    {
+         index = getfreeIndex();
+        //add in confirmed list of blocks
+         confirmedBlock[index].num = Chain.num;
+         confirmedBlock[index].prevBlocknum = Chain.prevBlocknum;
+         confirmedBlock[index].tx.Id = Chain.tx.Id;
+         confirmedBlock[index].tx.TxInput.id = Chain.tx.TxInput.id;
+         confirmedBlock[index].tx.TxOutput[0].Address = Chain.tx.TxOutput[0].Address;
+         confirmedBlock[index].tx.TxOutput[0].value = Chain.tx.TxOutput[0].value;
+         confirmedBlock[index].tx.TxOutput[1].Address = Chain.tx.TxOutput[1].Address;
+         confirmedBlock[index].tx.TxOutput[1].value = Chain.tx.TxOutput[1].value;
+
+        
+        //updating block number in chain
+        index = getfreeIndexChain();
+        chain[index][0] = Chain.num;
+        chain[index][1] = Chain.prevBlocknum;
+        chain[index][3] = chain[getIndexBlockChain(Chain.prevBlocknum)][3]+1;
+        if (lengthLongestChain &lt; chain[index][3])
+        {
+            lengthLongestChain = chain[index][3];
+            indexLongestChain = index;    
+        }
+        if(raceFlag == true)
+        {
+            for(k = 0; k &lt; HASHSIZE; k++)
+            {
+                if(chain[k][0] == chain[index][1] &amp;&amp; chain[k][2] == ID)
+                {
+                    raceFlag = false;
+                }
+
+             }
+        }
+    }
+    else //its an orphan block
+    {
+        for(j = 0;j &lt; MAX_BLOCK;j++)
+        {
+            if(orphanBlock[j].num == 0)
+            {
+                orphanBlock[j].num = Chain.num;
+                orphanBlock[j].prevBlocknum = Chain.prevBlocknum;
+                orphanBlock[j].tx.Id = Chain.tx.Id;
+                orphanBlock[j].tx.TxInput.id = Chain.tx.TxInput.id;
+                orphanBlock[j].tx.TxOutput[0].Address = Chain.tx.TxOutput[0].Address;
+                orphanBlock[j].tx.TxOutput[0].value = Chain.tx.TxOutput[0].value;
+                orphanBlock[j].tx.TxOutput[1].Address = Chain.tx.TxOutput[1].Address;
+                orphanBlock[j].tx.TxOutput[1].value = Chain.tx.TxOutput[1].value;
+                j = MAX_BLOCK;
+             } 
+        }
+    }
+    //CountFork = countFork();
+    //countMSuccesor = countMTxSuccesorBlock();
+    indexMBlock = findTx();
+     countSuccessor = countMTxSuccesorBlock();
+    }
+}
+//count pairs of double spent transactions
+int countDoubleSpending()
+{
+   int j,k,index, count = 0;
+   bool flag = false;
+   index = getfreeIndex();
+   for(j=0;j &lt; index;j++)
+    {
+        if (checkBlockinChain(confirmedBlock[j].num))
+        {
+            for(k = 1;k &lt; index-1;k++)
+            {
+                if(confirmedBlock[j].tx.TxInput.id == confirmedBlock[k].tx.TxInput.id &amp;&amp; confirmedBlock[j].num != confirmedBlock[k].num )
+                {
+                    if((confirmedBlock[j].tx.TxOutput[0].value + confirmedBlock[j].tx.TxOutput[1].value) == (confirmedBlock[k].tx.TxOutput[0].value + confirmedBlock[k].tx.TxOutput[1].value))
+                    {
+                    count++;
+                    }
+                }
+
+            }
+        }
+    } 
+    
+    return count;
+}
+
+//This function checks for double spending at forks
+bool checkDoubleSpending()
+{
+   int j,k,index;
+   bool flag = false;
+   index = getfreeIndex();
+   for(j=0;j &lt; index;j++)
+    {
+        if (checkBlockinChain(confirmedBlock[j].num))
+        {
+            for(k = 1;k &lt; index-1;k++)
+            {
+                if(confirmedBlock[j].tx.TxInput.id == confirmedBlock[k].tx.TxInput.id &amp;&amp; confirmedBlock[j].num != confirmedBlock[k].num)
+                {
+                   if((confirmedBlock[j].tx.TxOutput[0].value + confirmedBlock[j].tx.TxOutput[1].value) == (confirmedBlock[k].tx.TxOutput[0].value + confirmedBlock[k].tx.TxOutput[1].value))
+                    {
+                    
+                    flag = true;
+                    k = index;
+                    j = index;
+                    }
+                }
+
+            }
+        }
+    } 
+    
+    return flag;
+}
+
+// counts orphan blocks
+int countOrphans()
+{
+    int i, count = 0;
+    
+    for(i = 0;i &lt; MAX_BLOCK;i++)
+    {
+        if(orphanBlock[i].num !=0)
+        {
+            count++;
+        } 
+    }
+
+    return count;
+
+
+
+
+}</declaration>
+		<location id="id8" x="-2218" y="-2210">
+			<name x="-2235" y="-2193">Verify</name>
+			<committed/>
+		</location>
+		<location id="id9" x="-2465" y="-2210">
+			<name x="-2465" y="-2167">Wait</name>
+			<label kind="invariant" x="-2474" y="-2185">x&lt;= 1</label>
+		</location>
+		<location id="id10" x="-1972" y="-2210">
+			<name x="-1963" y="-2244">Mine</name>
+			<label kind="exponentialrate" x="-1972" y="-2201">1:rateX</label>
+		</location>
+		<location id="id11" x="-2762" y="-2227">
+			<name x="-2788" y="-2261">Initial</name>
+			<committed/>
+		</location>
+		<init ref="id11"/>
+		<transition>
+			<source ref="id9"/>
+			<target ref="id9"/>
+			<label kind="guard" x="-2601" y="-2507">((MPeerPool.Id != 0 &amp;&amp; !verifyTransaction(MPeerPool.TxInput.id))||
+(MPeerPool.Id != 0 &amp;&amp; verifyTransaction(MPeerPool.TxInput.id) &amp;&amp;
+ countMTxSuccesorBlock() &lt; confirmation_no))</label>
+			<label kind="assignment" x="-2533" y="-2448">x = 0</label>
+			<nail x="-2541" y="-2414"/>
+			<nail x="-2490" y="-2422"/>
+		</transition>
+		<transition>
+			<source ref="id9"/>
+			<target ref="id10"/>
+			<label kind="guard" x="-2397" y="-2150">MPeerPool.Id != 0 &amp;&amp; verifyTransaction(MPeerPool.TxInput.id) &amp;&amp;
+countMTxSuccesorBlock() &gt;= confirmation_no</label>
+			<label kind="assignment" x="-2397" y="-2108">getMTransaction(),
+resetMPeerPool(),
+x = 0</label>
+			<nail x="-2397" y="-2108"/>
+			<nail x="-2074" y="-2108"/>
+		</transition>
+		<transition>
+			<source ref="id8"/>
+			<target ref="id9"/>
+			<label kind="guard" x="-2414" y="-2329">verifyTransaction(localTx.TxInput.id)</label>
+			<label kind="assignment" x="-2414" y="-2295">updateTxStatus(),
+x=0</label>
+			<nail x="-2261" y="-2303"/>
+			<nail x="-2422" y="-2303"/>
+		</transition>
+		<transition>
+			<source ref="id8"/>
+			<target ref="id10"/>
+			<label kind="guard" x="-2218" y="-2235">!verifyTransaction(localTx.TxInput.id)</label>
+			<label kind="assignment" x="-2184" y="-2210">x=0</label>
+		</transition>
+		<transition>
+			<source ref="id9"/>
+			<target ref="id9"/>
+			<label kind="guard" x="-2660" y="-2431">checkOrphan()</label>
+			<label kind="assignment" x="-2660" y="-2414">processOrphans(),
+x=0</label>
+			<nail x="-2618" y="-2363"/>
+			<nail x="-2575" y="-2397"/>
+		</transition>
+		<transition>
+			<source ref="id9"/>
+			<target ref="id9"/>
+			<label kind="guard" x="-2575" y="-1955">requestOrphan</label>
+			<label kind="synchronisation" x="-2575" y="-1938">send?</label>
+			<label kind="assignment" x="-2575" y="-1921">addBlock(),
+processOrphans(),
+x = 0</label>
+			<nail x="-2575" y="-1980"/>
+			<nail x="-2508" y="-1955"/>
+		</transition>
+		<transition>
+			<source ref="id9"/>
+			<target ref="id9"/>
+			<label kind="guard" x="-2822" y="-2405">sendBlock.num != 0</label>
+			<label kind="synchronisation" x="-2822" y="-2388">send!</label>
+			<label kind="assignment" x="-2822" y="-2371">sendRequetedBlock(),
+x = 0</label>
+			<nail x="-2677" y="-2312"/>
+			<nail x="-2643" y="-2346"/>
+		</transition>
+		<transition>
+			<source ref="id9"/>
+			<target ref="id9"/>
+			<label kind="synchronisation" x="-2745" y="-2023">request?</label>
+			<label kind="assignment" x="-2746" y="-2006">localBlocknum = Blocknum,
+checkBlock(),
+x = 0</label>
+			<nail x="-2601" y="-2108"/>
+			<nail x="-2669" y="-2049"/>
+			<nail x="-2618" y="-2006"/>
+		</transition>
+		<transition>
+			<source ref="id9"/>
+			<target ref="id9"/>
+			<label kind="guard" x="-2805" y="-2117">checkOrphan()</label>
+			<label kind="synchronisation" x="-2805" y="-2099">request!</label>
+			<label kind="assignment" x="-2805" y="-2082">requestBlock(),
+requestOrphan = true,
+x = 0</label>
+			<nail x="-2711" y="-2125"/>
+			<nail x="-2686" y="-2066"/>
+			<nail x="-2678" y="-2066"/>
+		</transition>
+		<transition>
+			<source ref="id9"/>
+			<target ref="id9"/>
+			<label kind="synchronisation" x="-2813" y="-2193">blockSolution?</label>
+			<label kind="assignment" x="-2813" y="-2176">x=0,
+addBlock()</label>
+			<nail x="-2711" y="-2142"/>
+			<nail x="-2711" y="-2210"/>
+		</transition>
+		<transition>
+			<source ref="id9"/>
+			<target ref="id9"/>
+			<label kind="guard" x="-2796" y="-2303">!checkTxPool()</label>
+			<label kind="assignment" x="-2796" y="-2286">x=0</label>
+			<nail x="-2703" y="-2244"/>
+			<nail x="-2686" y="-2295"/>
+		</transition>
+		<transition>
+			<source ref="id11"/>
+			<target ref="id9"/>
+			<label kind="assignment" x="-2720" y="-2244">initial()</label>
+		</transition>
+		<transition>
+			<source ref="id10"/>
+			<target ref="id9"/>
+			<label kind="guard" x="-2142" y="-1963">!raceflag</label>
+			<label kind="synchronisation" x="-2142" y="-1946">blockSolution?</label>
+			<label kind="assignment" x="-2142" y="-1929">addBlock(),
+x=0</label>
+			<nail x="-1972" y="-1963"/>
+			<nail x="-2465" y="-1963"/>
+		</transition>
+		<transition>
+			<source ref="id10"/>
+			<target ref="id9"/>
+			<label kind="synchronisation" x="-2295" y="-2439">blockSolution!</label>
+			<label kind="assignment" x="-2295" y="-2422">x = 0,
+updateBlockChain()</label>
+			<nail x="-1972" y="-2422"/>
+			<nail x="-2465" y="-2422"/>
+		</transition>
+		<transition>
+			<source ref="id9"/>
+			<target ref="id8"/>
+			<label kind="guard" x="-2456" y="-2235">checkTxPool() &amp;&amp; MPeerPool.Id ==0</label>
+			<label kind="assignment" x="-2422" y="-2210">x=0,
+getTransaction()</label>
+			<nail x="-2355" y="-2210"/>
+		</transition>
+	</template>
+	<system>// Place template instantiations here.
+
+// List one or more processes to be composed into a system.
+Pool1 = Pool(1, 5433);
+Pool2 = Pool(2, 3018);
+Pool3 = Pool(3, 2469);
+Pool4 = MPool(4, 1041,1);
+Peer1 = Peer(1, 0);
+Peer2 = Peer(2, 0);
+Peer3 = Peer(3, 0);
+MPeer1 = MPeer(4);
+MPeer2 = MPeer(4);
+MPeer3 = MPeer(5);
+//Peer5 = Peer(4, 0);
+//Peer6 = Peer(5, 0);
+//Peer7 = Peer(6, 0);
+system   Pool4, Pool1, Pool2,Pool3,  Peer1, Peer2,Peer3, MPeer1;//Peer5, Peer6, Peer7, MPool1;
+    
+
+</system>
+	<queries>
+		<query>
+			<formula>Pr[#&lt;=500000](&lt;&gt;   Pool4.checkBlockinChain(Pool4.MBlock))
+			</formula>
+			<comment>
+			</comment>
+		</query>
+	</queries>
+</nta>
