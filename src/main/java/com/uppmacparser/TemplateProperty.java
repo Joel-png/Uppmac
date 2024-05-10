@@ -7,6 +7,9 @@ public class TemplateProperty {
     Boolean singleLocation = false;
     int numLocations = 0;
     int numTransitions = 0;
+    int deadEnds = 0;
+    boolean dag = false;
+    int declarationLength = 0;
     
     public TemplateProperty(Template template) {
         this.template = template;

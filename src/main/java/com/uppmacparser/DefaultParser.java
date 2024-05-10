@@ -29,8 +29,13 @@ public class DefaultParser {
         XPath xPath = XPathFactory.newInstance().newXPath();
 
         NodeList templateList = (NodeList) xPath.compile("/nta/template").evaluate(xmlDocument, XPathConstants.NODESET);
-        
-        Nta nta = new Nta(templateList.getLength(), NTAName);
+        NodeList tempGlobalDeclarationList = (NodeList) xPath.compile("/nta/declaration/text()").evaluate(xmlDocument, XPathConstants.NODESET);
+        //System.out.println(tempGlobalDeclarationList.item(0).toString());
+        String globalDeclaration = "";
+        if (tempGlobalDeclarationList.getLength() > 0) {
+            globalDeclaration = tempGlobalDeclarationList.item(0).toString();
+        }
+        Nta nta = new Nta(templateList.getLength(), NTAName, globalDeclaration);
 
         // do for each template
         // - find locations
@@ -40,8 +45,15 @@ public class DefaultParser {
         for (int i = 1; i <= templateList.getLength(); i++) {
             NodeList tempLocationList = (NodeList) xPath.compile("/nta/template[" + String.valueOf(i) + "]/location").evaluate(xmlDocument, XPathConstants.NODESET);
             NodeList tempTransitionList = (NodeList) xPath.compile("/nta/template[" + String.valueOf(i) + "]/transition").evaluate(xmlDocument, XPathConstants.NODESET);
+            NodeList tempDeclarationList = (NodeList) xPath.compile("/nta/template[" + String.valueOf(i) + "]/declaration/text()").evaluate(xmlDocument, XPathConstants.NODESET);
             NodeList tempTemplateName = (NodeList) xPath.compile("/nta/template[" + String.valueOf(i) + "]/name/text()").evaluate(xmlDocument, XPathConstants.NODESET);
-            Template tempTemplate = new Template(cleanText(tempTemplateName.item(0).toString()), tempLocationList.getLength(), tempTransitionList.getLength());
+            String declaration = "";
+            if (tempDeclarationList.getLength() > 0) {
+                declaration = tempDeclarationList.item(0).toString();
+            }
+
+            Template tempTemplate = new Template(cleanText(tempTemplateName.item(0).toString()), tempLocationList.getLength(), tempTransitionList.getLength(), declaration);
+            //System.out.println(tempDeclarationList.item(0).toString());
 
             NodeList tempInit = (NodeList) xPath.compile("/nta/template[" + String.valueOf(i) + "]/init/@ref").evaluate(xmlDocument, XPathConstants.NODESET);
             tempTemplate.init = cleanID(tempInit.item(0).toString(), 5);

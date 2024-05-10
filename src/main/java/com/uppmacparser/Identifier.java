@@ -1,7 +1,10 @@
 package com.uppmacparser;
 
 import java.io.IOException;
+import java.io.LineNumberReader;
+import java.io.StringReader;
 import java.util.ArrayList;
+
 
 
 public class Identifier {
@@ -17,7 +20,7 @@ public class Identifier {
 
 
     public void outputNtaTemplateProperties() throws IOException {
-        excelWriter.writeRow(new String[] {nta.name}); // print name of nta
+        excelWriter.writeRow(new String[] {nta.name, "globalDeclarationLength: " + getLengthOfDeclaration(nta.globalDeclaration)}); // print name of nta
         excelWriter.writeRow(excelWriter.titles);
         for (int i = 0; i < templateProperties.size(); i++) {
             TemplateProperty currentTemplateProperty = templateProperties.get(i);
@@ -28,6 +31,8 @@ public class Identifier {
             String isLinear = "no";
             String hasLonelyInit = "no";
             String isSingleLocation = "no";
+            String dag = "no";
+            int declarationLength = currentTemplateProperty.declarationLength;
 
             // System.out.println();
             // System.out.println();
@@ -41,10 +46,6 @@ public class Identifier {
                 // Navigator.indent(1);
                 // System.out.println("Linear");
                 isLinear = "yes";
-            } else {
-                // Navigator.indent(1);
-                // System.out.println("Not Linear");
-                isLinear = "no";
             }
 
             if (currentTemplateProperty.lonelyInit) {
@@ -59,7 +60,11 @@ public class Identifier {
                 isSingleLocation = "yes";
             }
 
-            excelWriter.writeRow(new String[] {"", currentTemplateProperty.template.name, hasLonelyInit, String.valueOf(currentTemplateProperty.numLocations), String.valueOf(currentTemplateProperty.numTransitions), String.valueOf(numOfPoplarLocations), isLinear, isSingleLocation});
+            if (currentTemplateProperty.dag) {
+                dag = "yes";
+            }
+
+            excelWriter.writeRow(new String[] {"", currentTemplateProperty.template.name, hasLonelyInit, String.valueOf(currentTemplateProperty.numLocations), String.valueOf(currentTemplateProperty.numTransitions), String.valueOf(declarationLength), String.valueOf(numOfPoplarLocations), dag, isSingleLocation, String.valueOf(currentTemplateProperty.deadEnds)});
         }
         excelWriter.writeRow(new String[] {""});
     }
@@ -71,7 +76,18 @@ public class Identifier {
         System.out.println("Location has " + checkAdjustedUniqueLoops(location, locations) + " adjusted unique loops");
     }
 
-    public void printTemplateProperties(Template template, int indent) {
+    public int getLengthOfDeclaration(Declaration declaration) throws IOException {
+        int count = 0;
+        String input = declaration.content;
+        for (int i = 0; i < input.length(); i++) {
+            if (input.charAt(i) == ';') {
+                count++;
+            }
+        }
+        return count;
+    }
+
+    public void printTemplateProperties(Template template, int indent) throws IOException {
         Location[] locations = template.locations;
         Transition[] transitions = template.transitions; 
         Location init = template.getInit();
@@ -116,6 +132,23 @@ public class Identifier {
             tempTemplateProperty.singleLocation = false;
         }
 
+        tempTemplateProperty.deadEnds = getNumOfDeadEnds(locations);
+        Navigator.indent(indent);
+        System.out.println("Template has " + tempTemplateProperty.deadEnds + " dead ends");
+
+        int counter = 0;
+        for (int i = 0; i < locations.length; i++) {
+            counter += checkAdjustedUniqueLoops(locations[i], locations);
+        }
+        Navigator.indent(indent);
+        System.out.println("Total adjusted loops " + counter);
+
+        if (counter == 0) {
+            tempTemplateProperty.dag = true;
+        }
+
+        int declarationLength = getLengthOfDeclaration(template.declaration);
+        tempTemplateProperty.declarationLength = declarationLength;
 
         templateProperties.add(tempTemplateProperty);
     }
@@ -141,6 +174,16 @@ public class Identifier {
         return 0;
     }
 
+    public int getNumOfDeadEnds(Location[] locations) {
+        int counter = 0;
+        for (int i = 0; i < locations.length; i++) {
+            if (locations[i].sourceTransitions.size() == 0) {
+                counter++;
+            }
+        }
+        return counter;
+    }
+
     // returns the % of edges involved with a given location
     public float checkDegreePresence(Location location, Transition[] transitions) {
         if (transitions.length == 0) {
@@ -162,10 +205,10 @@ public class Identifier {
 
     public int checkAdjustedUniqueLoops(Location startingLocation, Location[] locations) {
         ArrayList<String> visitedTransitions = new ArrayList<String>();
-        return getUniqueLoop(startingLocation, startingLocation, locations, cloneTransitionList(visitedTransitions));
+        return getAdjustedUniqueLoop(startingLocation, startingLocation, locations, cloneTransitionList(visitedTransitions));
     }
 
-    public int getUniqueLoop(Location targetLocation, Location currentLocation, Location[] locations, ArrayList<String> visitedTransitions) {
+    public int getAdjustedUniqueLoop(Location targetLocation, Location currentLocation, Location[] locations, ArrayList<String> visitedTransitions) {
         int loopCounter = 0;
         for (int i = 0; i < currentLocation.sourceTransitions.size(); i++) {
             if (!transitionVisited(currentLocation.sourceTransitions.get(i), visitedTransitions)) {
@@ -173,7 +216,27 @@ public class Identifier {
                 if (currentLocation.sourceTransitions.get(i).target.equals(targetLocation.id)) {
                     loopCounter++;
                 } else if (!currentLocation.sourceTransitions.get(i).target.equals(currentLocation.id)) {
-                    loopCounter += getUniqueLoop(targetLocation, fetchLocationFromID(currentLocation.sourceTransitions.get(i).target, locations), locations, cloneTransitionList(visitedTransitions));
+                    loopCounter += getAdjustedUniqueLoop(targetLocation, fetchLocationFromID(currentLocation.sourceTransitions.get(i).target, locations), locations, cloneTransitionList(visitedTransitions));
+                }
+            }
+        }
+        return loopCounter;
+    }
+
+    public int checkUniqueLoops(Location startingLocation, Location[] locations) {
+        ArrayList<String> visitedTransitions = new ArrayList<String>();
+        return getAdjustedUniqueLoop(startingLocation, startingLocation, locations, cloneTransitionList(visitedTransitions));
+    }
+
+    public int getUniqueLoops(Location targetLocation, Location currentLocation, Location[] locations, ArrayList<String> visitedTransitions) {
+        int loopCounter = 0;
+        for (int i = 0; i < currentLocation.sourceTransitions.size(); i++) {
+            if (!transitionVisited(currentLocation.sourceTransitions.get(i), visitedTransitions)) {
+                // if transition leads to target, complete a loop count
+                if (currentLocation.sourceTransitions.get(i).target.equals(targetLocation.id)) {
+                    loopCounter++;
+                } else {
+                    loopCounter += getAdjustedUniqueLoop(targetLocation, fetchLocationFromID(currentLocation.sourceTransitions.get(i).target, locations), locations, cloneTransitionList(visitedTransitions));
                 }
             }
         }

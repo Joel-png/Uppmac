@@ -48,7 +48,7 @@ public class Navigator {
     }
 
     public void getProperties() throws IOException {
-        boolean print = false;
+        boolean print = true;
         // NTA
         if (print) {
             System.out.print("<");
@@ -106,7 +106,7 @@ public class Navigator {
         identifier.outputNtaTemplateProperties();
     }
 
-    public void navigate() {
+    public void navigate() throws IOException {
         boolean exit = false;
         System.out.println();
         System.out.println("-- Welcome to UPPMAC --");
