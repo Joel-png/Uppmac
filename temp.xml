@@ -1,274 +1,885 @@
 <?xml version="1.0" encoding="utf-8"?>
 <nta>
-	<declaration>/*
- * For more details about this example, see 
- * "Automatic Verification of Real-Time Communicating Systems by Constraint Solving", 
- * by Wang Yi, Paul Pettersson and Mats Daniels. In Proceedings of the 7th International
- * Conference on Formal Description Techniques, pages 223-238, North-Holland. 1994.
- */
+	<declaration>/************************************************
+* 3D Needle Steering Model *
+****************************
 
-const int N = 6;         // # trains
-typedef int[0,N-1] id_t;
+This model implements the 3D motion model and entities of needle steering.
+The model has 4 components: The User, the Needle Device, the Tissue, and the State Checker.
+The environment sections are classified into 5 regions types: Unknown Regions (UR), Safe Regions (SR), Detection Regions (DR), Critical Regions (CR), and Target Regions (TR),
+where the later three region types are modeled explicitly.
 
-chan        appr[N], stop[N], leave[N];
-urgent chan go[N];
-</declaration>
+The User chooses actions (push, rotate), which are executed by the Needle Device.
+The Tissue then reacts to the state change of the Needle Device.
+After each cycle, the State Checker ensures that the currently explored model path is still valid, and checks whether any CRs or TRs are reached.
+
+=== Test Configuration ===
+The default model configuration represents an environment with the TR (radius=10) at y=-50, and a CR (radius=2) at y=-25, surrounded by a DR (radius=5).
+The query "E&lt;&gt; Checker.Final_TR_Reached" yields that a valid path to TR exists, and "strategy ReachFinalTR = control: A&lt;&gt; Checker.Final_TR_Reached" yields the strategy over all possible paths.
+If we change the radius of the CR to 10, the result of both queries is false, i.e., no path to the TR is possible without piercing through the CR.
+
+=== Notes ===
+For adaptions of the model, please consider the following notes:
+
+- "Deadlock" locations must not be urgent / committed to allow simulation beyond their activation time (channel "terminate" ensures that location enabling delay is reached by User).
+- Model optimizations currently enforce needle insertion motion in negative y-direction.
+    -&gt; if an alternative direction is required, adapt "check_path_valid" and "check_specific_TR_reachable" accordingly.
+************************************************/
+
+typedef int[-(1&lt;&lt;31),(1&lt;&lt;31)-1] int32_t;   // int32_t: A 32-bit integer data type.
+
+const int32_t INT32_MIN = -2147483648;     // INT32_MIN: The minimum value of the 32-bit integer range.
+const int32_t INT32_MAX = 2147483647;      // INT32_MAX: The maximum value of the 32-bit integer range.
+
+const int _SI_ = 1000;                     // _SI_: The scale factor between integer and double domain (as integer value).
+const double PI = 3.14159265358979312;     // PI: The (rounded) value of pi.
+
+int dt = 2;                                // dt: The simulation time delta (note: type is "int" instead of "int32_t" (and thus no scaling by _SI_) to make it usable for guards and invariants).
+
+/*************************************************
+************ General Helper Functions ************
+*************************************************/
+
+/**
+ * @brief Determines the maximum of two given values.
+ * @param v1 The first value.
+ * @param v2 The second value.
+*/
+int32_t max(int32_t v1, int32_t v2) {
+    return (v1 &gt; v2 ? v1 : v2);
+}
+
+/**
+ * @brief Determines the minimum of two given values.
+ * @param v1 The first value.
+ * @param v2 The second value.
+*/
+int32_t min(int32_t v1, int32_t v2) {
+    return (v1 &lt; v2 ? v1 : v2);
+}
+
+/*****************************************************
+******************** System Model ********************
+*****************************************************/
+
+/****************
+* Actions (ACT) *
+****************/
+const int32_t MIN_PROG_BETWEEN_ROTS = 2*_SI_;  // MIN_PROG_BETWEEN_ROTS: The required needle progress after a rotation until next rotation is possible.
+const int MAX_ROT_COUNT = 2;                   // MAX_ROT_COUNT: The maximum allowed number of rotations.
+
+const int PUSH_ACTION = 0;                     // PUSH_ACTION: The ID of a push action.
+const int ROLL_ROTATE_ACTION = 1;              // ROLL_ROTATE_ACTION: The ID of a roll rotate action.
+
+const int MAX_ACT_COUNT = 10;                  // MAX_ACT_COUNT: The maximum allowed number of actions (note: executions of the same action in subsequent steps are stored as one action over these steps).
+const int ACT_PROG = 0;                        // ACT_PROG: The index of the start needle progress inside an action tuple.
+const int ACT_TYPE = 1;                        // ACT_TYPE: The index of the action type inside an action tuple.
+const int ACT_VAL = 2;                         // ACT_VAL: The index of the action value inside an action tuple.
+int32_t actions[MAX_ACT_COUNT][3];             // (progress, action_type, action_value), e.g., {200*_SI_, ROLL_ROTATE_ACTION, fint(0.5*PI*_SI_)}.
+int32_t curr_ACT_index = 0;                    // curr_ACT_index: The current action index.
+
+/* Helper Variables */
+int ROT_counter = 0;                                    // ROT_counter: A counter for the number of rotations.
+int prev_ROT_index = -1;                                // prev_ROT_index: The index of the most previous rotation action.
+
+const int ANGLE_COUNT = 3;                              // ANGLE_COUNT: The count of different angles for rotation actions.
+int allowed_rot_angles[ANGLE_COUNT] = {90, 180, 270};   // allowed_rot_angles: The set of allowed rotation angle which the user can choose from.
+int sel_rot_angle = 0;                                  // sel_rot_angle: The currently selected rotation angle.
+
+/*************************
+* Detection Regions (DR) *
+*************************/
+const int32_t DR_COUNT = 1;                  // DR_COUNT: The number of detection regions in the system.
+
+const bool HAS_DETECTION_REGIONS = true;     // HAS_DETECTION_REGIONS: Indicator for whether the system has any DRs (required to toggle DR checks, as empty arrays are not allowed).
+const bool TREAT_DR_AS_CR = true;            // TREAT_DR_AS_CR: Indicator for whether DRs should be handle similar to CRs, i.e., paths that reach DRs are discarded as well.
+int32_t DR_center[DR_COUNT][3] = {           // DR_center: The center points of the spherical DRs.
+    {0, -25*_SI_, 0}
+};
+int32_t DR_radius[DR_COUNT] = { 5*_SI_ };    // DR_radius: The radii of the spherical DRs.
+
+/************************
+* Critical Regions (CR) *
+************************/
+const int32_t CR_COUNT = 1;                  // CR_COUNT: The number of critical regions in the system.
+
+const bool HAS_CRITICAL_REGIONS = true;      // HAS_CRITICAL_REGIONS: Indicator for whether the system has any CRs (required to toggle CR checks, as empty arrays are not allowed).
+int32_t CR_center[CR_COUNT][3] = {           // CR_center: The center points of the spherical CRs.
+    {0, -25*_SI_, 0}
+};
+int32_t CR_radius[CR_COUNT] = { 2*_SI_ };    // CR_radius: The radii of the spherical CRs.
+
+/**********************
+* Target Regions (TR) *
+**********************/
+const int32_t TR_COUNT = 1;                  // TR_COUNT: The number of target regions in the system.
+
+int32_t TR_center[TR_COUNT][3] = {           // TR_center: The center points of the spherical TRs.
+    {0, -50*_SI_, 0}
+};
+int32_t TR_radius[TR_COUNT] = { 10*_SI_ };   // TR_radius: The radii of the spherical TRs.
+
+int32_t curr_TR_index = 0;                   // curr_TR_index: The index of the currently considered TR.
+
+/*****************************************************
+******************** Needle Model ********************
+*****************************************************/
+
+/*****************************
+* Needle Parameters and Data *
+*****************************/
+int32_t needle_progress = 0;                     // needle_progress: The current progress of the needle (i.e., the length of the needle section inside the tissue) [mm].
+int32_t tip_pos[3] = {0*_SI_, 0*_SI_, 0*_SI_};   // tip_pos: The current position of the needle tip [mm].
+int32_t needle_vel = 1 * _SI_;                   // needle_vel: The velocity of the needle [mm/s].
+int32_t tip_roll = 0 * _SI_;                     // tip_roll: The current roll angle of the needle tip.
+
+/** Motion Circle **/
+int32_t motion_circle_center[3] = {0*_SI_, 0*_SI_, 0*_SI_};   // motion_circle_center: The center of the current motion circle (i.e., the circular path on which the needle approximatively moves between rotation points).
+int32_t motion_circle_r = 30 * _SI_;                          // motion_circle_r: The radius of the current motion circle.
+int32_t motion_circle_yaw = 0 * _SI_;                         // motion_circle_yaw: The current yaw of the needle tip around the motion circle.
+
+/** Vectors **/
+const int GLOBAL_X_VEC = 0;   // GLOBAL_X_VEC: The ID of the x-axis of the global coordinate system.
+const int GLOBAL_Y_VEC = 1;   // GLOBAL_Y_VEC: The ID of the y-axis of the global coordinate system.
+const int GLOBAL_Z_VEC = 2;   // GLOBAL_Z_VEC: The ID of the z-axis of the global coordinate system.
+const int TIP_X_VEC = 3;      // TIP_X_VEC: The ID of the x-axis of the local coordinate system of the needle tip (pointing in needle motion direction).
+const int TIP_Y_VEC = 4;      // TIP_X_VEC: The ID of the y-axis of the local coordinate system of the needle tip (pointing towards rotation circle center).
+const int TIP_Z_VEC = 5;      // TIP_X_VEC: The ID of the z-axis of the local coordinate system of the needle tip (normal of rotation circle).
+const int TEMP_VEC_1 = 6;     // TEMP_VEC_1: A vector for intermediate calculation results.
+const int TEMP_VEC_2 = 7;     // TEMP_VEC_2: A vector for intermediate calculation results.
+
+const int VECTOR_COUNT = 8;
+int32_t vectors[VECTOR_COUNT][3] = {
+    {1*_SI_, 0, 0},   // GLOBAL_X_VEC
+    {0, 1*_SI_, 0},   // GLOBAL_Y_VEC
+    {0, 0, 1*_SI_},   // GLOBAL_Z_VEC
+    {0, 0, 0},        // TIP_X_VEC
+    {0, 0, 0},        // TIP_Y_VEC
+    {0, 0, 0},        // TIP_Z_VEC
+    {0, 0, 0},        // TEMP_VEC_1
+    {0, 0, 0}         // TEMP_VEC_2
+};
+
+/** Matrices **/
+const int ID_MAT = 0;               // ID_MAT: The identity matrix.
+const int TIP_BASE_ROT_MAT = 1;     // TIP_BASE_ROT_MAT: Represents the rotation of the needle after the last completed "circle motion -&gt; rotation" cycle.
+const int TIP_CIRCLE_ROT_MAT = 2;   // TIP_CIRCLE_ROT_MAT: Reprents the rotation caused by the circular motion around the current circle center.
+const int TIP_ACTION_ROT_MAT = 3;   // TIP_ACTION_ROT_MAT: Reprents the rotation caused by a needle roll action.
+const int TIP_ROT_MAT = 4;          // TIP_ROT_MAT: Represents the current rotation of the needle tip.
+const int TEMP_MAT_1 = 5;           // TEMP_MAT_1: A matrix for intermediate calculation results.
+
+const int MATRIX_COUNT = 6;
+int32_t matrices[MATRIX_COUNT][3][3] = {
+    {{1*_SI_, 0, 0}, {0, 1*_SI_, 0}, {0, 0, 1*_SI_}},   // ID_MAT
+    {{0, 1*_SI_, 0}, {-1*_SI_, 0, 0}, {0, 0, 1*_SI_}},  // TIP_BASE_ROT_MAT
+    {{1*_SI_, 0, 0}, {0, 1*_SI_, 0}, {0, 0, 1*_SI_}},   // TIP_CIRCLE_ROT_MAT
+    {{1*_SI_, 0, 0}, {0, 1*_SI_, 0}, {0, 0, 1*_SI_}},   // TIP_ACTION_ROT_MAT
+    {{1*_SI_, 0, 0}, {0, 1*_SI_, 0}, {0, 0, 1*_SI_}},   // TIP_ROT_MAT
+    {{0, 0, 0}, {0, 0, 0}, {0, 0, 0}}                   // TEMP_MAT_1
+};
+
+
+/****************************
+* Vector / matrix functions *
+****************************/
+
+/**
+ * @brief Calculates the dot product of two matrices.
+ * @param in_mat_1 The index of the first input matrix.
+ * @param in_mat_2 The index of the second input matrix.
+ * @param out_mat The index of the resulting matrix.
+*/
+void matrix_matrix_dot(int in_mat_1, int in_mat_2, int out_mat) {
+    int i,j,k;
+    int32_t entry_sum;
+    double _S_ = _SI_*1.0;  // _S_: The scale factor (as double value).
+
+    for (i=0; i&lt;3; i++) {
+        for (j=0; j&lt;3; j++) {
+            entry_sum = 0;
+            for (k=0; k&lt;3; k++) {
+                entry_sum += fint(((matrices[in_mat_1][i][k]/_S_) * (matrices[in_mat_2][k][j]/_S_))*_S_);
+            }
+            matrices[out_mat][i][j] = entry_sum;
+        }
+    }
+}
+
+/**
+ * @brief Calculates the dot product of a matrix and a vector.
+ * @param in_mat The index of the input matrix.
+ * @param in_vec The index of the input vector.
+ * @param out_vec The index of the resulting vector.
+*/
+void matrix_vector_dot(int in_mat, int in_vec, int out_vec) {
+    int i,k;
+    int32_t entry_sum;
+    double _S_ = _SI_*1.0;  // _S_: The scale factor (as double value).
+
+    for (i=0; i&lt;3; i++) {
+        entry_sum = 0;
+        for (k=0; k&lt;3; k++) {
+            entry_sum += fint(((matrices[in_mat][i][k]/_S_) * (vectors[in_vec][k]/_S_))*_S_);
+        }
+        vectors[out_vec][i] = entry_sum;
+    }
+}
+
+/**
+ * @brief Copies a vector to another vector.
+ * @param in_vec The index of the source vector.
+ * @param out_vec The index of the target vector.
+*/
+void copy_vector(int in_vec, int out_vec) {
+    int i;
+    for (i=0; i&lt;3; i++) {
+        vectors[out_vec][i] = vectors[in_vec][i];
+    }
+}
+
+/**
+ * @brief Copies a matrix to another matrix.
+ * @param in_mat The index of the source matrix.
+ * @param out_mat The index of the target matrix.
+*/
+void copy_matrix(int in_mat, int out_mat) {
+    int i,j;
+    for (i=0; i&lt;3; i++) {
+        for (j=0; j&lt;3; j++) {
+            matrices[out_mat][i][j] = matrices[in_mat][i][j];
+        }
+    }
+}
+
+/**
+ * @brief Get the magnitude of a given vector.
+ * @param in_vec The index of the vector.
+*/
+int32_t get_magnitude(int in_vec) {
+    double _S_ = _SI_*1.0;  // _S_: The scale factor (as double value).
+
+    int32_t res = fint((sqrt(pow(vectors[in_vec][0]/_S_, 2) +
+                             pow(vectors[in_vec][1]/_S_, 2) +
+                             pow(vectors[in_vec][2]/_S_, 2)))*_S_);
+    return res;
+}
+
+/**
+ * @brief Normalizes a given vector.
+ * @param in_vec The index of the vector.
+*/
+void normalize_vector(int in_vec) {
+    int i;
+    double _S_ = _SI_*1.0;  // _S_: The scale factor (as double value).
+
+    int32_t magnitude = get_magnitude(in_vec);
+    if (magnitude == 0) {
+        return;
+    }
+    for (i=0; i&lt;3; i++) {
+        vectors[in_vec][i] = fint(((vectors[in_vec][i]/_S_) / (magnitude/_S_)) * _S_);
+    }
+}
+
+/**
+ * @brief Generates a rotation matrix based on an axis vector and an angle.
+ * @param axis The index of the axis vector.
+ * @param theta The angle.
+ * @param out_mat The index of the resulting matrix.
+*/
+void generate_rotation_matrix_from_axis_and_angle(int axis, int32_t theta, int out_mat) {
+    double _S_ = _SI_*1.0;  // _S_: The scale factor (as double value).
+
+    matrices[out_mat][0][0] = fint((cos(theta/_S_) + pow(vectors[axis][0]/_S_,2) * (1 - cos(theta/_S_)))*_S_);
+    matrices[out_mat][0][1] = fint(((vectors[axis][0]/_S_) * (vectors[axis][1]/_S_) * (1 - cos(theta/_S_)) - (vectors[axis][2]/_S_) * sin(theta/_S_))*_S_);
+    matrices[out_mat][0][2] = fint(((vectors[axis][0]/_S_) * (vectors[axis][2]/_S_) * (1 - cos(theta/_S_)) + (vectors[axis][1]/_S_) * sin(theta/_S_))*_S_);
+    matrices[out_mat][1][0] = fint(((vectors[axis][1]/_S_) * (vectors[axis][0]/_S_) * (1 - cos(theta/_S_)) + (vectors[axis][2]/_S_) * sin(theta/_S_))*_S_);
+    matrices[out_mat][1][1] = fint((cos(theta/_S_) + pow(vectors[axis][1]/_S_,2) * (1 - cos(theta/_S_)))*_S_);
+    matrices[out_mat][1][2] = fint(((vectors[axis][1]/_S_) * (vectors[axis][2]/_S_) * (1 - cos(theta/_S_)) - (vectors[axis][0]/_S_) * sin(theta/_S_))*_S_);
+    matrices[out_mat][2][0] = fint(((vectors[axis][2]/_S_) * (vectors[axis][0]/_S_) * (1 - cos(theta/_S_)) - (vectors[axis][1]/_S_) * sin(theta/_S_))*_S_);
+    matrices[out_mat][2][1] = fint(((vectors[axis][2]/_S_) * (vectors[axis][1]/_S_) * (1 - cos(theta/_S_)) + (vectors[axis][0]/_S_) * sin(theta/_S_))*_S_);
+    matrices[out_mat][2][2] = fint((cos(theta/_S_) + pow(vectors[axis][2]/_S_,2) * (1 - cos(theta/_S_)))*_S_);
+}
+
+/**********************
+* Simulator functions *
+**********************/
+
+/**
+ * @brief Updates the tip rotation matrix (composed from base, circle, and action rotation).
+*/
+void update_tip_rotation_matrix() {
+    matrix_matrix_dot(TIP_CIRCLE_ROT_MAT, TIP_BASE_ROT_MAT, TEMP_MAT_1);
+    matrix_matrix_dot(TIP_ACTION_ROT_MAT, TEMP_MAT_1, TIP_ROT_MAT);
+}
+
+/**
+ * @brief Updates the action rotation matrix (e.g., when an action was performed).
+*/
+void update_action_rotation_matrix() {
+    generate_rotation_matrix_from_axis_and_angle(TIP_X_VEC, tip_roll, TIP_ACTION_ROT_MAT);
+}
+
+/**
+ * @brief Updates the circle rotation matrix (i.e., when the needle was further moved along the rotation circle).
+*/
+void update_circle_rotation_matrix() {
+    matrix_vector_dot(TIP_BASE_ROT_MAT, GLOBAL_Y_VEC, TEMP_VEC_1);
+    normalize_vector(TEMP_VEC_1);
+    generate_rotation_matrix_from_axis_and_angle(TEMP_VEC_1, motion_circle_yaw, TIP_CIRCLE_ROT_MAT);
+}
+
+/**
+ * @brief Reset the remaining matrices (circle and action rotation) and the rotation circle yaw
+ *        after base rotation update.
+*/
+void reset_data_after_base_rotation_update() {
+    copy_matrix(ID_MAT, TIP_CIRCLE_ROT_MAT);
+    copy_matrix(ID_MAT, TIP_ACTION_ROT_MAT);
+    motion_circle_yaw = 0;
+}
+
+/**
+ * @brief Updates the tip base rotation matrix (composed from base, circle, and action rotation).
+          The current, concrete tip rotation matrix becomes the new base rotation matrix then.
+          All other matrices (circle and action rotation) and the rotation circle yaw are reset afterwards.
+*/
+void update_base_rotation_matrix() {
+    update_tip_rotation_matrix();
+    copy_matrix(TIP_ROT_MAT, TIP_BASE_ROT_MAT);
+
+    reset_data_after_base_rotation_update();
+}
+
+/**
+ * @brief Updates the local coordinate system of the needle.
+ *        The x-axis points in needle direction, the y-axis towards the current rotation circle center.
+*/
+void update_needle_coordinate_system() {
+    matrix_vector_dot(TIP_ROT_MAT, GLOBAL_X_VEC, TIP_X_VEC);
+    normalize_vector(TIP_X_VEC);
+    matrix_vector_dot(TIP_ROT_MAT, GLOBAL_Y_VEC, TIP_Y_VEC);
+    normalize_vector(TIP_Y_VEC);
+    matrix_vector_dot(TIP_ROT_MAT, GLOBAL_Z_VEC, TIP_Z_VEC);
+    normalize_vector(TIP_Z_VEC);
+}
+
+/**
+ * @brief Updates the rotation circle center (e.g., when the needle roll angle changes).
+*/
+void update_circle_center() {
+    double _S_ = _SI_*1.0;  // _S_: The scale factor (as double value).
+
+    update_tip_rotation_matrix();
+    update_needle_coordinate_system();
+    motion_circle_center[0] = fint((tip_pos[0]/_S_ - ((motion_circle_r/_S_) * (vectors[TIP_Z_VEC][0]/_S_))) * _S_);
+    motion_circle_center[1] = fint((tip_pos[1]/_S_ - ((motion_circle_r/_S_) * (vectors[TIP_Z_VEC][1]/_S_))) * _S_);
+    motion_circle_center[2] = fint((tip_pos[2]/_S_ - ((motion_circle_r/_S_) * (vectors[TIP_Z_VEC][2]/_S_))) * _S_);
+}
+
+/**
+ * @brief Updates the position of the needle tip.
+*/
+void update_tip_pos() {
+    double _S_ = _SI_*1.0;  // _S_: The scale factor (as double value).
+
+    update_circle_rotation_matrix();
+
+    // Calculate rotated vector from circle center to new tip position
+    matrix_vector_dot(TIP_BASE_ROT_MAT, GLOBAL_Z_VEC, TEMP_VEC_1);
+    matrix_vector_dot(TIP_CIRCLE_ROT_MAT, TEMP_VEC_1, TEMP_VEC_2);
+
+    // Calculate new tip position
+    tip_pos[0] = fint((motion_circle_center[0]/_S_ + (vectors[TEMP_VEC_2][0]/_S_) * (motion_circle_r/_S_)) * _S_);
+    tip_pos[1] = fint((motion_circle_center[1]/_S_ + (vectors[TEMP_VEC_2][1]/_S_) * (motion_circle_r/_S_)) * _S_);
+    tip_pos[2] = fint((motion_circle_center[2]/_S_ + (vectors[TEMP_VEC_2][2]/_S_) * (motion_circle_r/_S_)) * _S_);
+
+    update_tip_rotation_matrix();
+    update_needle_coordinate_system();
+}
+
+/**
+ * @brief Rotates the needle by a given roll angle specified in radians (e.g., rotate_rad(fint(0.5*PI*_SI_)) for a 90 degree rotation).
+*/
+void rotate_rad(int32_t angle) {
+    tip_roll = angle;
+    update_action_rotation_matrix();
+    update_circle_center();
+
+    // Update tip base rotation matrix by previous base rotation, circle rotation, and action rotation
+    update_base_rotation_matrix();
+
+    ROT_counter++;
+}
+
+/**
+ * @brief Rotates the needle by a given roll angle specified in degrees (e.g., rotate_deg(90) for a 90 degree rotation).
+*/
+void rotate_deg(int32_t angle) {
+    rotate_rad(fint(((angle/180.0) * PI * _SI_)));
+}
+
+/**
+ * @brief Performs a single simulation step.
+*/
+void step() {
+    int32_t needle_pos_delta, tip_yaw_delta;
+    double _S_ = _SI_*1.0;  // _S_: The scale factor (as double value).
+
+    needle_pos_delta = fint(((needle_vel/_S_) * dt) * _S_);
+    tip_yaw_delta = fint(((needle_pos_delta/_S_) / (motion_circle_r/_S_)) * _S_);
+
+    needle_progress += needle_pos_delta;
+    motion_circle_yaw += tip_yaw_delta;
+    update_tip_pos();
+}
+
+/**
+ * @brief Initializes the needle.
+*/
+void initialize() {
+    update_circle_center();
+}
+
+/*************************************************
+******************** TA Model ********************
+*************************************************/
+
+/** Clocks **/
+clock t = 0.0;  // t: The global system clock.
+
+/** Communication Channels **/
+/* Workflow */
+broadcast chan do_tissue_action;         // do_tissue_action: The channel for notifying the Tissue that needle action step is finished to start Tissue reaction.
+broadcast chan finished_tissue_action;   // finished_tissue_action: The channel for notifying the User that Tissue reaction has finished.
+broadcast chan do_check;                 // do_check: The channel for notifying the State Checker that a new state is available for validity / reaching checks.
+broadcast chan finished_check;           // finished_check: The channel for notifying the User that the State Checker finished the validity / reaching checks.
+
+/* User / Needle */
+broadcast chan do_push;                  // do_push: The channel for notifying the Needle that a push motion should be executed.
+broadcast chan do_rotate;                // do_rotate: The channel for notifying the Needle that a rotate motion should be executed.
+
+/* Checker */
+broadcast chan terminate;                // terminate: The channel for notifying the User that the current path should be discarded.
+
+/*******************
+* Logger functions *
+*******************/
+
+/**
+ * @brief Logs the current push action.
+*/
+void log_push_action() {
+    actions[curr_ACT_index][ACT_PROG] = curr_ACT_index==0 ? 0 : actions[curr_ACT_index-1][ACT_PROG];
+    actions[curr_ACT_index][ACT_TYPE] = PUSH_ACTION;
+    actions[curr_ACT_index][ACT_VAL] = needle_progress - actions[curr_ACT_index][ACT_PROG];
+    curr_ACT_index++;
+}
+
+/**
+ * @brief Logs the current rotation action.
+*/
+void log_rotation_action() {
+    actions[curr_ACT_index][ACT_PROG] = needle_progress;
+    actions[curr_ACT_index][ACT_TYPE] = ROLL_ROTATE_ACTION;
+    actions[curr_ACT_index][ACT_VAL] = sel_rot_angle;
+    prev_ROT_index = curr_ACT_index;
+    curr_ACT_index++;
+    
+}
+
+/******************************
+* Guard / Invariant functions *
+******************************/
+
+/**
+ * @brief Checks if the needle tip entered any critical region.
+*/
+bool CR_reached = false;
+
+bool check_CR_reached() {
+    int32_t tip_center_dist, tip_region_dist;
+    int i;
+    double _S_ = _SI_*1.0;
+    CR_reached = false;
+
+    if (!HAS_CRITICAL_REGIONS &amp;&amp; !HAS_DETECTION_REGIONS) {
+        CR_reached = false;
+        return CR_reached;
+    }
+
+    for (i=0; i&lt;CR_COUNT; i++) {
+        tip_center_dist = fint(sqrt(
+            pow(CR_center[i][0]/_S_ - tip_pos[0]/_S_,2) +
+            pow(CR_center[i][1]/_S_ - tip_pos[1]/_S_,2) +
+            pow(CR_center[i][2]/_S_ - tip_pos[2]/_S_,2))*_S_);
+        tip_region_dist = tip_center_dist - CR_radius[i];
+        if (tip_region_dist &lt;= 0) {
+            CR_reached = true;
+            return CR_reached;
+        }
+    }
+
+    if (TREAT_DR_AS_CR) {
+        if (!HAS_DETECTION_REGIONS) {
+            CR_reached = false;
+            return CR_reached;
+        }
+
+        for (i=0; i&lt;DR_COUNT; i++) {
+            tip_center_dist = fint(sqrt(
+                pow(DR_center[i][0]/_S_ - tip_pos[0]/_S_,2) +
+                pow(DR_center[i][1]/_S_ - tip_pos[1]/_S_,2) +
+                pow(DR_center[i][2]/_S_ - tip_pos[2]/_S_,2))*_S_);
+            tip_region_dist = tip_center_dist - DR_radius[i];
+            if (tip_region_dist &lt;= 0) {
+                CR_reached = true;
+                return CR_reached;
+            }
+        }
+    }
+
+    return CR_reached;
+}
+
+/**
+ * @brief Checks if the needle tip lies within a defined target region.
+*/
+bool TR_reached = false;
+bool check_specific_TR_reached(int TR_index) {
+    double tip_center_dist, tip_region_dist;
+    TR_reached = false;
+    tip_center_dist = sqrt(pow(TR_center[TR_index][0] - tip_pos[0],2) +
+                           pow(TR_center[TR_index][1] - tip_pos[1],2) +
+                           pow(TR_center[TR_index][2] - tip_pos[2],2));
+    tip_region_dist = tip_center_dist - TR_radius[TR_index];
+    if (tip_region_dist &lt;= 0) {
+        TR_reached = true;
+    }
+    return TR_reached;
+}
+bool check_TR_reached() {
+    return check_specific_TR_reached(curr_TR_index);
+}
+
+/**
+ * @brief Checks if the needle tip can still reach the target region.
+*/
+bool TR_reachable = false;
+bool check_specific_TR_reachable(int TR_index) {
+    TR_reachable = (tip_pos[1] &gt;= (TR_center[TR_index][1] - TR_radius[TR_index]));
+    return TR_reachable;
+}
+bool check_TR_reachable() {
+    return check_specific_TR_reachable(curr_TR_index);
+}
+
+/**
+ * @brief Checks if the current needle path is still valid (i.e., if the needle moves in a valid direction).
+*/
+bool path_valid = false;
+bool check_path_valid() {
+    bool is_negative_y_motion = vectors[TIP_X_VEC][1] &lt;= 0;
+    path_valid = is_negative_y_motion;
+    return path_valid;
+}</declaration>
 	<template>
-		<name x="40" y="16">Train</name>
-		<parameter>const id_t id</parameter>
-		<declaration>clock x;</declaration>
-		<location id="id0" x="96" y="96">
-			<name x="48" y="80">Safe</name>
+		<name>User_Tmpl</name>
+		<declaration>bool check_rotation_allowed() {
+    bool has_not_reached_max = ROT_counter &lt; MAX_ROT_COUNT;
+    bool has_sufficient_distance = (prev_ROT_index == -1) || (needle_progress - actions[prev_ROT_index][ACT_PROG] &gt; MIN_PROG_BETWEEN_ROTS);
+    return has_not_reached_max &amp;&amp; has_sufficient_distance;
+}</declaration>
+		<location id="id0" x="-25" y="-17">
+			<name x="-67" y="-25">Idle</name>
+			<urgent/>
 		</location>
-		<location id="id1" x="176" y="320">
-			<name x="192" y="328">Stop</name>
+		<location id="id1" x="331" y="-17">
+			<name x="212" y="-25">Perform_Action</name>
 		</location>
-		<location id="id2" x="256" y="96">
-			<name x="272" y="80">Cross</name>
-			<label kind="invariant" x="272" y="96">x&lt;=5</label>
+		<location id="id2" x="331" y="59">
+			<name x="246" y="34">Pre_Check</name>
+			<urgent/>
 		</location>
-		<location id="id3" x="96" y="232">
-			<name x="32" y="216">Appr</name>
-			<label kind="invariant" x="32" y="232">x&lt;=20</label>
+		<location id="id3" x="144" y="59">
+			<name x="110" y="76">Wait_Check</name>
+			<urgent/>
 		</location>
-		<location id="id4" x="256" y="232">
-			<name x="272" y="216">Start</name>
-			<label kind="invariant" x="272" y="232">x&lt;= 15</label>
+		<location id="id4" x="144" y="-25">
+			<name x="101" y="-33">End</name>
 		</location>
-		<init ref="id0"/>
+		<location id="id5" x="331" y="110">
+			<committed/>
+		</location>
+		<init ref="id5"/>
 		<transition>
-			<source ref="id3"/>
+			<source ref="id5"/>
 			<target ref="id2"/>
-			<label kind="guard" x="184" y="160">x&gt;=10</label>
-			<label kind="assignment" x="184" y="176">x=0</label>
+			<label kind="assignment" x="254" y="76">initialize()</label>
 		</transition>
 		<transition>
 			<source ref="id3"/>
-			<target ref="id1"/>
-			<label kind="guard" x="88" y="280">x&lt;=10</label>
-			<label kind="synchronisation" x="88" y="296">stop[id]?</label>
+			<target ref="id4"/>
+			<label kind="synchronisation" x="67" y="0">terminate?</label>
+			<label kind="assignment" x="17" y="17">log_push_action()</label>
 		</transition>
 		<transition>
-			<source ref="id2"/>
+			<source ref="id3"/>
 			<target ref="id0"/>
-			<label kind="guard" x="184" y="56">x&gt;=3</label>
-			<label kind="synchronisation" x="184" y="72">leave[id]!</label>
-		</transition>
-		<transition>
-			<source ref="id0"/>
-			<target ref="id3"/>
-			<label kind="synchronisation" x="32" y="128">appr[id]!</label>
-			<label kind="assignment" x="32" y="144">x=0</label>
-		</transition>
-		<transition>
-			<source ref="id4"/>
-			<target ref="id2"/>
-			<label kind="guard" x="264" y="160">x&gt;=7</label>
-			<label kind="assignment" x="264" y="176">x=0</label>
+			<label kind="synchronisation" x="9" y="59">finished_check?</label>
+			<nail x="-25" y="59"/>
 		</transition>
 		<transition>
 			<source ref="id1"/>
-			<target ref="id4"/>
-			<label kind="synchronisation" x="224" y="280">go[id]?</label>
-			<label kind="assignment" x="224" y="296">x=0</label>
+			<target ref="id2"/>
+			<label kind="synchronisation" x="170" y="8">finished_tissue_action?</label>
+		</transition>
+		<transition>
+			<source ref="id2"/>
+			<target ref="id3"/>
+			<label kind="synchronisation" x="204" y="59">do_check!</label>
+		</transition>
+		<transition>
+			<source ref="id0"/>
+			<target ref="id1"/>
+			<label kind="select" x="-17" y="-136">i : int[0,ANGLE_COUNT-1]</label>
+			<label kind="guard" x="-17" y="-119">check_rotation_allowed()</label>
+			<label kind="synchronisation" x="246" y="-102">do_rotate!</label>
+			<label kind="assignment" x="-17" y="-102">sel_rot_angle = allowed_rot_angles[i]</label>
+			<nail x="-24" y="-102"/>
+			<nail x="331" y="-102"/>
+		</transition>
+		<transition>
+			<source ref="id0"/>
+			<target ref="id1"/>
+			<label kind="synchronisation" x="246" y="-59">do_push!</label>
+			<nail x="-25" y="-59"/>
+			<nail x="331" y="-59"/>
 		</transition>
 	</template>
 	<template>
-		<name x="40" y="16">Gate</name>
-		<declaration>id_t list[N+1];
-int[0,N] len;
-
-// Put an element at the end of the queue
-void enqueue(id_t element)
-{
-        list[len++] = element;
-}
-
-// Remove the front element of the queue
-void dequeue()
-{
-        int i = 0;
-        len -= 1;
-        while (i &lt; len)
-        {
-                list[i] = list[i + 1];
-                i++;
-        }
-        list[i] = 0;
-}
-
-// Returns the front element of the queue
-id_t front()
-{
-   return list[0];
-}
-
-// Returns the last element of the queue
-id_t tail()
-{
-   return list[len - 1];
-}</declaration>
-		<location id="id5" x="192" y="360">
-			<committed/>
+		<name>Needle_Device_Tmpl</name>
+		<declaration>clock ti;</declaration>
+		<location id="id6" x="68" y="0">
+			<name x="58" y="-34">Idle</name>
 		</location>
-		<location id="id6" x="192" y="264">
-			<name x="208" y="264">Occ</name>
+		<location id="id7" x="221" y="0">
+			<name x="204" y="-34">Push</name>
+			<label kind="invariant" x="153" y="8">ti &lt;= dt</label>
 		</location>
-		<location id="id7" x="192" y="128">
-			<name x="208" y="96">Free</name>
+		<location id="id8" x="-127" y="0">
+			<name x="-144" y="-34">Rotate</name>
+			<urgent/>
 		</location>
-		<init ref="id7"/>
+		<init ref="id6"/>
+		<transition>
+			<source ref="id8"/>
+			<target ref="id6"/>
+			<label kind="synchronisation" x="-119" y="59">do_tissue_action!</label>
+			<label kind="assignment" x="-119" y="76">rotate_deg(sel_rot_angle),
+ti = 0</label>
+			<nail x="-127" y="76"/>
+			<nail x="68" y="76"/>
+		</transition>
+		<transition>
+			<source ref="id7"/>
+			<target ref="id6"/>
+			<label kind="guard" x="85" y="42">ti &gt;= dt</label>
+			<label kind="synchronisation" x="85" y="59">do_tissue_action!</label>
+			<label kind="assignment" x="85" y="76">step(),
+ti = 0</label>
+			<nail x="221" y="76"/>
+			<nail x="68" y="76"/>
+		</transition>
 		<transition>
 			<source ref="id6"/>
-			<target ref="id5"/>
-			<label kind="select" x="104" y="288">e : id_t</label>
-			<label kind="synchronisation" x="104" y="304">appr[e]?</label>
-			<label kind="assignment" x="104" y="320">enqueue(e)</label>
+			<target ref="id8"/>
+			<label kind="synchronisation" x="-93" y="-17">do_rotate?</label>
+			<label kind="assignment" x="-93" y="0">log_push_action(),
+log_rotation_action()</label>
 		</transition>
 		<transition>
 			<source ref="id6"/>
 			<target ref="id7"/>
-			<label kind="select" x="296" y="152">e : id_t</label>
-			<label kind="guard" x="296" y="168">e == front()</label>
-			<label kind="synchronisation" x="296" y="184">leave[e]?</label>
-			<label kind="assignment" x="296" y="200">dequeue()</label>
-			<nail x="288" y="264"/>
-			<nail x="288" y="128"/>
-		</transition>
-		<transition>
-			<source ref="id5"/>
-			<target ref="id6"/>
-			<label kind="synchronisation" x="224" y="304">stop[tail()]!</label>
-			<nail x="216" y="312"/>
-		</transition>
-		<transition>
-			<source ref="id7"/>
-			<target ref="id6"/>
-			<label kind="guard" x="104" y="168">len &gt; 0</label>
-			<label kind="synchronisation" x="104" y="184">go[front()]!</label>
-			<nail x="96" y="128"/>
-			<nail x="96" y="264"/>
-		</transition>
-		<transition>
-			<source ref="id7"/>
-			<target ref="id6"/>
-			<label kind="select" x="200" y="152">e : id_t</label>
-			<label kind="guard" x="200" y="168">len == 0</label>
-			<label kind="synchronisation" x="200" y="184">appr[e]?</label>
-			<label kind="assignment" x="200" y="200">enqueue(e)</label>
+			<label kind="synchronisation" x="119" y="-17">do_push?</label>
 		</transition>
 	</template>
-	<system>system Train, Gate;
-</system>
+	<template>
+		<name>Tissue_Tmpl</name>
+		<location id="id9" x="-161" y="-127">
+			<name x="-171" y="-161">Idle</name>
+		</location>
+		<location id="id10" x="17" y="-127">
+			<name x="-34" y="-161">Tissue_Reaction</name>
+			<committed/>
+		</location>
+		<init ref="id9"/>
+		<transition>
+			<source ref="id10"/>
+			<target ref="id9"/>
+			<label kind="synchronisation" x="-153" y="-76">finished_tissue_action!</label>
+			<nail x="17" y="-59"/>
+			<nail x="-161" y="-59"/>
+		</transition>
+		<transition>
+			<source ref="id9"/>
+			<target ref="id10"/>
+			<label kind="synchronisation" x="-136" y="-127">do_tissue_action?</label>
+		</transition>
+	</template>
+	<template>
+		<name>Checker_Tmpl</name>
+		<location id="id11" x="-595" y="-204">
+			<name x="-731" y="-195">Check_Path_Valid</name>
+			<committed/>
+		</location>
+		<location id="id12" x="-595" y="-93">
+			<name x="-748" y="-85">Check_TR_Reached</name>
+			<committed/>
+		</location>
+		<location id="id13" x="-595" y="0">
+			<name x="-756" y="9">Check_TR_Reachable</name>
+			<committed/>
+		</location>
+		<location id="id14" x="-408" y="-93">
+			<name x="-450" y="-76">TR_Reached</name>
+			<committed/>
+		</location>
+		<location id="id15" x="-408" y="0">
+			<name x="-468" y="17">TR_Unreachable</name>
+		</location>
+		<location id="id16" x="-595" y="-297">
+			<name x="-629" y="-289">Idle</name>
+		</location>
+		<location id="id17" x="-595" y="93">
+			<name x="-748" y="101">Check_CR_Reached</name>
+			<committed/>
+		</location>
+		<location id="id18" x="-408" y="93">
+			<name x="-451" y="109">CR_Reached</name>
+		</location>
+		<location id="id19" x="-255" y="-93">
+			<name x="-323" y="-76">Final_TR_Reached</name>
+		</location>
+		<location id="id20" x="-399" y="-204">
+			<name x="-433" y="-187">Path_Invalid</name>
+		</location>
+		<init ref="id16"/>
+		<transition>
+			<source ref="id11"/>
+			<target ref="id20"/>
+			<label kind="guard" x="-561" y="-221">!path_valid</label>
+			<label kind="synchronisation" x="-561" y="-238">terminate!</label>
+		</transition>
+		<transition>
+			<source ref="id14"/>
+			<target ref="id19"/>
+			<label kind="guard" x="-391" y="-127">curr_TR_index 
+&gt;= TR_COUNT</label>
+			<label kind="synchronisation" x="-391" y="-144">terminate!</label>
+		</transition>
+		<transition>
+			<source ref="id14"/>
+			<target ref="id12"/>
+			<label kind="guard" x="-561" y="-161">curr_TR_index &lt; TR_COUNT</label>
+			<label kind="assignment" x="-561" y="-144">check_TR_reached()</label>
+			<nail x="-408" y="-144"/>
+			<nail x="-561" y="-144"/>
+		</transition>
+		<transition>
+			<source ref="id17"/>
+			<target ref="id16"/>
+			<label kind="guard" x="-731" y="75">!CR_reached</label>
+			<label kind="synchronisation" x="-748" y="-314">finished_check!</label>
+			<nail x="-765" y="93"/>
+			<nail x="-765" y="-297"/>
+		</transition>
+		<transition>
+			<source ref="id17"/>
+			<target ref="id18"/>
+			<label kind="guard" x="-544" y="77">CR_reached</label>
+			<label kind="synchronisation" x="-544" y="60">terminate!</label>
+		</transition>
+		<transition>
+			<source ref="id13"/>
+			<target ref="id17"/>
+			<label kind="guard" x="-697" y="34">TR_reachable</label>
+			<label kind="assignment" x="-739" y="51">check_CR_reached()</label>
+		</transition>
+		<transition>
+			<source ref="id16"/>
+			<target ref="id11"/>
+			<label kind="synchronisation" x="-586" y="-280">do_check?</label>
+			<label kind="assignment" x="-586" y="-263">check_path_valid()</label>
+		</transition>
+		<transition>
+			<source ref="id12"/>
+			<target ref="id13"/>
+			<label kind="guard" x="-688" y="-59">!TR_reached</label>
+			<label kind="assignment" x="-748" y="-42">check_TR_reachable()</label>
+		</transition>
+		<transition>
+			<source ref="id13"/>
+			<target ref="id15"/>
+			<label kind="guard" x="-552" y="-17">!TR_reachable</label>
+			<label kind="synchronisation" x="-552" y="-34">terminate!</label>
+		</transition>
+		<transition>
+			<source ref="id12"/>
+			<target ref="id14"/>
+			<label kind="guard" x="-552" y="-110">TR_reached</label>
+			<label kind="assignment" x="-561" y="-93">curr_TR_index++</label>
+		</transition>
+		<transition>
+			<source ref="id11"/>
+			<target ref="id12"/>
+			<label kind="guard" x="-671" y="-170">path_valid</label>
+			<label kind="assignment" x="-739" y="-153">check_TR_reached()</label>
+		</transition>
+	</template>
+	<system>User = User_Tmpl();
+Needle_Device = Needle_Device_Tmpl();
+Tissue = Tissue_Tmpl();
+Checker = Checker_Tmpl();
+
+system User, Needle_Device, Tissue, Checker;</system>
 	<queries>
 		<query>
-			<formula>
-			</formula>
-			<comment>===== Validation Properties:
-			</comment>
+			<formula>E&lt;&gt; Checker.Final_TR_Reached</formula>
+			<comment>This query checks if there exists a path that reaches the final target region (TR).</comment>
 		</query>
 		<query>
-			<formula>E&lt;&gt; Gate.Occ
-			</formula>
-			<comment>Gate can receive (and store in queue) msg's from approaching trains.
-			</comment>
+			<formula>A[] not Checker.CR_Reached</formula>
+			<comment>This query checks if no critical region (CR) is ever reached.
+The result of this query is typically "false", as the CRs usually lie between start point and TR so that at least some paths lead to a CR.</comment>
 		</query>
 		<query>
-			<formula>E&lt;&gt; Train(0).Cross
-			</formula>
-			<comment>Train 0 can reach crossing.
-			</comment>
+			<formula>E&lt;&gt; Checker.CR_Reached</formula>
+			<comment>This query checks if there exists a path that reaches a critical region (CR).</comment>
 		</query>
 		<query>
-			<formula>E&lt;&gt; Train(1).Cross
-			</formula>
-			<comment>Train 1 can reach crossing.
-			</comment>
+			<formula></formula>
+			<comment></comment>
 		</query>
 		<query>
-			<formula>E&lt;&gt; Train(0).Cross and Train(1).Stop
-			</formula>
-			<comment>Train 0 can be crossing bridge while Train 1 is waiting to cross.
-			</comment>
+			<formula>strategy ReachCR = control: A&lt;&gt; Checker.CR_Reached</formula>
+			<comment>This query synthesizes a strategy that deliberately reaches any of the critical regions (CR).</comment>
 		</query>
 		<query>
-			<formula>E&lt;&gt; Train(0).Cross and (forall (i : id_t) i != 0 imply Train(i).Stop)
-			</formula>
-			<comment>Train 0 can cross bridge while the other trains are waiting to cross.
-			</comment>
+			<formula>simulate 1000 [&lt;=300] {tip_pos[0]*1.0/_SI_, tip_pos[1]*1.0/_SI_, tip_pos[2]*1.0/_SI_, needle_progress*1.0/_SI_, ROT_counter*10} under ReachCR</formula>
+			<comment>This query performs a set of simulating runs under the ReachCR strategy, and plots the tip position, needle progress, and current rotation count.</comment>
 		</query>
 		<query>
-			<formula>
-			</formula>
-			<comment>===== Safety Properties:
-			</comment>
+			<formula></formula>
+			<comment></comment>
 		</query>
 		<query>
-			<formula>A[] forall (i : id_t) forall (j : id_t) Train(i).Cross &amp;&amp; Train(j).Cross imply i == j
-			</formula>
-			<comment>There is never more than one train crossing the bridge (at
-any time instance).
-			</comment>
+			<formula>strategy ReachFinalTR = control: A&lt;&gt; Checker.Final_TR_Reached</formula>
+			<comment>This query synthesizes a strategy of paths reaching the final target region (TR).</comment>
 		</query>
 		<query>
-			<formula>A[] Gate.list[N] == 0
-			</formula>
-			<comment>There can never be N elements in the queue (thus the array will not overflow).
-			</comment>
-		</query>
-		<query>
-			<formula>
-			</formula>
-			<comment>===== Liveness Properties:
-			</comment>
-		</query>
-		<query>
-			<formula>Train(0).Appr --&gt; Train(0).Cross
-			</formula>
-			<comment>Whenever a train approaches the bridge, it will eventually cross.
-			</comment>
-		</query>
-		<query>
-			<formula>Train(1).Appr --&gt; Train(1).Cross
-			</formula>
-			<comment>
-			</comment>
-		</query>
-		<query>
-			<formula>Train(2).Appr --&gt; Train(2).Cross
-			</formula>
-			<comment>
-			</comment>
-		</query>
-		<query>
-			<formula>Train(3).Appr --&gt; Train(3).Cross
-			</formula>
-			<comment>
-			</comment>
-		</query>
-		<query>
-			<formula>Train(4).Appr --&gt; Train(4).Cross
-			</formula>
-			<comment>
-			</comment>
-		</query>
-		<query>
-			<formula>Train(5).Appr --&gt; Train(5).Cross
-			</formula>
-			<comment>
-			</comment>
-		</query>
-		<query>
-			<formula>
-			</formula>
-			<comment>===== Deadlock checking:
-			</comment>
-		</query>
-		<query>
-			<formula>A[] not deadlock
-			</formula>
-			<comment>The system is deadlock-free.
-			</comment>
+			<formula>simulate 100 [&lt;=300] {tip_pos[0]*1.0/_SI_, tip_pos[1]*1.0/_SI_, tip_pos[2]*1.0/_SI_, needle_progress*1.0/_SI_, ROT_counter*10} under ReachFinalTR</formula>
+			<comment>This query performs a set of simulating runs under the ReachFinalTR strategy, and plots the tip position, needle progress, and current rotation count.</comment>
 		</query>
 	</queries>
 </nta>

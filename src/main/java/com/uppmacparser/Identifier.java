@@ -64,7 +64,7 @@ public class Identifier {
                 dag = "yes";
             }
 
-            excelWriter.writeRow(new String[] {"", currentTemplateProperty.template.name, hasLonelyInit, String.valueOf(currentTemplateProperty.numLocations), String.valueOf(currentTemplateProperty.numTransitions), String.valueOf(declarationLength), String.valueOf(numOfPoplarLocations), dag, isSingleLocation, String.valueOf(currentTemplateProperty.deadEnds)});
+            excelWriter.writeRow(new String[] {"", currentTemplateProperty.template.name, hasLonelyInit, String.valueOf(currentTemplateProperty.numLocations), String.valueOf(currentTemplateProperty.numTransitions), String.valueOf(declarationLength), String.valueOf(currentTemplateProperty.functions), String.valueOf(numOfPoplarLocations), dag, isSingleLocation, String.valueOf(currentTemplateProperty.deadEnds)});
         }
         excelWriter.writeRow(new String[] {""});
     }
@@ -149,6 +149,9 @@ public class Identifier {
 
         int declarationLength = getLengthOfDeclaration(template.declaration);
         tempTemplateProperty.declarationLength = declarationLength;
+
+        int functionCount = template.declaration.countFunctions();
+        tempTemplateProperty.functions = functionCount;
 
         templateProperties.add(tempTemplateProperty);
     }

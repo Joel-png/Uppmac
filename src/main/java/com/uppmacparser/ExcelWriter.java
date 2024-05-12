@@ -7,7 +7,7 @@ import java.io.BufferedWriter;
 import java.io.File;
 
 public class ExcelWriter {
-    String[] titles = {"", "         name         ", "lonelyInit", "locations", "transitions", "declarationLength", "flowers", "dag", "single", "deadEnds"};
+    String[] titles = {"", "         name         ", "lonelyInit", "locations", "transitions", "declarationLength", "functions", "flowers", "dag", "single", "deadEnds"};
 
     ArrayList<String[]> ntaData;
 

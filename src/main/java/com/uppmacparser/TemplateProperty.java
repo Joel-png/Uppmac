@@ -10,6 +10,8 @@ public class TemplateProperty {
     int deadEnds = 0;
     boolean dag = false;
     int declarationLength = 0;
+    int functions = 0;
+    int variables = 0;
     
     public TemplateProperty(Template template) {
         this.template = template;
