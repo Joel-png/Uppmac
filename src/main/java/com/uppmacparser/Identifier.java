@@ -1,8 +1,6 @@
 package com.uppmacparser;
 
 import java.io.IOException;
-import java.io.LineNumberReader;
-import java.io.StringReader;
 import java.util.ArrayList;
 
 
@@ -25,46 +23,7 @@ public class Identifier {
         for (int i = 0; i < templateProperties.size(); i++) {
             TemplateProperty currentTemplateProperty = templateProperties.get(i);
             
-            int numOfPoplarLocations = currentTemplateProperty.numOfPoplarLocations;
-            
-
-            String isLinear = "no";
-            String hasLonelyInit = "no";
-            String isSingleLocation = "no";
-            String dag = "no";
-            int declarationLength = currentTemplateProperty.declarationLength;
-
-            // System.out.println();
-            // System.out.println();
-            // System.out.println();
-            // System.out.println(currentTemplateProperty.template.name);
-
-            // Navigator.indent(1);
-            // System.out.println("Has " + numOfPoplarLocations + " popular locations (75-100% degree presences)");
-
-            if (currentTemplateProperty.isLinear) {
-                // Navigator.indent(1);
-                // System.out.println("Linear");
-                isLinear = "yes";
-            }
-
-            if (currentTemplateProperty.lonelyInit) {
-                // Navigator.indent(1);
-                // System.out.println("Lonely init");
-                hasLonelyInit = "yes";
-            }
-
-            if (currentTemplateProperty.singleLocation) {
-                // Navigator.indent(1);
-                // System.out.println("Single location");
-                isSingleLocation = "yes";
-            }
-
-            if (currentTemplateProperty.dag) {
-                dag = "yes";
-            }
-
-            excelWriter.writeRow(new String[] {"", currentTemplateProperty.template.name, hasLonelyInit, String.valueOf(currentTemplateProperty.numLocations), String.valueOf(currentTemplateProperty.numTransitions), String.valueOf(declarationLength), String.valueOf(currentTemplateProperty.functions), String.valueOf(numOfPoplarLocations), dag, isSingleLocation, String.valueOf(currentTemplateProperty.deadEnds)});
+            excelWriter.writeRow(currentTemplateProperty.returnStringData());
         }
         excelWriter.writeRow(new String[] {""});
     }
