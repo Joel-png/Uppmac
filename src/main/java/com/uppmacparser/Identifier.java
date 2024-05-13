@@ -19,7 +19,7 @@ public class Identifier {
 
     public void outputNtaTemplateProperties() throws IOException {
         excelWriter.writeRow(new String[] {nta.name, "globalDeclarationLength: " + getLengthOfDeclaration(nta.globalDeclaration)}); // print name of nta
-        excelWriter.writeRow(excelWriter.titles);
+        excelWriter.writeRow(excelWriter.fixedTitles);
         for (int i = 0; i < templateProperties.size(); i++) {
             TemplateProperty currentTemplateProperty = templateProperties.get(i);
             
@@ -28,6 +28,9 @@ public class Identifier {
         excelWriter.writeRow(new String[] {""});
     }
 
+    public ArrayList<TemplateProperty> getTemplateProperties() {
+        return templateProperties;
+    }
     public void printLocationProperties(Location location, Location[] locations, Transition[] transitions, int indent) {
         Navigator.indent(indent);
         System.out.println("Location has in-out degree presence % of: " + checkDegreePresence(location, transitions) * 100 + "%");
@@ -111,6 +114,9 @@ public class Identifier {
 
         int functionCount = template.declaration.countFunctions();
         tempTemplateProperty.functions = functionCount;
+
+        int variableCount = template.declaration.countVariables();
+        tempTemplateProperty.variables = variableCount;
 
         templateProperties.add(tempTemplateProperty);
     }

@@ -7,14 +7,24 @@ import java.io.BufferedWriter;
 import java.io.File;
 
 public class ExcelWriter {
-    String[] titles = {"", "         name         ", "lonelyInit", "locations", "transitions", "declarationLength", "functions", "flowers", "dag", "single", "deadEnds"};
-
+    String[] titles = {"", "name", "lonelyInit", "locations", "transitions", "declarationLength", "functions", "variables", "flowers", "dag", "single", "deadEnds"};
+    String[] fixedTitles;
     ArrayList<String[]> ntaData;
 
     int rowIndex = 0;
 
     public ExcelWriter() {
         ntaData = new ArrayList<String[]>(); 
+        fixedTitles = fixTitles();
+    }
+
+    public String[] fixTitles() {
+        String[] newTitles = new String[titles.length];
+        for (int i = 0; i < newTitles.length; i++) {
+            newTitles[i] = titles[i];
+        }
+        newTitles[1] = "         name         ";
+        return newTitles;
     }
 
     public void writeRow(String[] strings) {
@@ -31,13 +41,13 @@ public class ExcelWriter {
     }
 
     public void finish() throws IOException {
-        File outputFile = new File("output.txt");
+        File outputFile = new File("output/output.txt");
         BufferedWriter writer = new BufferedWriter(new FileWriter(outputFile));
 
         // writing the data into the sheets... 
-        for (int i = 0; i < ntaData.size(); i++) {
-            //printObject(ntaData.get(i));
-        }
+        // for (int i = 0; i < ntaData.size(); i++) {
+        //     printObject(ntaData.get(i));
+        // }
 
         for (int i = 0; i < ntaData.size(); i++) {
             //row = spreadsheet.createRow(i+1);
@@ -49,7 +59,7 @@ public class ExcelWriter {
                 //Cell cell = row.createCell(cellid++); 
                 //cell.setCellValue((String)obj); 
                 if (stringArr.length == titles.length) {
-                    str = formatLength(str, titles[j].length());
+                    str = formatLength(str, fixedTitles[j].length());
                 }
                 
                 data += str + " | ";
@@ -63,6 +73,30 @@ public class ExcelWriter {
         //workbook.write(out); 
         //workbook.close();
         //out.close(); 
+    }
+
+    public void writeIndividualData(ArrayList<TemplateProperty> templateProperties) throws IOException {
+        String[] data = new String[titles.length];
+        for (int i = 0; i < data.length; i++) {
+            data[i] = "" + titles[i] + System.getProperty("line.separator");
+        }
+
+        for (int i = 0; i < templateProperties.size(); i++) {
+            TemplateProperty currentTemplateProperty = templateProperties.get(i);
+
+            for (int j = 1; j < data.length; j++) { 
+                // "", "         name         ", "lonelyInit", "locations", "transitions", "declarationLength", "functions", "variables", "flowers", "dag", "single", "deadEnds"
+                data[j] += currentTemplateProperty.getData(j) + " ";
+            }
+        }
+
+        for (int i = 1; i < data.length; i++) {
+            String filename = "output/" + titles[i] + ".txt";
+            File outputFile = new File(new String(filename));
+            BufferedWriter writer = new BufferedWriter(new FileWriter(outputFile));
+            writer.write(data[i]);
+            writer.close();
+        }
     }
 
     public String formatLength(String data, int length) {

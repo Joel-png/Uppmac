@@ -5,11 +5,15 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.util.ArrayList;
 
 public class Runner {
 
     Navigator navigator;
     ExcelWriter excelWriter;
+    ArrayList<TemplateProperty> templateProperties = new ArrayList<TemplateProperty>();
+
     public Runner () {
 
     }
@@ -87,6 +91,7 @@ public class Runner {
                 //         System.out.println("Specified file is of type '" + extension + "', please use a file with type 'xml'");
                 //     }
                 // }
+                excelWriter.writeIndividualData(templateProperties);
                 excelWriter.finish();
 
             // file -p
@@ -120,7 +125,50 @@ public class Runner {
                 System.out.println("For printing properties use '-p [xml file]', for all files in directory use '-ap [folder]'");
             }
         }
+
+        if (args.length == 3) {
+            if (args[0].equals(new String("-merge"))) {
+                
+                StringBuilder content = new StringBuilder();
+                String x;
+                String line;
+                try (BufferedReader br = new BufferedReader(new FileReader(args[1]))) {
+                    line = br.readLine();
+                    while ((line = br.readLine()) != null) {
+                        content.append(line).append("\n");
+                    }
+                    x = content.toString();
+                }
+                String y;
+                content = new StringBuilder();
+                try (BufferedReader br = new BufferedReader(new FileReader(args[2]))) {
+                    line = br.readLine();
+                    while ((line = br.readLine()) != null) {
+                        content.append(line).append("\n");
+                    }
+                    y = content.toString();
+                }
+                String output = merge(x, y, args[1] + args[2]);
+                File outputFile = new File("output/merged.txt");
+                BufferedWriter writer = new BufferedWriter(new FileWriter(outputFile));
+                writer.write(output);
+                writer.close();
+            }
+        }
         return navigator;
+    }
+
+    public String merge(String xValue, String yValue, String name) {
+        String[] xArray = xValue.split(" ");
+        String[] yArray = yValue.split(" ");
+
+        StringBuilder result = new StringBuilder();
+        result.append(name + System.getProperty("line.separator"));
+        for (int i = 0; i < xArray.length; i++) {
+            result.append(xArray[i]).append(" ").append(yArray[i]).append(" ");
+        }
+
+        return result.toString();
     }
 
     public void traverseFolder(String absolutePath, String name) throws Exception {
@@ -136,6 +184,11 @@ public class Runner {
         }
     }
 
+    public void addProperties(ArrayList<TemplateProperty> newProperties) {
+        for (int i = 0; i < newProperties.size(); i++) {
+            templateProperties.add(newProperties.get(i));
+        }
+    }
     public void analyze(String path, String name) throws Exception {
         System.out.println("Analysing file: " + name);
                     
@@ -151,6 +204,7 @@ public class Runner {
                         DefaultParser parser = new DefaultParser(formatXML(inputFile), name);
                         navigator = new Navigator(parser.parse(), name, excelWriter);
                         navigator.getProperties();
+                        addProperties(navigator.identifier.getTemplateProperties());
                         
                     } else {
                         System.out.println("Specified file is of type '" + extension + "', please use a file with type 'xml'");

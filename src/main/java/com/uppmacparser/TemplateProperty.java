@@ -17,6 +17,46 @@ public class TemplateProperty {
         this.template = template;
     }
 
+    public String getData(int i) {
+        switch (i) {
+            case 1:
+                return template.name;
+            case 2:
+                if (lonelyInit) {
+                    return "1";
+                } else {
+                    return "0";
+                }
+            case 3:
+                return String.valueOf(numLocations);
+            case 4:
+                return String.valueOf(numTransitions);
+            case 5:
+                return String.valueOf(declarationLength);
+            case 6:
+                return String.valueOf(functions);
+            case 7:
+                return String.valueOf(variables);
+            case 8:
+                return String.valueOf(numOfPoplarLocations);
+            case 9:
+                if (dag) {
+                    return "1";
+                } else {
+                    return "0";
+                }
+            case 10:
+                if (singleLocation) {
+                    return "1";
+                } else {
+                    return "0";
+                }
+            case 11:
+                return String.valueOf(deadEnds);
+            default:
+                return "ERROR";
+        }
+    }
     public String[] returnStringData() {
         String isLinearString = "no";
         String hasLonelyInit = "no";
@@ -46,6 +86,7 @@ public class TemplateProperty {
             String.valueOf(numTransitions), 
             String.valueOf(declarationLength), 
             String.valueOf(functions), 
+            String.valueOf(variables),
             String.valueOf(numOfPoplarLocations), 
             dagString, 
             isSingleLocation, 
