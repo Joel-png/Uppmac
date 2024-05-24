@@ -8,6 +8,7 @@ import java.io.File;
 
 public class ExcelWriter {
     String[] titles = {"", "name", "lonelyInit", "locations", "transitions", "declarationLength", "functions", "variables", "flowers", "dag", "single", "deadEnds"};
+    String[] ntaTitles = {"nameName", "globalFunctions", "globalVariables", "globalComplexity", "templateFunctions", "templateVariables", "templateComplexity"};
     String[] fixedTitles;
     ArrayList<String[]> ntaData;
 
@@ -84,9 +85,11 @@ public class ExcelWriter {
         for (int i = 0; i < templateProperties.size(); i++) {
             TemplateProperty currentTemplateProperty = templateProperties.get(i);
 
-            for (int j = 1; j < data.length; j++) { 
-                // "", "         name         ", "lonelyInit", "locations", "transitions", "declarationLength", "functions", "variables", "flowers", "dag", "single", "deadEnds"
-                data[j] += currentTemplateProperty.getData(j) + " ";
+            if (isOutlier(currentTemplateProperty)) {
+                for (int j = 1; j < data.length; j++) { 
+                    // "", "         name         ", "lonelyInit", "locations", "transitions", "declarationLength", "functions", "variables", "flowers", "dag", "single", "deadEnds"
+                    data[j] += currentTemplateProperty.getData(j) + " ";
+                }
             }
         }
 
@@ -97,6 +100,39 @@ public class ExcelWriter {
             writer.write(data[i]);
             writer.close();
         }
+    }
+
+    public void writeNtaData(ArrayList<Nta> ntas) throws IOException {
+        String[] data = new String[ntaTitles.length];
+        for (int i = 0; i < data.length; i++) {
+            data[i] = "" + ntaTitles[i] + System.getProperty("line.separator");
+        }
+
+        for (int i = 0; i < ntas.size(); i++) {
+            Nta currentNta = ntas.get(i);
+
+            for (int j = 0; j < data.length; j++) { 
+                data[j] += currentNta.getData(j) + " ";
+            }
+        }
+
+        for (int i = 0; i < data.length; i++) {
+            String filename = "output/ntaOutput/" + ntaTitles[i] + ".txt";
+            File outputFile = new File(new String(filename));
+            BufferedWriter writer = new BufferedWriter(new FileWriter(outputFile));
+            writer.write(data[i]);
+            writer.close();
+        }
+    }
+
+    public boolean isOutlier(TemplateProperty tempProp) {
+        if (tempProp.numLocations > 200) {
+            return false;
+        }
+        if (tempProp.variables > 100) {
+            return false;
+        }
+        return true;
     }
 
     public String formatLength(String data, int length) {

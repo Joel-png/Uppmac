@@ -1,0 +1,2 @@
+globalVariables
+28 7 31 22 8 

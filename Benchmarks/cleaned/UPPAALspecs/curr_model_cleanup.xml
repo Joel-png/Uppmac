@@ -1,0 +1,815 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE nta PUBLIC '-//Uppaal Team//DTD Flat System 1.1//EN' 'http://www.it.uu.se/research/group/darts/uppaal/flat-1_2.dtd'>
+<nta>
+	<declaration>// Place global declarations here.
+
+// Test
+
+
+
+// Clocks
+clock total;                            // Overall time, used for queries in the verifier.
+clock country_c;    // Ticker for country population, population is increased everytime this clock hits 1.
+
+// Types
+const int ND = 3; // number of drug processes per pharma
+const int NC = 4; // number of country processes
+const int NP = 1; // number of pharma processes
+const int NT = 1; // number of potential drug types
+const int NV = 3; // number of drug values
+const int AMG = 13; // number of maximum additional months gained (QALY) + 1 
+
+typedef int[0,ND-1] id_d; // id of a drug process
+typedef int[0,NC-1] id_c; // id of a country process
+typedef int[0,NP-1] id_p; // id of a pharma process
+typedef int[0, NT-1] id_t; // drug type
+typedef int[0, NV-1] id_v; // drug value
+typedef int[0, AMG-1] id_amg; // Additional months gained
+
+// Channels
+urgent broadcast chan ready[NC][NP][NT][AMG][ND];    // This channel is used to signify the Negotiation of a Country that a Drug is ready to be released.
+broadcast chan done[NC];                            // This channel is used to signify to a Drug that the Negotiation with a Country has finished and the Drug can be brought on the market.
+urgent broadcast chan reset;                    // This channel is used to "reset" a population, in the sense that every population has had an equal amount of ticks by the country_c at the end of every Drug cycle.
+broadcast chan release[NC][AMG];                // This channel is used to signify to a Country that a Drug is released by the Negotiation. This leads to an increase of population.
+urgent broadcast chan start_drug_development[id_p][id_d];
+
+// Definitions
+
+//Global
+
+const int RD_TIME = (11+16) * 6;
+const int DISC_TIME = fint(11.0 / 27.0 * RD_TIME);                        // Time spent in "Discovery" (Paul, 2010) is 5.5 years.
+const int DEV_TIME = fint(16.0 / 27.0 * RD_RIME);                        // Time spent in "Development" (Paul, 2010) is 8 years.
+
+const int END_TIME = 25*12;
+
+const int DISC_COSTS = fint(75000/6 * 0.2);
+const int DEV_COSTS = fint(0.2*60000/6);
+
+const int SELLING_PERIOD = END_TIME - DISC_TIME - DEV_TIME;
+
+// const int RAMP_TIME = 8 * 6;                        // Time spent while the market share is increasing and decreasing is 4 years (Stewart &amp; Johnson)
+// const int PATENT_TIME = 25 * 12;                     // Total patent time is 25 years.
+
+int drug_launches = 1;                            // We start with one drug launch in the beginning of every simulation (see Initial location Pharma)
+
+// Pharma
+const double MARKET_PEAK = 100.0;      // In percentage
+const double RAMP_YEARS_F = 48.0;     // 4 Ramp years in months (float)
+const int RAMP_YEARS = 48;            // 4 Ramp years in months (int)
+const double reinvestment_rate = 1785000.0 * 0.8;
+double pharma_revenue[NP] = { 0.0 };
+int reinvestment[NP] = { 0 };
+
+// Country
+const int POPULATION = 200;
+double population[NC][NT] = {{ POPULATION*1.0 }, {POPULATION*1.0}, {POPULATION/2.0}, {POPULATION/4.0}};
+int pop_cycles[NC] = {0, 0, 0, 0};
+
+// Negotiation
+double price[NC][NP][NT] = { { { 100.0 } }, {{ 100.0 }}, {{ 100.0 }}, {{ 100.0 }} };
+int negotiation_success[NC][ND] = { { false, false, false }, { false, false, false }, {false, false, false}, {false, false, false} };
+
+double last_prices[NC][NP][NT][3] = { { { { 100.0, 100.0, 100.0 } } }, { { { 100.0, 100.0, 100.0 } } }, { { { 100.0, 100.0, 100.0 } } }, { { { 100.0, 100.0, 100.0 } } } };
+
+// Drug
+bool free[NP][ND] = { { true, true, true }};
+
+void new_price(int country, int pharma, int type, double new_price) {
+    last_prices[country][pharma][type][2] = last_prices[country][pharma][type][1];
+    last_prices[country][pharma][type][1] = last_prices[country][pharma][type][0];
+    last_prices[country][pharma][type][0] = new_price;
+    price[country][pharma][type] = new_price;
+}
+
+
+</declaration>
+	<template>
+		<name x="5" y="5">Pharma</name>
+		<parameter>id_p id</parameter>
+		<declaration>// Place local declarations here.
+clock p_clock;
+
+int get_free(id_p p) {
+    for (d : id_d) {
+        if (free[p][d]) {
+            return d;
+        }
+    }
+    return -1;
+}</declaration>
+		<location id="id0" x="-799" y="-289">
+			<name x="-809" y="-323">Idle</name>
+		</location>
+		<location id="id1" x="-1096" y="-289">
+			<name x="-1106" y="-323">Init</name>
+			<committed/>
+		</location>
+		<init ref="id1"/>
+		<transition>
+			<source ref="id1"/>
+			<target ref="id0"/>
+			<label kind="synchronisation" x="-1096" y="-314">start_drug_development[id][get_free(id)]!</label>
+		</transition>
+		<transition>
+			<source ref="id0"/>
+			<target ref="id0"/>
+			<label kind="guard" x="-595" y="-391">reinvestment[id] &gt; 0 &amp;&amp; get_free(id) &gt; -1</label>
+			<label kind="synchronisation" x="-595" y="-425">start_drug_development[id][get_free(id)]!</label>
+			<label kind="assignment" x="-595" y="-408">reinvestment[id] -= 1</label>
+			<nail x="-705" y="-425"/>
+			<nail x="-484" y="-289"/>
+			<nail x="-705" y="-178"/>
+		</transition>
+	</template>
+	<template>
+		<name>Country</name>
+		<parameter>id_c id</parameter>
+		<declaration>id_t type;
+
+void update_pop(id_t type) {
+    population[id][type] = fint(population[id][type]*1.01);
+}
+
+</declaration>
+		<location id="id2" x="-391" y="-238">
+			<committed/>
+		</location>
+		<location id="id3" x="-221" y="-238">
+			<committed/>
+		</location>
+		<location id="id4" x="-221" y="-119">
+			<label kind="invariant" x="-374" y="-93">country_c &lt;= 6</label>
+		</location>
+		<init ref="id4"/>
+		<transition>
+			<source ref="id4"/>
+			<target ref="id4"/>
+			<label kind="select" x="-119" y="-144">amg : id_amg</label>
+			<label kind="guard" x="-127" y="-127">country_c &lt;= 6</label>
+			<label kind="synchronisation" x="-119" y="-110">release[id][amg]?</label>
+			<label kind="assignment" x="-119" y="-93">population[id][0] = population[id][0] + 25*amg</label>
+			<nail x="-127" y="-68"/>
+			<nail x="-127" y="-144"/>
+		</transition>
+		<transition>
+			<source ref="id4"/>
+			<target ref="id4"/>
+			<label kind="synchronisation" x="-246" y="-17">reset?</label>
+			<label kind="assignment" x="-245" y="-42">pop_cycles[id] = 0</label>
+			<nail x="-263" y="-42"/>
+			<nail x="-187" y="-42"/>
+		</transition>
+		<transition>
+			<source ref="id2"/>
+			<target ref="id4"/>
+			<label kind="guard" x="-365" y="-144">type==NT-1</label>
+			<label kind="assignment" x="-373" y="-119">country_c = 0</label>
+			<nail x="-391" y="-119"/>
+		</transition>
+		<transition>
+			<source ref="id2"/>
+			<target ref="id3"/>
+			<label kind="guard" x="-348" y="-374">type &lt; NT -1</label>
+			<label kind="assignment" x="-331" y="-348">type++</label>
+			<nail x="-391" y="-348"/>
+			<nail x="-221" y="-348"/>
+		</transition>
+		<transition>
+			<source ref="id3"/>
+			<target ref="id2"/>
+			<label kind="assignment" x="-373" y="-238">update_pop(type)</label>
+		</transition>
+		<transition>
+			<source ref="id4"/>
+			<target ref="id3"/>
+			<label kind="guard" x="-204" y="-221">country_c &gt;= 6</label>
+			<label kind="assignment" x="-204" y="-204">type = 0,
+pop_cycles[id] = pop_cycles[id] +1</label>
+		</transition>
+	</template>
+	<template>
+		<name>Drug_lifecycle</name>
+		<parameter>id_p pharma, id_d id</parameter>
+		<declaration>clock months;
+
+hybrid clock running_costs;        // Amount of costs made on a drug. Real-time.
+
+int generated_launches = 0;
+
+double revenue = 0.0;                  // Revenue made on the drug.
+double costs;                      // Amount of total costs on a drug. Not in real-time.
+double marketing = 0.0;
+double reinvest = 0.0;
+double RD = 0.0;
+double profit = 0.0;
+
+clock sell_clock;                    // Clock used to increase and decrease market_share on every tick.
+double marketshare[NC] = {0.0, 0.0, 0.0, 0.0};          // Market share (in %) per country
+
+id_t type;                        // Type of drug. This entails the population for which the drug is effective.
+id_amg amg;                        // Additional months gained (on average) by the drug.
+int typectr;                   // Deprecated?
+
+int country = 0;
+
+bool pop_ready(int cycles) {            // TODO: Improve, deprecated?
+    //return true;
+   return (pop_cycles[0] == cycles);
+}
+
+int rev_rate = 0;                   // Rate with which the revenue is increased.
+
+double rev_gen() {                     // Compute the rate with which the revenue should be increased.
+    double result = 0.0;
+    id_c c = 0;
+    for (c:id_c) {
+        result = result + (population[c][type] * 0.01*marketshare[c] * price[c][pharma][type] * negotiation_success[c][id]);
+    }
+    return result;
+}
+
+void divide_revenue(double rev) {
+    costs = 0.2*costs;
+    if (costs &gt; 0) {
+        if (0.7 * rev &lt; costs) {
+            costs = costs - 0.7 * rev;
+            RD = RD + 0.7*rev;
+            marketing = marketing + 0.3 * rev;
+            return;
+        } else {
+            RD = RD + costs;
+            rev = rev-costs;
+            costs = 0;
+        }
+    }
+
+    if ((reinvest * 1.0) / (revenue * 1.0) &lt; 0.2) {
+        reinvest = reinvest + rev*0.25;
+        marketing = marketing + rev*0.3;
+        profit = profit + rev*0.45;
+    } else {
+        reinvest = reinvest + rev*0.2;
+        marketing = marketing + rev*0.3;
+        profit = profit + rev*0.5;
+    }
+}
+
+void update_revenue() {
+    double rev = rev_gen();
+    revenue = revenue + rev;
+    pharma_revenue[pharma] = pharma_revenue[pharma] + rev;
+    if (rev &gt; 0) {
+        divide_revenue(rev);
+    }
+}
+
+void inc_marketshare() {
+    for (c : id_c) {
+        if (negotiation_success[c][id]) {
+            marketshare[c] = marketshare[c] + ((MARKET_PEAK * 1.0) / (RAMP_YEARS_F));
+            if (marketshare[c] &gt;= MARKET_PEAK) {
+                marketshare[c] = MARKET_PEAK;
+            }
+        }
+    }
+}
+
+void dec_marketshare() {
+    for (c : id_c) {
+        if (negotiation_success[c][id]) {
+            marketshare[c] = marketshare[c] - ((MARKET_PEAK * 1.0) / (RAMP_YEARS_F));
+            if (marketshare[c] &lt;= 0) {
+                marketshare[c] = 0;
+            }
+        }
+    }
+}
+
+void reset_marketshare() {
+    for (c : id_c) {
+        marketshare[c] = 0.0;
+    }
+}
+
+void reset_negotiation_success() {
+    for (c : id_c) {
+        negotiation_success[c][id] = false;
+    }
+}
+
+const double PI = 3.14159265358979323846;
+
+double stdNormal() { //N(0,1)
+    return sqrt(-2*ln(1-random(1)))*cos(2*PI*random(1));
+}
+
+double Normal(double mean, double stdDev) {
+    return mean+stdDev*stdNormal();
+}
+
+
+int generate_amg() {
+    double months = Normal(AMG/2.0, 2.0); // (13); // (6.0, 2.0);
+    int result = fint(months);
+    if (result &lt; 1) {
+        result = 1;
+    } if (result &gt; AMG-1) {
+        result = AMG-1;
+    }
+    return result;
+}
+
+void check_for_reinvestment(double to_reinvest) {
+    if (reinvest &gt;= (to_reinvest * (generated_launches + 1))) {
+        generated_launches++;
+        drug_launches++;
+        reinvestment[pharma]++;
+    }
+}</declaration>
+		<location id="id5" x="-391" y="-365">
+			<name x="-401" y="-399">Initialise</name>
+			<committed/>
+		</location>
+		<location id="id6" x="-714" y="-25">
+			<name x="-697" y="-85">Marketshare_down</name>
+			<label kind="invariant" x="-697" y="-68">sell_clock &lt;= 1 &amp;&amp;
+months &lt;= END_TIME</label>
+		</location>
+		<location id="id7" x="-144" y="-25">
+			<name x="-76" y="-76">Ticker</name>
+			<label kind="invariant" x="-110" y="-59">sell_clock &lt;= 1 &amp;&amp;
+months &lt;= (END_TIME - RAMP_YEARS)</label>
+		</location>
+		<location id="id8" x="280" y="-25">
+			<name x="246" y="-59">Negotiated</name>
+			<committed/>
+		</location>
+		<location id="id9" x="425" y="-153">
+			<name x="331" y="-187">Develop</name>
+			<label kind="invariant" x="153" y="-170">months&lt;=DEV_TIME + DISC_TIME &amp;&amp;
+running_costs' == DEV_COSTS</label>
+		</location>
+		<location id="id10" x="425" y="-25">
+			<name x="450" y="-33">Init_neg1</name>
+			<committed/>
+		</location>
+		<location id="id11" x="-713" y="-365">
+			<name x="-790" y="-416">Wait_for_development</name>
+		</location>
+		<location id="id12" x="425" y="-306">
+			<name x="289" y="-331">Discovery</name>
+			<label kind="invariant" x="204" y="-314">months &lt;= DISC_TIME &amp;&amp;
+running_costs'==DISC_COSTS</label>
+		</location>
+		<location id="id13" x="-714" y="-535">
+			<label kind="invariant" x="-714" y="-569">months &lt;= (DISC_TIME + DEV_TIME)</label>
+		</location>
+		<init ref="id11"/>
+		<transition>
+			<source ref="id13"/>
+			<target ref="id11"/>
+			<label kind="guard" x="-705" y="-518">months &gt;= (DISC_TIME + DEV_TIME)</label>
+			<label kind="assignment" x="-705" y="-501">country_c = 0,
+free[pharma][id] = true,
+drug_launches++,
+reinvestment[pharma]++</label>
+		</transition>
+		<transition>
+			<source ref="id12"/>
+			<target ref="id13"/>
+			<label kind="guard" x="374" y="-510">amg &lt;= 3</label>
+			<nail x="459" y="-391"/>
+			<nail x="459" y="-535"/>
+		</transition>
+		<transition>
+			<source ref="id11"/>
+			<target ref="id5"/>
+			<label kind="synchronisation" x="-680" y="-391">start_drug_development[pharma][id]?</label>
+		</transition>
+		<transition>
+			<source ref="id6"/>
+			<target ref="id11"/>
+			<label kind="guard" x="-705" y="-306">months &gt;= END_TIME</label>
+			<label kind="assignment" x="-705" y="-289">reset_marketshare(),
+reset_negotiation_success(),
+country_c = 0,
+free[pharma][id] = true</label>
+		</transition>
+		<transition>
+			<source ref="id6"/>
+			<target ref="id6"/>
+			<label kind="guard" x="-774" y="59">sell_clock &gt;= 1</label>
+			<label kind="assignment" x="-782" y="76">sell_clock = 0,
+dec_marketshare(),
+update_revenue(),
+check_for_reinvestment(reinvestment_rate)</label>
+			<nail x="-816" y="59"/>
+			<nail x="-629" y="59"/>
+		</transition>
+		<transition>
+			<source ref="id7"/>
+			<target ref="id6"/>
+			<label kind="guard" x="-595" y="-17">months &gt;= (END_TIME - fint(RAMP_YEARS_F)) &amp;&amp;
+sell_clock &gt;= 0</label>
+			<label kind="assignment" x="-476" y="-42">sell_clock=0</label>
+		</transition>
+		<transition>
+			<source ref="id7"/>
+			<target ref="id7"/>
+			<label kind="guard" x="-212" y="68">sell_clock &gt;= 1</label>
+			<label kind="assignment" x="-203" y="102">sell_clock = 0,
+inc_marketshare(),
+update_revenue(),
+check_for_reinvestment(reinvestment_rate)</label>
+			<nail x="-229" y="68"/>
+			<nail x="-59" y="68"/>
+		</transition>
+		<transition>
+			<source ref="id8"/>
+			<target ref="id7"/>
+			<label kind="guard" x="-8" y="-8">country == NC-1</label>
+			<label kind="assignment" x="-8" y="-25">sell_clock = 0</label>
+		</transition>
+		<transition>
+			<source ref="id8"/>
+			<target ref="id10"/>
+			<label kind="guard" x="297" y="-42">country &lt; NC-1</label>
+			<label kind="assignment" x="306" y="-25">country += 1</label>
+		</transition>
+		<transition>
+			<source ref="id10"/>
+			<target ref="id8"/>
+			<label kind="synchronisation" x="221" y="51">ready[country][pharma][type][amg][id]!</label>
+			<nail x="425" y="51"/>
+			<nail x="280" y="51"/>
+		</transition>
+		<transition>
+			<source ref="id12"/>
+			<target ref="id9"/>
+			<label kind="guard" x="433" y="-255">months&gt;=DISC_TIME &amp;&amp;
+amg &gt; 3</label>
+		</transition>
+		<transition>
+			<source ref="id9"/>
+			<target ref="id10"/>
+			<label kind="guard" x="425" y="-119">months&gt;= DEV_TIME + DISC_TIME</label>
+			<label kind="assignment" x="425" y="-101">costs = costs +running_costs</label>
+		</transition>
+		<transition>
+			<source ref="id5"/>
+			<target ref="id12"/>
+			<label kind="select" x="-331" y="-391">t : int[0, NT-1]</label>
+			<label kind="synchronisation" x="-680" y="-408">reset!</label>
+			<label kind="assignment" x="-323" y="-357">months=0,
+type = t,
+running_costs = 0,
+amg = generate_amg(),
+free[pharma][id] = false</label>
+			<nail x="425" y="-365"/>
+		</transition>
+	</template>
+	<template>
+		<name>Negotiation</name>
+		<parameter>id_c country</parameter>
+		<declaration>int pharma;                // Pharma with which the negotiation is happening.
+int type;                  // Type of drug which is negotiated for.
+int amg = 0;               // Additional months gained by the drug. Important for initial price settings.
+int drug;
+int offer;                // Deprectated?
+
+double logistic_ratio = 2.0;        // Initial aversity to agree
+
+clock waiting_c;
+int waiting_time;
+
+// clock cycles;              // Clock (in half years) for negotiation. Every tick a new round starts.
+double gov_p = 1.0;            // Government offered price
+double pharma_p = 1.0;         // Pharma offered price
+int denying;              // Chance of denying
+int rounds = 0;            // Rounds (in half years) spent in the negotiation
+
+double month_value;
+
+int acc = 0;
+
+int accept() {            // Function calculating the chance of accepting. This chance is compared to the 'denying'-variable later.
+    double ratio = (pharma_p * 1.0) / (gov_p * 1.0);
+    double logistic = 1.0 / (1 + exp(-5.0 * (ratio-logistic_ratio)));
+    return fint((1-logistic)*100);
+}
+double check = 0.0;
+
+double get_gov_offer(int months) {
+    check = (30.0 / 12.0 *( months*1.0)) + (50.0/12.0)*(months*1.0);
+    return check;
+}
+
+double get_pharma_offer(int months) {
+    return 1.3;
+    // double val = random(0.3-0.03)+0.03;
+    // double pharm_init_offer = 1.2;
+    // return (pharm_init_offer + (val*months));
+}
+    
+double amg_increase(int months) {
+    double val =  random(0.02-0.01)+0.01;
+    double gov_increase = 1.02;
+    return (gov_increase+(val*months));
+}
+
+void update_logistic_ratio() {
+    double min_log_ratio = 1.0;                // Final aversity to agree
+    logistic_ratio = min_log_ratio + exp(-1.0*rounds);
+//    logistic_ratio = 1.8-((0.15*rounds*rounds)/8)
+}
+
+double get_avg_price(int country, int pharma, int type) {
+    double result = 0.0;
+    int i = 0;
+    while (i &lt; 3) {
+        result = result + last_prices[country][pharma][type][i];
+        i++;
+    }
+    return (result / 3.0);
+}
+
+double get_gov_price(int country, int pharma, int type) {
+    double last_price = get_avg_price(country, pharma, type);
+    double rev = (last_price + month_value * (1.0*amg)) * (1.0*SELLING_PERIOD) * (population[country][type]);
+    double new_price = (rev - (month_value * amg * population[country][type] * (1.0*rounds))) / ((1.0*(SELLING_PERIOD - rounds)) * population[country][type]);
+    return new_price;
+}
+
+double get_pharma_price(int country, int pharma, int type) {
+    double gov_rev = gov_p * population[country][type] * (1.0*(SELLING_PERIOD - rounds));
+    double pharma_rev = pharma_p * population[country][type] * (1.0*(SELLING_PERIOD - rounds));
+    double avg_rev = (gov_rev + pharma_rev) / 2.0;
+    if (avg_rev / (population[country][type] * (1.0*(SELLING_PERIOD - rounds))) &lt;= pharma_p) {
+        return avg_rev / (population[country][type] * (1.0*(SELLING_PERIOD - rounds)));
+    } else {
+        return pharma_p;
+    }
+        
+}</declaration>
+		<location id="id14" x="-161" y="-1190">
+			<name x="-171" y="-1224">Accepting</name>
+			<committed/>
+		</location>
+		<location id="id15" x="-569" y="-1190">
+			<name x="-579" y="-1224">Nego_1</name>
+			<committed/>
+		</location>
+		<location id="id16" x="-892" y="-1190">
+			<name x="-902" y="-1224">Init2</name>
+			<committed/>
+		</location>
+		<location id="id17" x="-1062" y="-1190">
+			<name x="-1104" y="-1207">Init</name>
+		</location>
+		<location id="id18" x="-1062" y="-1436">
+			<name x="-1096" y="-1470">Accepted</name>
+			<committed/>
+		</location>
+		<location id="id19" x="-331" y="-1257">
+			<name x="-341" y="-1291">Intermediate</name>
+			<committed/>
+		</location>
+		<location id="id20" x="-1062" y="-1351">
+			<name x="-1130" y="-1377">Waiting</name>
+			<label kind="invariant" x="-1258" y="-1360">waiting_c &lt;= waiting_time</label>
+		</location>
+		<init ref="id17"/>
+		<transition>
+			<source ref="id18"/>
+			<target ref="id20"/>
+			<label kind="select" x="-1045" y="-1428">w : int[1,2]</label>
+			<label kind="assignment" x="-1045" y="-1402">waiting_time = w * rounds,
+waiting_c = 0</label>
+		</transition>
+		<transition>
+			<source ref="id19"/>
+			<target ref="id14"/>
+			<label kind="assignment" x="-289" y="-1258">acc = accept()</label>
+		</transition>
+		<transition>
+			<source ref="id14"/>
+			<target ref="id17"/>
+			<label kind="guard" x="-229" y="-918">accept() &gt; denying &amp;&amp;
+rounds &gt; 4</label>
+			<label kind="synchronisation" x="-237" y="-875">done[country]!</label>
+			<nail x="9" y="-1190"/>
+			<nail x="9" y="-875"/>
+			<nail x="-1062" y="-875"/>
+		</transition>
+		<transition>
+			<source ref="id20"/>
+			<target ref="id17"/>
+			<label kind="guard" x="-1055" y="-1326">waiting_c &gt;= waiting_time</label>
+			<label kind="synchronisation" x="-1054" y="-1343">release[country][amg]!</label>
+			<label kind="assignment" x="-1054" y="-1309">negotiation_success[country][drug] = true,
+new_price(country, pharma, type, pharma_p)</label>
+		</transition>
+		<transition>
+			<source ref="id17"/>
+			<target ref="id16"/>
+			<label kind="select" x="-1045" y="-1088">getp : id_p,
+gett : int[0,NT-1],
+get_amg : int[0,AMG-1],
+getd : int[0, ND-1]</label>
+			<label kind="synchronisation" x="-1045" y="-1105">ready[country][getp][gett][get_amg][getd]?</label>
+			<label kind="assignment" x="-1045" y="-1173">pharma = getp,
+type = gett,
+amg = get_amg</label>
+		</transition>
+		<transition>
+			<source ref="id14"/>
+			<target ref="id18"/>
+			<label kind="guard" x="-765" y="-1402">accept() &lt;= denying || gov_p &lt;= pharma_p</label>
+			<label kind="synchronisation" x="-749" y="-1420">done[country]!</label>
+			<nail x="-162" y="-1445"/>
+		</transition>
+		<transition>
+			<source ref="id14"/>
+			<target ref="id15"/>
+			<label kind="guard" x="-441" y="-1003">accept() &gt; denying &amp;&amp;
+rounds &lt;= 4</label>
+			<label kind="assignment" x="-551" y="-986">rounds += 1,
+pharma_p = get_pharma_price(country, pharma, type),
+update_logistic_ratio()</label>
+			<nail x="-161" y="-1096"/>
+			<nail x="-161" y="-986"/>
+			<nail x="-569" y="-986"/>
+		</transition>
+		<transition>
+			<source ref="id15"/>
+			<target ref="id19"/>
+			<label kind="select" x="-518" y="-1207">rand : int[0,100]</label>
+			<label kind="assignment" x="-535" y="-1181">gov_p = fint(get_gov_price(country, pharma, type)),
+denying = rand</label>
+			<nail x="-331" y="-1190"/>
+		</transition>
+		<transition>
+			<source ref="id16"/>
+			<target ref="id15"/>
+			<label kind="assignment" x="-875" y="-1266">rounds = 0,
+pharma_p = 1.0*get_avg_price(country,pharma,type) * get_pharma_offer(amg),
+month_value = (30.0 + (50.0 / (AMG-1) * amg)) / 12.0</label>
+		</transition>
+	</template>
+	<system>// Place template instantiations here.
+// List one or more processes to be composed into a system.
+
+system Pharma, Country, Drug_lifecycle, Negotiation;
+    </system>
+	<queries>
+		<query>
+			<formula>simulate [total&lt;= 150; 5] {Negotiation(0).cycles, Negotiation(0).Init}</formula>
+			<comment></comment>
+		</query>
+		<query>
+			<formula>simulate [total&lt;= 150; 200] {pop_cycles[0], Drug(0,0).Develop}</formula>
+			<comment></comment>
+		</query>
+		<query>
+			<formula>simulate [total&lt;= 150; 1] {price[0][0][0], price[1][0][0], Negotiation(0).Nego_1}</formula>
+			<comment></comment>
+		</query>
+		<query>
+			<formula>simulate [total&lt;= 50; 100] {END_TIME}</formula>
+			<comment></comment>
+		</query>
+		<query>
+			<formula></formula>
+			<comment></comment>
+		</query>
+		<query>
+			<formula>simulate [total&lt;= 50; 25] {Drug(0,0).marketshare, Drug(0,0).revenue, population[0][0], price[0][0][0]*100}</formula>
+			<comment></comment>
+		</query>
+		<query>
+			<formula>simulate [total&lt;= 100; 10] {Drug(0,0).Negotiated}</formula>
+			<comment></comment>
+		</query>
+		<query>
+			<formula>simulate [total&lt;= 100; 10] {Country(0).pop_rate}</formula>
+			<comment></comment>
+		</query>
+		<query>
+			<formula></formula>
+			<comment></comment>
+		</query>
+		<query>
+			<formula>Pr[total&lt;= 50] (&lt;&gt; Drug(0,0).amg &gt; 3 )</formula>
+			<comment></comment>
+		</query>
+		<query>
+			<formula>simulate [total&lt;= 300; 1] { Drug(0,0).marketshare[0], counter }</formula>
+			<comment></comment>
+		</query>
+		<query>
+			<formula>E[&lt;=300;2000] (max: negotiation_success[0][0])</formula>
+			<comment></comment>
+		</query>
+		<query>
+			<formula>E[&lt;=300;2000] (max: price[0][0][0] * population[0][0] * negotiation_success[0][0])</formula>
+			<comment></comment>
+		</query>
+		<query>
+			<formula>E[ &lt;=300; 200](max: sum(c:id_c) (price[c][0][0] / NC) )</formula>
+			<comment></comment>
+		</query>
+		<query>
+			<formula>E[ &lt;=300; 1000](max: reinvestment[0])</formula>
+			<comment></comment>
+		</query>
+		<query>
+			<formula>Pr[total&lt;=300] (&lt;&gt;Negotiation(0).rounds &gt;= 6)</formula>
+			<comment></comment>
+		</query>
+		<query>
+			<formula>E[ &lt;=300; 200](max: Negotiation(0).rounds)</formula>
+			<comment></comment>
+		</query>
+		<query>
+			<formula>E[&lt;=300;1000] (max: drug_launches)</formula>
+			<comment></comment>
+		</query>
+		<query>
+			<formula>E[&lt;=300;1000] (max: drug_launches)</formula>
+			<comment></comment>
+		</query>
+		<query>
+			<formula>E[&lt;=300;5000] ( max: Drug(0,0).amg)</formula>
+			<comment></comment>
+		</query>
+		<query>
+			<formula>E[&lt;=50;100] ( max: Drug(0,0).profit)</formula>
+			<comment></comment>
+		</query>
+		<query>
+			<formula>Pr[total &lt;= 300] (&lt;&gt; Negotiation(0).logistic_ratio &lt; 1.0 )</formula>
+			<comment></comment>
+		</query>
+		<query>
+			<formula>Pr[total &lt;= 1000] (&lt;&gt; Negotiation(0).Waiting )</formula>
+			<comment></comment>
+		</query>
+		<query>
+			<formula>Pr[total &lt;= 150] (&lt;&gt; negotiation_success[0][0] == 1)</formula>
+			<comment></comment>
+		</query>
+		<query>
+			<formula>simulate [total &lt;= 50*6; 1] {Drug(0,0).Start, Drug(0,1).Start*2, Drug(0,2).Start*3, drug_launches }</formula>
+			<comment></comment>
+		</query>
+		<query>
+			<formula>simulate [total&lt;= 100; 1] { pharma_revenue[0], negotiation_success[0][0] * 2000, negotiation_success[1][0] * 1000}</formula>
+			<comment></comment>
+		</query>
+		<query>
+			<formula>simulate [total &lt;= 500; 10] { Drug(0,0).marketshare[0], Drug(0,0).Marketshare_down * 25 + 5, Drug(0,0).Ticker + 5 }</formula>
+			<comment></comment>
+		</query>
+		<query>
+			<formula>simulate [total &lt;= 1000; 1] {Negotiation(0).Init, Negotiation(0).Waiting  }</formula>
+			<comment></comment>
+		</query>
+		<query>
+			<formula>simulate [total&lt;= 1000; 1] { Drug(0,0).revenue, Drug(0,0).marketing, Drug(0,0).RD, Drug(0,0).profit, Drug(0,0).reinvest, Drug(0,0).running_costs, Drug(0,0).revenue - Drug(0,0).costs}</formula>
+			<comment></comment>
+		</query>
+		<query>
+			<formula>simulate [total&lt;= 1000; 1] { Drug(0,0).revenue, Drug(0,0).marketing, Drug(0,0).RD, Drug(0,0).profit, Drug(0,0).reinvest, Drug(0,0).running_costs, drug_launches*600000, Drug(0,1).revenue, Drug(0,2).revenue, get_free(0)*700000}</formula>
+			<comment></comment>
+		</query>
+		<query>
+			<formula>simulate [total&lt;= 50; 1] {costs[0], pharma_revenue[0]}</formula>
+			<comment></comment>
+		</query>
+		<query>
+			<formula>simulate [total&lt;= 1000; 100] { Drug_lifecycle(0,0).revenue }</formula>
+			<comment></comment>
+		</query>
+		<query>
+			<formula>simulate [total&lt;= 300; 50] {Negotiation(0).gov_p, Negotiation(0).pharma_p}</formula>
+			<comment></comment>
+		</query>
+		<query>
+			<formula>simulate [total&lt;= 300; 15] {Drug_lifecycle(0,0).marketshare[0], negotiation_success[0][0]}</formula>
+			<comment></comment>
+		</query>
+		<query>
+			<formula>simulate [total&lt;= 300; 20] { Negotiation(0).logistic_ratio}</formula>
+			<comment></comment>
+		</query>
+		<query>
+			<formula>simulate [total&lt;= 300; 10] { (Negotiation(0).pharma_p * 1.0) / (Negotiation(0).gov_p * 1.0)}</formula>
+			<comment></comment>
+		</query>
+		<query>
+			<formula>__spec</formula>
+			<comment>{"checks":[{"type":"invariant","params":{"condition":"Negotiation(0).rounds &lt;= 5","check_type":"concrete"}}],"time_limit_clock":"total","constants":{},"time":""}</comment>
+		</query>
+	</queries>
+</nta>

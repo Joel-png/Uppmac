@@ -5,13 +5,13 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.nio.file.Files;
 import java.util.ArrayList;
 
 public class Runner {
 
     Navigator navigator;
     ExcelWriter excelWriter;
+    ArrayList<Nta> ntas = new ArrayList<Nta>();
     ArrayList<TemplateProperty> templateProperties = new ArrayList<TemplateProperty>();
 
     public Runner () {
@@ -92,7 +92,11 @@ public class Runner {
                 //     }
                 // }
                 excelWriter.writeIndividualData(templateProperties);
+                excelWriter.writeNtaData(ntas);
                 excelWriter.finish();
+                
+
+
 
             // file -p
             } else if (args[0].equals(new String("-p"))) {
@@ -202,10 +206,15 @@ public class Runner {
                         
                         // all the computing of file is done here
                         DefaultParser parser = new DefaultParser(formatXML(inputFile), name);
-                        navigator = new Navigator(parser.parse(), name, excelWriter);
+                        Nta currentNta = parser.parse();
+                        navigator = new Navigator(currentNta, name, excelWriter);
                         navigator.getProperties();
                         addProperties(navigator.identifier.getTemplateProperties());
-                        
+                        int[] decComplexityData = navigator.identifier.getTotalTemplateComplexity();
+                        currentNta.templateFunctions = decComplexityData[0];
+                        currentNta.templateVariables = decComplexityData[1];
+                        currentNta.templateComplexity = decComplexityData[2];
+                        ntas.add(currentNta);
                     } else {
                         System.out.println("Specified file is of type '" + extension + "', please use a file with type 'xml'");
                     }

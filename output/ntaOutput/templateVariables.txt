@@ -1,0 +1,2 @@
+templateVariables
+6 2 45 2 22 

@@ -16,6 +16,16 @@ public class Identifier {
         this.excelWriter = excelWriter;
     }
 
+    public int[] getTotalTemplateComplexity() {
+        int functions = 0;
+        int variables = 0;
+        for (int i = 0; i < templateProperties.size(); i++) {
+            functions += templateProperties.get(i).functions;
+            variables += templateProperties.get(i).variables;
+        }
+
+        return new int[] {functions, variables, functions + variables};
+    }
 
     public void outputNtaTemplateProperties() throws IOException {
         excelWriter.writeRow(new String[] {nta.name, "globalDeclarationLength: " + getLengthOfDeclaration(nta.globalDeclaration)}); // print name of nta
@@ -31,6 +41,7 @@ public class Identifier {
     public ArrayList<TemplateProperty> getTemplateProperties() {
         return templateProperties;
     }
+
     public void printLocationProperties(Location location, Location[] locations, Transition[] transitions, int indent) {
         Navigator.indent(indent);
         System.out.println("Location has in-out degree presence % of: " + checkDegreePresence(location, transitions) * 100 + "%");

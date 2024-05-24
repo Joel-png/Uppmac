@@ -7,6 +7,7 @@ public class Location {
     String label;
     ArrayList<Transition> sourceTransitions = new ArrayList<Transition>();
     ArrayList<Transition> targetTransitions = new ArrayList<Transition>();
+    Boolean isNail = false;
 
     public Location(String id, String name) {
         this.id = id;

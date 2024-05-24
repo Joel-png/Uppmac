@@ -1,0 +1,1550 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE nta PUBLIC '-//Uppaal Team//DTD Flat System 1.1//EN' 'http://www.it.uu.se/research/group/darts/uppaal/flat-1_2.dtd'>
+<nta>
+	<declaration>// Place global declarations here.
+//maak overal range van, efficienter dan int
+const int endTime = 26;
+//protocol 0=no medication; 1=1-5-5; 2=MTX
+int[0,20] protocol = 2;
+
+double Das28 = 5.5;
+int[0,4] severity = 3;//range
+int[0,4] State = 3;//range
+int[0, 20] protocol_state=1;
+int[0,4] endState = 0;
+double internalDas28 = 6.0;
+broadcast chan start,Initialized, test, TimeframePassed, sideEffect;
+clock week, weekmed, weekstable, stable, weekstep, x;
+
+int[0,35] MTX = 0;
+int[0,35] MTXold=1;
+int[0,50] SSZ = 0;
+int[0,50] SSZold = 1;
+int[0,50] adalimumab = 0;
+int[0,50] adalimumabold = 1;
+int[0,50] etanercept=0;
+int[0,50] etanerceptold=1;
+
+int[0,50] hydroxychloroquine=0;
+int[0,50] auranofin = 0;
+int[0,50] aurothioglucose = 0;
+int[0,50] Dpenicillamine = 0;
+int[0,50] NAIRD = 0;
+
+
+double TenderJoints = 7.0;
+double SwollenJoints = 5.0;
+double ESR = 40.0;
+double VAS = 50.0;
+int randVal;
+</declaration>
+	<template>
+		<name>Patient</name>
+		<declaration>//maak het model met vaste waarde, semi kloppend, dus maak ziekte zonder/met bagger medicatie
+//presenteer verloop: grafieken, staaf grafieken, gemiddelde waarden, simulaties, gebruik filters
+//gebruik een oud protocol en kijk wat gebeurd en maak kloppend
+//vergelijk met literatuur
+
+//iedere stap komt er 15-75 punten bij zonder de multipliers
+//MTX 15-25
+//SSZ 20-30
+//ADA 20-40
+//ETA 50
+// For
+
+clock reach_mod, reach_low, reach_remission;
+
+//baseline is defined
+
+
+double Statemove(int next, int transit, int protocol){
+int returnValue = 0;
+    if (next==0){ returnValue = 99;}
+    else if (next==1){returnValue=1;}
+    else if (next==2){returnValue=19;}
+    else if (next==3){returnValue=80;}
+    else if (next==4){returnValue=1;}
+    else if (next==5){returnValue=14;}
+    else if (next==6){returnValue=85;}
+    else if (next==7){returnValue=1;}
+    else if (next==8){returnValue=10;}
+    else if (next==9){returnValue=90;}
+
+//Use non-SAARD
+if (protocol==1){
+    if (next==0)     {returnValue= returnValue-4;}
+    else if (next==1){returnValue=returnValue+4;}
+    else if (next==2){returnValue=returnValue-15;}
+    else if (next==3){returnValue=returnValue+15;}
+    else if (next==4){returnValue=returnValue+0;}
+    else if (next==5){returnValue=returnValue+0;}
+    else if (next==6){returnValue=returnValue+0;}
+    else if (next==7){returnValue=returnValue+0;}
+    else if (next==8){returnValue=returnValue+0;}
+    else if (next==9){returnValue=returnValue+0;}
+}
+//T2T Step up approach MTX
+if (protocol==2){
+    if (transit==1){
+        if (next == 0){returnValue=returnValue-30;}
+        if (next == 1){returnValue=returnValue+30;}
+        if (next == 2){returnValue=returnValue-2;}
+        if (next == 3){returnValue=returnValue-0;}
+        if (next == 4){returnValue=returnValue+18;}
+        if (next == 5){returnValue=returnValue-2;}
+        if (next == 6){returnValue=returnValue-0;}
+        if (next == 7){returnValue=returnValue+11;}
+        if (next == 8){returnValue=returnValue-1;}
+        if (next == 9){returnValue=returnValue+0;}
+}
+    if (transit==2){
+        if (next == 0){returnValue=returnValue-32;}
+        if (next == 1){returnValue=returnValue+32;}
+        if (next == 2){returnValue=returnValue-3;}
+        if (next == 3){returnValue=returnValue-0;}
+        if (next == 4){returnValue=returnValue+20;}
+        if (next == 5){returnValue=returnValue-3;}
+        if (next == 6){returnValue=returnValue-0;}
+        if (next == 7){returnValue=returnValue+13;}
+        if (next == 8){returnValue=returnValue-1;}
+        if (next == 9){returnValue=returnValue+0;}
+}
+if (transit==3){
+        if (next == 0){returnValue=returnValue-34;}
+        if (next == 1){returnValue=returnValue+34;}
+        if (next == 2){returnValue=returnValue-4;}
+        if (next == 3){returnValue=returnValue-0;}
+        if (next == 4){returnValue=returnValue+22;}
+        if (next == 5){returnValue=returnValue-4;}
+        if (next == 6){returnValue=returnValue-0;}
+        if (next == 7){returnValue=returnValue+15;}
+        if (next == 8){returnValue=returnValue-1;}
+        if (next == 9){returnValue=returnValue+0;}
+}
+if (transit==4){
+        if (next == 0){returnValue=returnValue-36;}
+        if (next == 1){returnValue=returnValue+36;}
+        if (next == 2){returnValue=returnValue-5;}
+        if (next == 3){returnValue=returnValue-0;}
+        if (next == 4){returnValue=returnValue+24;}
+        if (next == 5){returnValue=returnValue-5;}
+        if (next == 6){returnValue=returnValue-0;}
+        if (next == 7){returnValue=returnValue+17;}
+        if (next == 8){returnValue=returnValue-2;}
+        if (next == 9){returnValue=returnValue+0;}
+}
+if (transit==5){
+        if (next == 0){returnValue=returnValue-38;}
+        if (next == 1){returnValue=returnValue+38;}
+        if (next == 2){returnValue=returnValue-6;}
+        if (next == 3){returnValue=returnValue-0;}
+        if (next == 4){returnValue=returnValue+26;}
+        if (next == 5){returnValue=returnValue-6;}
+        if (next == 6){returnValue=returnValue-0;}
+        if (next == 7){returnValue=returnValue+19;}
+        if (next == 8){returnValue=returnValue-2;}
+        if (next == 9){returnValue=returnValue+0;}
+}
+if (transit==6){
+        if (next == 0){returnValue=returnValue-40;}
+        if (next == 1){returnValue=returnValue+40;}
+        if (next == 2){returnValue=returnValue-7;}
+        if (next == 3){returnValue=returnValue-0;}
+        if (next == 4){returnValue=returnValue+28;}
+        if (next == 5){returnValue=returnValue-7;}
+        if (next == 6){returnValue=returnValue-0;}
+        if (next == 7){returnValue=returnValue+21;}
+        if (next == 8){returnValue=returnValue-2;}
+        if (next == 9){returnValue=returnValue+0;}
+}
+if (transit==7){
+        if (next == 0){returnValue=returnValue-42;}
+        if (next == 1){returnValue=returnValue+42;}
+        if (next == 2){returnValue=returnValue-8;}
+        if (next == 3){returnValue=returnValue-0;}
+        if (next == 4){returnValue=returnValue+30;}
+        if (next == 5){returnValue=returnValue-8;}
+        if (next == 6){returnValue=returnValue-0;}
+        if (next == 7){returnValue=returnValue+23;}
+        if (next == 8){returnValue=returnValue-2;}
+        if (next == 9){returnValue=returnValue+0;}
+}
+}
+
+return returnValue;
+}
+
+
+</declaration>
+		<location id="id0" x="-340" y="221">
+			<urgent/>
+		</location>
+		<location id="id1" x="-620" y="0">
+			<name x="-630" y="-34">High</name>
+		</location>
+		<location id="id2" x="-42" y="0">
+			<name x="-52" y="-34">Remision</name>
+		</location>
+		<location id="id3" x="-212" y="0">
+			<name x="-222" y="-34">Low</name>
+		</location>
+		<location id="id4" x="-391" y="0">
+			<name x="-401" y="-34">Moderate</name>
+		</location>
+		<location id="id5" x="-620" y="-110">
+			<urgent/>
+		</location>
+		<location id="id6" x="-212" y="-110">
+			<urgent/>
+		</location>
+		<location id="id7" x="-391" y="127">
+			<urgent/>
+		</location>
+		<location id="id8" x="-42" y="127">
+			<urgent/>
+		</location>
+		<location id="id9" x="-340" y="280">
+			<urgent/>
+		</location>
+		<branchpoint id="id10" x="-42" y="128">
+		</branchpoint>
+		<branchpoint id="id11" x="-212" y="-110">
+		</branchpoint>
+		<branchpoint id="id12" x="-391" y="128">
+		</branchpoint>
+		<branchpoint id="id13" x="-620" y="-110">
+		</branchpoint>
+		<init ref="id9"/>
+		<transition>
+			<source ref="id9"/>
+			<target ref="id0"/>
+			<label kind="synchronisation" x="-340" y="233">start!</label>
+		</transition>
+		<transition>
+			<source ref="id5"/>
+			<target ref="id13"/>
+		</transition>
+		<transition>
+			<source ref="id8"/>
+			<target ref="id10"/>
+		</transition>
+		<transition>
+			<source ref="id6"/>
+			<target ref="id11"/>
+		</transition>
+		<transition>
+			<source ref="id7"/>
+			<target ref="id12"/>
+		</transition>
+		<transition>
+			<source ref="id0"/>
+			<target ref="id2"/>
+			<label kind="guard" x="-93" y="187">Das28&lt;2.600</label>
+			<label kind="assignment" x="-195" y="221">State = 1,
+reach_mod = 0,
+reach_low=0,
+reach_remission = 0</label>
+			<nail x="17" y="221"/>
+			<nail x="17" y="0"/>
+		</transition>
+		<transition>
+			<source ref="id0"/>
+			<target ref="id3"/>
+			<label kind="guard" x="-323" y="187">Das28&gt;=2.600 &amp;&amp; Das28&lt;=3.200</label>
+			<label kind="assignment" x="-297" y="221">State = 2,
+reach_mod = 0,
+reach_low=0</label>
+			<nail x="-212" y="221"/>
+		</transition>
+		<transition>
+			<source ref="id0"/>
+			<target ref="id4"/>
+			<label kind="guard" x="-518" y="187">Das28&gt;3.2 &amp;&amp; Das28&lt;=5.1</label>
+			<label kind="assignment" x="-466" y="221">State = 3,
+reach_mod = 0</label>
+			<nail x="-484" y="221"/>
+			<nail x="-484" y="0"/>
+		</transition>
+		<transition>
+			<source ref="id0"/>
+			<target ref="id1"/>
+			<label kind="guard" x="-602" y="187">Das28&gt;5.1</label>
+			<label kind="assignment" x="-602" y="221">State = 4</label>
+			<nail x="-620" y="221"/>
+		</transition>
+		<transition>
+			<source ref="id10"/>
+			<target ref="id3"/>
+			<label kind="assignment" x="-195" y="42">State = 2</label>
+			<label kind="probability" x="-170" y="136">Statemove(8,protocol_state,protocol)</label>
+			<nail x="-195" y="128"/>
+		</transition>
+		<transition>
+			<source ref="id10"/>
+			<target ref="id2"/>
+			<label kind="assignment" x="8" y="68">State = 1</label>
+			<label kind="probability" x="-17" y="85">Statemove(9,protocol_state,protocol)</label>
+			<nail x="8" y="128"/>
+			<nail x="8" y="8"/>
+		</transition>
+		<transition>
+			<source ref="id2"/>
+			<target ref="id8"/>
+			<label kind="synchronisation" x="-119" y="34">TimeframePassed?</label>
+			<label kind="assignment" x="-102" y="59">reach_mod = 0,
+reach_low=0,
+reach_remission = 0</label>
+		</transition>
+		<transition>
+			<source ref="id11"/>
+			<target ref="id3"/>
+			<label kind="assignment" x="-170" y="-51">State = 2</label>
+			<label kind="probability" x="-187" y="-93">Statemove(6,protocol_state,protocol)</label>
+			<nail x="-170" y="-102"/>
+			<nail x="-170" y="0"/>
+		</transition>
+		<transition>
+			<source ref="id11"/>
+			<target ref="id2"/>
+			<label kind="assignment" x="-76" y="-119">State = 1</label>
+			<label kind="probability" x="-170" y="-153">Statemove(7,protocol_state,protocol)</label>
+			<nail x="-93" y="-110"/>
+		</transition>
+		<transition>
+			<source ref="id11"/>
+			<target ref="id4"/>
+			<label kind="assignment" x="-314" y="-102">State = 3</label>
+			<label kind="probability" x="-331" y="-127">Statemove(5,protocol_state,protocol)</label>
+			<nail x="-297" y="-110"/>
+		</transition>
+		<transition>
+			<source ref="id3"/>
+			<target ref="id6"/>
+			<label kind="synchronisation" x="-289" y="-76">TimeframePassed?</label>
+			<label kind="assignment" x="-280" y="-59">reach_mod = 0,
+reach_low=0</label>
+		</transition>
+		<transition>
+			<source ref="id12"/>
+			<target ref="id3"/>
+			<label kind="assignment" x="-314" y="42">State = 2</label>
+			<label kind="probability" x="-374" y="110">Statemove(4,protocol_state,protocol)</label>
+			<nail x="-229" y="128"/>
+		</transition>
+		<transition>
+			<source ref="id12"/>
+			<target ref="id1"/>
+			<label kind="assignment" x="-585" y="128">State = 4</label>
+			<label kind="probability" x="-595" y="136">Statemove(2,protocol_state,protocol)</label>
+			<nail x="-603" y="128"/>
+		</transition>
+		<transition>
+			<source ref="id12"/>
+			<target ref="id4"/>
+			<label kind="assignment" x="-459" y="17">State = 3</label>
+			<label kind="probability" x="-484" y="93">Statemove(3,protocol_state,protocol)</label>
+			<nail x="-476" y="119"/>
+			<nail x="-468" y="17"/>
+		</transition>
+		<transition>
+			<source ref="id4"/>
+			<target ref="id7"/>
+			<label kind="synchronisation" x="-442" y="51">TimeframePassed?</label>
+			<label kind="assignment" x="-433" y="68">reach_mod = 0</label>
+		</transition>
+		<transition>
+			<source ref="id13"/>
+			<target ref="id4"/>
+			<label kind="assignment" x="-578" y="-110">State = 3</label>
+			<label kind="probability" x="-595" y="-127">Statemove(1,protocol_state,protocol)</label>
+			<nail x="-510" y="-110"/>
+		</transition>
+		<transition>
+			<source ref="id13"/>
+			<target ref="id1"/>
+			<label kind="assignment" x="-731" y="-102">State = 4</label>
+			<label kind="probability" x="-790" y="-144">Statemove(0,protocol_state,protocol)</label>
+			<nail x="-688" y="-110"/>
+			<nail x="-688" y="0"/>
+		</transition>
+		<transition>
+			<source ref="id1"/>
+			<target ref="id5"/>
+			<label kind="synchronisation" x="-663" y="-68">TimeframePassed?</label>
+		</transition>
+	</template>
+	<template>
+		<name>ClockUpdate</name>
+		<location id="id14" x="-289" y="-34">
+			<label kind="invariant" x="-299" y="-17">weekstep&lt;=1</label>
+		</location>
+		<location id="id15" x="42" y="-127">
+			<urgent/>
+		</location>
+		<init ref="id14"/>
+		<transition>
+			<source ref="id15"/>
+			<target ref="id14"/>
+			<nail x="-119" y="-17"/>
+		</transition>
+		<transition>
+			<source ref="id14"/>
+			<target ref="id15"/>
+			<label kind="guard" x="-229" y="-136">weekstep&gt;=1</label>
+			<label kind="synchronisation" x="-161" y="-195">TimeframePassed!</label>
+			<label kind="assignment" x="-204" y="-153">weekstep = 0</label>
+			<nail x="-93" y="-170"/>
+			<nail x="-17" y="-153"/>
+		</transition>
+	</template>
+	<template>
+		<name>Protocol1_5_5</name>
+		<location id="id16" x="-263" y="-76">
+		</location>
+		<location id="id17" x="-17" y="-170">
+		</location>
+		<location id="id18" x="-17" y="17">
+		</location>
+		<location id="id19" x="-17" y="85">
+		</location>
+		<location id="id20" x="-17" y="-229">
+		</location>
+		<location id="id21" x="178" y="-229">
+		</location>
+		<location id="id22" x="178" y="-170">
+		</location>
+		<location id="id23" x="187" y="17">
+		</location>
+		<location id="id24" x="450" y="-68">
+		</location>
+		<branchpoint id="id25" x="-169" y="-76">
+		</branchpoint>
+		<init ref="id16"/>
+		<transition>
+			<source ref="id19"/>
+			<target ref="id24"/>
+			<label kind="synchronisation" x="1" y="63">sideEffect?</label>
+			<label kind="assignment" x="1" y="80">NAIRD = 0</label>
+			<nail x="450" y="76"/>
+		</transition>
+		<transition>
+			<source ref="id23"/>
+			<target ref="id24"/>
+			<label kind="synchronisation" x="205" y="-42">sideEffect?</label>
+			<label kind="assignment" x="205" y="-25">SSZ = 0</label>
+		</transition>
+		<transition>
+			<source ref="id22"/>
+			<target ref="id24"/>
+			<label kind="synchronisation" x="196" y="-136">sideEffect?</label>
+			<label kind="assignment" x="196" y="-119">Dpenicillamine = 0</label>
+		</transition>
+		<transition>
+			<source ref="id21"/>
+			<target ref="id24"/>
+			<label kind="synchronisation" x="238" y="-204">sideEffect?</label>
+			<label kind="assignment" x="238" y="-187">auranofin = 0</label>
+		</transition>
+		<transition>
+			<source ref="id20"/>
+			<target ref="id21"/>
+			<label kind="synchronisation" x="1" y="-246">sideEffect?</label>
+			<label kind="assignment" x="1" y="-229">hydroxychloroquine = 0,
+auranofin = 42</label>
+		</transition>
+		<transition>
+			<source ref="id18"/>
+			<target ref="id23"/>
+			<label kind="synchronisation" x="1" y="0">sideEffect?</label>
+			<label kind="assignment" x="1" y="17">MTX = 0,
+SSZ = 25</label>
+		</transition>
+		<transition>
+			<source ref="id17"/>
+			<target ref="id22"/>
+			<label kind="synchronisation" x="1" y="-187">sideEffect?</label>
+			<label kind="assignment" x="1" y="-170">aurothioglucose = 0,
+Dpenicillamine = 4375</label>
+		</transition>
+		<transition>
+			<source ref="id16"/>
+			<target ref="id25"/>
+		</transition>
+		<transition>
+			<source ref="id25"/>
+			<target ref="id19"/>
+			<label kind="assignment" x="-152" y="85">NAIRD = 1</label>
+			<label kind="probability" x="-119" y="68">1</label>
+			<nail x="-170" y="85"/>
+		</transition>
+		<transition>
+			<source ref="id25"/>
+			<target ref="id18"/>
+			<label kind="assignment" x="-135" y="17">MTX = 10</label>
+			<label kind="probability" x="-119" y="0">1</label>
+			<nail x="-153" y="17"/>
+		</transition>
+		<transition>
+			<source ref="id25"/>
+			<target ref="id17"/>
+			<label kind="assignment" x="-153" y="-161">aurothioglucose = 50</label>
+			<label kind="probability" x="-127" y="-178">1</label>
+			<nail x="-153" y="-170"/>
+		</transition>
+		<transition>
+			<source ref="id25"/>
+			<target ref="id20"/>
+			<label kind="assignment" x="-170" y="-263">hydroxychloroquine=2800</label>
+			<label kind="probability" x="-127" y="-246">1</label>
+			<nail x="-170" y="-229"/>
+		</transition>
+	</template>
+	<template>
+		<name>ProtocolMTX</name>
+		<declaration>int weekdeadline = 8;
+void medUpdate(int weekdl)
+{
+if (weekdl ==8){
+weekmed = 8;
+MTX=25;
+weekdeadline = 12;
+weekstable=0;
+protocol_state=2;
+}
+else if(weekdl==12){
+weekmed = 12;
+MTX=25;
+SSZ=20;
+weekdeadline = 20;
+weekstable=0;
+protocol_state = 3;
+}
+else if(weekdl==20){
+weekmed = 20;
+MTX=25;
+SSZ=30;
+weekdeadline = 24;
+weekstable=0;
+protocol_state = 4;
+}
+else if(weekdl==24){
+weekmed = 24;
+MTX=25;
+SSZ=0;
+adalimumab=20;
+weekdeadline = 36;
+weekstable=0;
+protocol_state = 5;
+}
+else if(weekdl==36){
+weekmed = 36;
+MTX=25;
+adalimumab=40;
+weekdeadline = 52;
+weekstable=0;
+protocol_state = 6;
+}
+else if(weekdl==52){
+weekmed = 36;
+MTX=25;
+adalimumab=0;
+etanercept=50;
+weekdeadline = 52;
+weekstable=0;
+protocol_state = 7;
+}
+}
+
+void stableUpdate(){
+if (Das28&gt;=2.6){
+MTX = MTXold;
+SSZ = SSZold;
+adalimumab = adalimumabold;
+etanercept=etanerceptold;
+}
+else{
+if (etanercept&gt;0){
+etanerceptold = etanercept;
+etanercept-=2;
+}
+else if (adalimumab&gt;0){
+adalimumabold=adalimumab;
+adalimumab-=2;
+}
+else if (SSZ&gt;0){
+SSZold=SSZ;
+SSZ-=100;
+}
+else if (MTX&gt;0){
+MTXold=MTX;
+MTX-=1;
+}
+}
+}</declaration>
+		<location id="id26" x="-561" y="34">
+		</location>
+		<location id="id27" x="-442" y="34">
+			<name x="-452" y="0">p1</name>
+			<label kind="invariant" x="-493" y="-17">weekmed&lt;=weekdeadline</label>
+		</location>
+		<location id="id28" x="-442" y="340">
+			<name x="-452" y="306">p2</name>
+			<label kind="invariant" x="-561" y="340">weekstable&lt;=8</label>
+		</location>
+		<location id="id29" x="-102" y="246">
+			<name x="-112" y="212">p3</name>
+			<urgent/>
+		</location>
+		<location id="id30" x="-315" y="467">
+			<name x="-325" y="433">p4</name>
+			<label kind="invariant" x="-349" y="492">stable&lt;=1</label>
+		</location>
+		<location id="id31" x="-213" y="467">
+			<name x="-223" y="433">p5</name>
+			<urgent/>
+		</location>
+		<location id="id32" x="-442" y="102">
+			<label kind="invariant" x="-510" y="102">weekmed&lt;=weekdeadline</label>
+		</location>
+		<init ref="id26"/>
+		<transition>
+			<source ref="id27"/>
+			<target ref="id32"/>
+		</transition>
+		<transition>
+			<source ref="id31"/>
+			<target ref="id30"/>
+			<nail x="-264" y="501"/>
+		</transition>
+		<transition>
+			<source ref="id30"/>
+			<target ref="id31"/>
+			<label kind="guard" x="-289" y="416">stable&gt;=1&amp;&amp;State==1</label>
+			<label kind="assignment" x="-264" y="399">stable = 0</label>
+			<nail x="-264" y="433"/>
+		</transition>
+		<transition>
+			<source ref="id29"/>
+			<target ref="id27"/>
+			<label kind="assignment" x="-340" y="8">medUpdate(weekdeadline)</label>
+			<nail x="-102" y="34"/>
+		</transition>
+		<transition>
+			<source ref="id30"/>
+			<target ref="id28"/>
+			<label kind="guard" x="-399" y="348">stable&gt;=1&amp;&amp;State!=1</label>
+			<label kind="assignment" x="-391" y="365">stable = 0,
+weekstable = 0</label>
+			<nail x="-315" y="340"/>
+		</transition>
+		<transition>
+			<source ref="id28"/>
+			<target ref="id30"/>
+			<label kind="guard" x="-620" y="416">weekstable&gt;=8&amp;&amp; State==1</label>
+			<label kind="assignment" x="-424" y="467">stable=0</label>
+			<nail x="-442" y="467"/>
+		</transition>
+		<transition>
+			<source ref="id32"/>
+			<target ref="id28"/>
+			<label kind="guard" x="-697" y="212">weekmed&gt;=weekdeadline&amp;&amp;State==1</label>
+			<label kind="assignment" x="-553" y="255">weekstable = 0</label>
+		</transition>
+		<transition>
+			<source ref="id28"/>
+			<target ref="id29"/>
+			<label kind="guard" x="-400" y="280">State!=1</label>
+			<nail x="-340" y="246"/>
+		</transition>
+		<transition>
+			<source ref="id32"/>
+			<target ref="id29"/>
+			<label kind="guard" x="-365" y="221">weekmed&gt;=weekdeadline&amp;&amp;State!=1</label>
+			<nail x="-340" y="246"/>
+		</transition>
+		<transition>
+			<source ref="id26"/>
+			<target ref="id27"/>
+			<label kind="synchronisation" x="-543" y="17">start?</label>
+			<label kind="assignment" x="-552" y="51">MTX=15,
+protocol_state = 1</label>
+		</transition>
+	</template>
+	<template>
+		<name>TestMTX</name>
+		<location id="id33" x="-442" y="-144">
+		</location>
+		<location id="id34" x="-348" y="-144">
+			<label kind="invariant" x="-358" y="-127">week &lt;=8</label>
+		</location>
+		<location id="id35" x="-246" y="-144">
+			<label kind="invariant" x="-256" y="-127">week&lt;=12</label>
+		</location>
+		<location id="id36" x="-144" y="-144">
+			<label kind="invariant" x="-154" y="-127">week&lt;=20</label>
+		</location>
+		<location id="id37" x="-42" y="-144">
+			<label kind="invariant" x="-52" y="-127">week&lt;=24</label>
+		</location>
+		<location id="id38" x="51" y="-144">
+			<label kind="invariant" x="41" y="-127">week&lt;=36</label>
+		</location>
+		<location id="id39" x="136" y="-144">
+			<label kind="invariant" x="126" y="-127">week&lt;=52</label>
+		</location>
+		<location id="id40" x="221" y="-144">
+		</location>
+		<init ref="id33"/>
+		<transition>
+			<source ref="id39"/>
+			<target ref="id40"/>
+			<label kind="guard" x="154" y="-178">week&gt;=52</label>
+			<label kind="synchronisation" x="154" y="-161">test!</label>
+		</transition>
+		<transition>
+			<source ref="id38"/>
+			<target ref="id39"/>
+			<label kind="guard" x="69" y="-178">week&gt;=36</label>
+			<label kind="synchronisation" x="69" y="-161">test!</label>
+		</transition>
+		<transition>
+			<source ref="id37"/>
+			<target ref="id38"/>
+			<label kind="guard" x="-24" y="-178">week&gt;=24</label>
+			<label kind="synchronisation" x="-24" y="-161">test!</label>
+		</transition>
+		<transition>
+			<source ref="id36"/>
+			<target ref="id37"/>
+			<label kind="guard" x="-126" y="-178">week&gt;=20</label>
+			<label kind="synchronisation" x="-126" y="-161">test!</label>
+		</transition>
+		<transition>
+			<source ref="id35"/>
+			<target ref="id36"/>
+			<label kind="guard" x="-228" y="-178">week&gt;=12</label>
+			<label kind="synchronisation" x="-228" y="-161">test!</label>
+		</transition>
+		<transition>
+			<source ref="id34"/>
+			<target ref="id35"/>
+			<label kind="guard" x="-330" y="-178">week&gt;=8</label>
+			<label kind="synchronisation" x="-330" y="-161">test!</label>
+		</transition>
+		<transition>
+			<source ref="id33"/>
+			<target ref="id34"/>
+			<label kind="synchronisation" x="-424" y="-161">start?</label>
+			<label kind="assignment" x="-424" y="-144">week = 0</label>
+		</transition>
+	</template>
+	<template>
+		<name>endStateModel</name>
+		<location id="id41" x="-204" y="-59">
+			<label kind="invariant" x="-238" y="-42">x&lt;=endTime</label>
+		</location>
+		<location id="id42" x="25" y="-59">
+		</location>
+		<init ref="id41"/>
+		<transition>
+			<source ref="id41"/>
+			<target ref="id42"/>
+			<label kind="guard" x="-153" y="-85">x&gt;=endTime</label>
+			<label kind="assignment" x="-153" y="-59">endState = State</label>
+		</transition>
+	</template>
+	<template>
+		<name>Das28Test</name>
+		<declaration>
+double DasCalc()
+{
+return ((0.56*sqrt(TenderJoints)+0.28*sqrt(SwollenJoints)+0.70*ln(ESR)+0.014*VAS));
+}</declaration>
+		<location id="id43" x="-347" y="-544">
+			<name x="-357" y="-578">initial1</name>
+		</location>
+		<location id="id44" x="-93" y="-544">
+			<name x="-103" y="-578">a</name>
+			<urgent/>
+		</location>
+		<init ref="id43"/>
+		<transition>
+			<source ref="id44"/>
+			<target ref="id43"/>
+			<nail x="-246" y="-433"/>
+		</transition>
+		<transition>
+			<source ref="id43"/>
+			<target ref="id44"/>
+			<label kind="synchronisation" x="-289" y="-561">test?</label>
+			<label kind="assignment" x="-306" y="-578">Das28 = DasCalc()</label>
+		</transition>
+	</template>
+	<template>
+		<name x="5" y="5">Patient1</name>
+		<declaration>// Place local declarations here.
+
+int Multdown = 5;
+int Multup = 0;
+int Multeq = 3;
+
+double calcdas(){
+return ((0.56*sqrt(TenderJoints)+0.28*sqrt(SwollenJoints)+0.70*ln(ESR)+0.014*VAS));
+}
+
+double DASmove(int setting)
+{
+//DAS28 components go up
+if (setting == 1){
+return (0+MTX*Multup+SSZ*Multup+adalimumab*Multup+etanercept*Multup);
+}
+else if (setting == 4){
+return (0+MTX*Multup+SSZ*Multup+adalimumab*Multup+etanercept*Multup);
+}
+else if (setting == 7){
+return (0+MTX*Multup+SSZ*Multup+adalimumab*Multup+etanercept*Multup);
+}
+else if (setting == 10){
+return (0+MTX*Multup+SSZ*Multup+adalimumab*Multup+etanercept*Multup);
+}
+
+//DAS28 components stay equal
+else if (setting == 2){
+return (30+MTX*Multeq+SSZ*Multeq+adalimumab*Multeq+etanercept*Multeq);
+}
+else if (setting == 5){
+return (30+MTX*Multeq+SSZ*Multeq+adalimumab*Multeq+etanercept*Multeq);
+}
+else if (setting == 8){
+return (30+MTX*Multeq+SSZ*Multeq+adalimumab*Multeq+etanercept*Multeq);
+}
+else if (setting == 11){
+return (30+MTX*Multeq+SSZ*Multeq+adalimumab*Multeq+etanercept*Multeq);
+}
+
+//DAS28 components go down
+else if (setting == 3){
+return (2+MTX*Multdown+SSZ*Multdown+adalimumab*Multdown+etanercept*Multdown);
+}
+else if (setting == 6){
+return (2+MTX*Multdown+SSZ*Multdown+adalimumab*Multdown+etanercept*Multdown);
+}
+else if (setting == 9){
+return (2+MTX*Multdown+SSZ*Multdown+adalimumab*Multdown+etanercept*Multdown);
+}
+else if (setting == 12){
+return (2+MTX*Multdown+SSZ*Multdown+adalimumab*Multdown+etanercept*Multdown);
+}
+return 1;
+}
+
+void DasComponentUpdate(int setting)
+{
+double tempDas = 1.0;
+if (Das28&gt;0 &amp;&amp; Das28&lt;=2){tempDas = 1;}
+if (Das28&gt;2 &amp;&amp; Das28&lt;=3){tempDas = 2;}
+if (Das28&gt;3 &amp;&amp; Das28&lt;=4){tempDas = 3;}
+if (Das28&gt;4){tempDas = 4;}
+tempDas = internalDas28;
+//Das goes up
+if (setting == 1){
+randVal = fint(random(4));
+if (randVal == 0 &amp;&amp; VAS&lt;100){
+VAS=VAS+VAS/60*10*(tempDas/5.5);
+if (VAS&gt;100){VAS=100;}
+}
+else if (randVal==1 &amp;&amp; TenderJoints&lt;28){
+TenderJoints = TenderJoints + TenderJoints/22*5*(tempDas/5.5);
+if (TenderJoints&gt;28){TenderJoints=28;}
+}
+else if (randVal ==2 &amp;&amp; SwollenJoints&lt;28){
+SwollenJoints = SwollenJoints+SwollenJoints/22*5*(tempDas/5.5);
+if (SwollenJoints&gt;28){SwollenJoints=28;}
+}
+else if (randVal==3 &amp;&amp; ESR&lt; 100){
+ESR = ESR+ESR/25*5*(tempDas/5.5);
+if (ESR&gt;100){ESR=100;}
+}
+//if the randomly chosen setting is already at the lowest point:
+if (VAS&lt;100){
+VAS=VAS+VAS/60*10*(tempDas/5.5);
+if (VAS&gt;100){VAS=100;}
+}
+else if (TenderJoints&lt;28){
+TenderJoints = TenderJoints + TenderJoints/22*5*(tempDas/5.5);
+if (TenderJoints&gt;28){TenderJoints=28;}
+}
+else if (SwollenJoints&lt;28){
+SwollenJoints = SwollenJoints+SwollenJoints/22*5*(tempDas/5.5);
+if (SwollenJoints&gt;28){SwollenJoints=28;}
+}
+else if (ESR&lt; 100){
+ESR = ESR+ESR/25*5*(tempDas/5.5);
+if (ESR&gt;100){ESR=100;}
+}
+}
+//Das goes down
+else if (setting == 2){
+randVal = fint(random(4));
+if (randVal == 0 &amp;&amp; VAS&gt;0){
+VAS=VAS-VAS/300*(tempDas*tempDas*tempDas);
+if (VAS&lt;0){VAS=0;}
+}
+else if (randVal==1 &amp;&amp; TenderJoints&gt;0){
+TenderJoints = TenderJoints - TenderJoints/100*(tempDas*tempDas*tempDas);
+if (TenderJoints&lt;0){TenderJoints=0;}
+}
+else if (randVal ==2 &amp;&amp; SwollenJoints&gt;0){
+SwollenJoints = SwollenJoints-SwollenJoints/100*(tempDas*tempDas*tempDas);
+if (SwollenJoints&lt;0){SwollenJoints=0;}
+}
+else if (randVal==3 &amp;&amp; ESR&gt; 1){
+ESR = ESR-ESR/250*(tempDas*tempDas*tempDas);
+if (ESR&lt;1){ESR=1;}
+}
+//if the randomly chosen setting is already at the lowest point:
+else if ( ESR&gt; 1){
+ESR = ESR-ESR/250*(tempDas*tempDas*tempDas);
+if (ESR&lt;1){ESR=1;}
+}
+else if (SwollenJoints&gt;0){
+SwollenJoints = SwollenJoints-SwollenJoints/100*(tempDas*tempDas*tempDas);
+if (SwollenJoints&lt;0){SwollenJoints=0;}
+}
+else if (TenderJoints&gt;0){
+TenderJoints = TenderJoints - TenderJoints/100*(tempDas*tempDas*tempDas);
+if (TenderJoints&lt;0){TenderJoints=0;}
+}
+else if (VAS&gt;0){
+VAS=VAS-VAS/300*(tempDas*tempDas*tempDas);
+if (VAS&lt;0){VAS=0;}
+}
+
+}
+}</declaration>
+		<location id="id45" x="-552" y="-365">
+			<urgent/>
+		</location>
+		<location id="id46" x="-144" y="-365">
+			<urgent/>
+		</location>
+		<location id="id47" x="110" y="-297">
+			<name x="93" y="-289">Low</name>
+		</location>
+		<location id="id48" x="119" y="-527">
+			<name x="102" y="-518">High</name>
+		</location>
+		<location id="id49" x="110" y="-178">
+			<name x="85" y="-161">Remision</name>
+		</location>
+		<location id="id50" x="119" y="-425">
+			<name x="85" y="-416">Moderate</name>
+		</location>
+		<location id="id51" x="-357" y="-365">
+			<name x="-391" y="-399">initialized</name>
+			<urgent/>
+		</location>
+		<location id="id52" x="289" y="-178">
+			<name x="279" y="-212">d</name>
+			<urgent/>
+		</location>
+		<location id="id53" x="263" y="-297">
+			<name x="253" y="-331">c</name>
+			<urgent/>
+		</location>
+		<location id="id54" x="348" y="-425">
+			<name x="338" y="-459">b</name>
+			<urgent/>
+		</location>
+		<location id="id55" x="323" y="-527">
+			<name x="313" y="-561">a</name>
+			<urgent/>
+		</location>
+		<location id="id56" x="535" y="-535">
+			<name x="525" y="-569">DasUP</name>
+			<urgent/>
+		</location>
+		<location id="id57" x="603" y="-306">
+			<name x="593" y="-340">DasDOWN</name>
+			<urgent/>
+		</location>
+		<location id="id58" x="-255" y="-365">
+			<urgent/>
+		</location>
+		<branchpoint id="id59" x="289" y="-238">
+		</branchpoint>
+		<branchpoint id="id60" x="263" y="-365">
+		</branchpoint>
+		<branchpoint id="id61" x="348" y="-467">
+		</branchpoint>
+		<branchpoint id="id62" x="323" y="-603">
+		</branchpoint>
+		<init ref="id45"/>
+		<transition>
+			<source ref="id58"/>
+			<target ref="id46"/>
+			<label kind="assignment" x="-263" y="-357">internalDas28 = calcdas()</label>
+		</transition>
+		<transition>
+			<source ref="id59"/>
+			<target ref="id57"/>
+			<label kind="probability" x="307" y="-221">DASmove(12)</label>
+			<nail x="569" y="-238"/>
+			<nail x="569" y="-306"/>
+		</transition>
+		<transition>
+			<source ref="id62"/>
+			<target ref="id56"/>
+			<label kind="probability" x="399" y="-629">DASmove(1)</label>
+			<nail x="535" y="-603"/>
+		</transition>
+		<transition>
+			<source ref="id57"/>
+			<target ref="id58"/>
+			<label kind="assignment" x="51" y="-102">DasComponentUpdate(2)</label>
+			<nail x="603" y="-76"/>
+			<nail x="-144" y="-76"/>
+		</transition>
+		<transition>
+			<source ref="id56"/>
+			<target ref="id58"/>
+			<label kind="assignment" x="42" y="-697">DasComponentUpdate(1)</label>
+			<nail x="535" y="-671"/>
+			<nail x="-144" y="-671"/>
+		</transition>
+		<transition>
+			<source ref="id55"/>
+			<target ref="id62"/>
+		</transition>
+		<transition>
+			<source ref="id54"/>
+			<target ref="id61"/>
+		</transition>
+		<transition>
+			<source ref="id53"/>
+			<target ref="id60"/>
+		</transition>
+		<transition>
+			<source ref="id52"/>
+			<target ref="id59"/>
+		</transition>
+		<transition>
+			<source ref="id59"/>
+			<target ref="id56"/>
+			<label kind="probability" x="433" y="-280">DASmove(10)</label>
+			<nail x="535" y="-246"/>
+		</transition>
+		<transition>
+			<source ref="id59"/>
+			<target ref="id58"/>
+			<label kind="probability" x="178" y="-127">DASmove(11)</label>
+			<nail x="374" y="-238"/>
+			<nail x="374" y="-102"/>
+			<nail x="-144" y="-102"/>
+		</transition>
+		<transition>
+			<source ref="id49"/>
+			<target ref="id52"/>
+			<label kind="synchronisation" x="136" y="-212">TimeframePassed?</label>
+		</transition>
+		<transition>
+			<source ref="id60"/>
+			<target ref="id57"/>
+			<label kind="probability" x="510" y="-382">DASmove(9)</label>
+			<nail x="603" y="-365"/>
+		</transition>
+		<transition>
+			<source ref="id60"/>
+			<target ref="id58"/>
+			<label kind="probability" x="195" y="-153">DASmove(8)</label>
+			<nail x="340" y="-365"/>
+			<nail x="340" y="-136"/>
+			<nail x="-144" y="-136"/>
+		</transition>
+		<transition>
+			<source ref="id60"/>
+			<target ref="id56"/>
+			<label kind="probability" x="399" y="-408">DASmove(7)</label>
+			<nail x="535" y="-382"/>
+		</transition>
+		<transition>
+			<source ref="id47"/>
+			<target ref="id53"/>
+			<label kind="synchronisation" x="119" y="-340">TimeframePassed?</label>
+		</transition>
+		<transition>
+			<source ref="id61"/>
+			<target ref="id57"/>
+			<label kind="probability" x="416" y="-484">DASmove(6)</label>
+			<nail x="603" y="-467"/>
+		</transition>
+		<transition>
+			<source ref="id61"/>
+			<target ref="id58"/>
+			<label kind="probability" x="17" y="-671">DASmove(5)</label>
+			<nail x="348" y="-637"/>
+			<nail x="-144" y="-637"/>
+		</transition>
+		<transition>
+			<source ref="id61"/>
+			<target ref="id56"/>
+			<label kind="probability" x="391" y="-552">DASmove(4)</label>
+			<nail x="357" y="-535"/>
+		</transition>
+		<transition>
+			<source ref="id50"/>
+			<target ref="id54"/>
+			<label kind="synchronisation" x="187" y="-442">TimeframePassed?</label>
+		</transition>
+		<transition>
+			<source ref="id62"/>
+			<target ref="id57"/>
+			<label kind="probability" x="595" y="-654">DASmove(3)</label>
+			<nail x="323" y="-663"/>
+			<nail x="603" y="-663"/>
+		</transition>
+		<transition>
+			<source ref="id62"/>
+			<target ref="id58"/>
+			<label kind="probability" x="8" y="-637">DASmove(2)</label>
+			<nail x="-144" y="-603"/>
+		</transition>
+		<transition>
+			<source ref="id48"/>
+			<target ref="id55"/>
+			<label kind="synchronisation" x="153" y="-544">TimeframePassed?</label>
+		</transition>
+		<transition>
+			<source ref="id45"/>
+			<target ref="id51"/>
+			<label kind="synchronisation" x="-450" y="-382">Initialized!</label>
+			<label kind="assignment" x="-534" y="-365">Das28 = 5.5</label>
+		</transition>
+		<transition>
+			<source ref="id46"/>
+			<target ref="id49"/>
+			<label kind="guard" x="-50" y="-212">Das28&lt;2.600</label>
+			<nail x="-68" y="-178"/>
+		</transition>
+		<transition>
+			<source ref="id46"/>
+			<target ref="id47"/>
+			<label kind="guard" x="-76" y="-323">Das28&gt;=2.600 &amp;&amp; Das28&lt;=3.200</label>
+			<nail x="-68" y="-297"/>
+		</transition>
+		<transition>
+			<source ref="id46"/>
+			<target ref="id50"/>
+			<label kind="guard" x="-76" y="-450">Das28&gt;3.2 &amp;&amp; Das28&lt;=5.100</label>
+			<nail x="-68" y="-425"/>
+		</transition>
+		<transition>
+			<source ref="id46"/>
+			<target ref="id48"/>
+			<label kind="guard" x="-126" y="-480">Das28&gt;5.1</label>
+			<nail x="-68" y="-527"/>
+		</transition>
+		<transition>
+			<source ref="id51"/>
+			<target ref="id58"/>
+			<label kind="synchronisation" x="-314" y="-382">start!</label>
+		</transition>
+	</template>
+	<template>
+		<name>ProtocolMTX_prototype</name>
+		<declaration>int weekdeadline = 8;
+void medUpdate(int weekdl)
+{
+if (weekdl ==8){
+weekmed = 8;
+MTX=25;
+weekdeadline = 12;
+weekstable=0;
+}
+else if(weekdl==12){
+weekmed = 12;
+MTX=25;
+SSZ=20;
+weekdeadline = 20;
+weekstable=0;
+}
+else if(weekdl==20){
+weekmed = 20;
+MTX=25;
+SSZ=30;
+weekdeadline = 24;
+weekstable=0;
+}
+else if(weekdl==24){
+weekmed = 24;
+MTX=25;
+SSZ=0;
+adalimumab=20;
+weekdeadline = 36;
+weekstable=0;
+}
+else if(weekdl==36){
+weekmed = 36;
+MTX=25;
+adalimumab=40;
+weekdeadline = 52;
+weekstable=0;
+}
+else if(weekdl==52){
+weekmed = 36;
+MTX=25;
+adalimumab=0;
+etanercept=50;
+weekdeadline = 52;
+weekstable=0;
+}
+}
+
+void stableUpdate(){
+if (Das28&gt;=2.6){
+MTX = MTXold;
+SSZ = SSZold;
+adalimumab = adalimumabold;
+etanercept=etanerceptold;
+}
+else{
+if (etanercept&gt;0){
+etanerceptold = etanercept;
+etanercept-=2;
+}
+else if (adalimumab&gt;0){
+adalimumabold=adalimumab;
+adalimumab-=2;
+}
+else if (SSZ&gt;0){
+SSZold=SSZ;
+SSZ-=100;
+}
+else if (MTX&gt;0){
+MTXold=MTX;
+MTX-=1;
+}
+}
+}</declaration>
+		<location id="id63" x="-671" y="-348">
+		</location>
+		<location id="id64" x="-552" y="-348">
+			<name x="-562" y="-382">p1</name>
+			<label kind="invariant" x="-603" y="-399">weekmed&lt;=weekdeadline</label>
+		</location>
+		<location id="id65" x="-552" y="-42">
+			<name x="-562" y="-76">p2</name>
+			<label kind="invariant" x="-671" y="-42">weekstable&lt;=8</label>
+		</location>
+		<location id="id66" x="-212" y="-136">
+			<name x="-222" y="-170">p3</name>
+			<urgent/>
+		</location>
+		<location id="id67" x="-425" y="85">
+			<name x="-435" y="51">p4</name>
+			<label kind="invariant" x="-459" y="110">stable&lt;=1</label>
+		</location>
+		<location id="id68" x="-323" y="85">
+			<name x="-333" y="51">p5</name>
+			<urgent/>
+		</location>
+		<location id="id69" x="-552" y="-280">
+			<label kind="invariant" x="-620" y="-272">weekmed&lt;=weekdeadline</label>
+		</location>
+		<init ref="id63"/>
+		<transition>
+			<source ref="id64"/>
+			<target ref="id69"/>
+		</transition>
+		<transition>
+			<source ref="id68"/>
+			<target ref="id67"/>
+			<nail x="-374" y="119"/>
+		</transition>
+		<transition>
+			<source ref="id67"/>
+			<target ref="id68"/>
+			<label kind="guard" x="-399" y="34">stable&gt;=1&amp;&amp;Das28&lt;=2.6</label>
+			<label kind="assignment" x="-374" y="17">stable = 0</label>
+			<nail x="-374" y="51"/>
+		</transition>
+		<transition>
+			<source ref="id66"/>
+			<target ref="id64"/>
+			<label kind="assignment" x="-450" y="-374">medUpdate(weekdeadline)</label>
+			<nail x="-212" y="-348"/>
+		</transition>
+		<transition>
+			<source ref="id67"/>
+			<target ref="id65"/>
+			<label kind="guard" x="-518" y="-34">stable&gt;=1&amp;&amp;Das28&gt;=2.6</label>
+			<label kind="assignment" x="-501" y="-17">stable = 0,
+weekstable = 0</label>
+			<nail x="-425" y="-42"/>
+		</transition>
+		<transition>
+			<source ref="id65"/>
+			<target ref="id67"/>
+			<label kind="guard" x="-756" y="42">weekstable&gt;=8&amp;&amp; Das28&lt;2.6</label>
+			<label kind="assignment" x="-534" y="85">stable=0</label>
+			<nail x="-552" y="85"/>
+		</transition>
+		<transition>
+			<source ref="id69"/>
+			<target ref="id65"/>
+			<label kind="guard" x="-807" y="-170">weekmed&gt;=weekdeadline&amp;&amp;Das28&lt;2.6</label>
+			<label kind="assignment" x="-663" y="-127">weekstable = 0</label>
+		</transition>
+		<transition>
+			<source ref="id65"/>
+			<target ref="id66"/>
+			<label kind="guard" x="-510" y="-102">Das28&gt;=2.7</label>
+			<nail x="-450" y="-136"/>
+		</transition>
+		<transition>
+			<source ref="id69"/>
+			<target ref="id66"/>
+			<label kind="guard" x="-484" y="-161">weekmed&gt;=weekdeadline&amp;&amp;Das28&gt;=2.6</label>
+			<nail x="-450" y="-136"/>
+		</transition>
+		<transition>
+			<source ref="id63"/>
+			<target ref="id64"/>
+			<label kind="synchronisation" x="-653" y="-365">start?</label>
+			<label kind="assignment" x="-653" y="-348">MTX=15</label>
+		</transition>
+	</template>
+	<template>
+		<name>Patient_prototype</name>
+		<declaration>
+
+double Statemove(int severity, int next){
+//high
+if (severity==3){
+if (next==3){
+return (50);}
+if (next==2){
+return(15);}
+if (next==1){
+return(2);}
+if (next==0){
+return(1);}
+}
+//moderate
+if (severity==2){
+if (next==3){
+return (20);}
+if (next==2){
+return(50);}
+if (next==1){
+return(5);}
+if (next==0){
+return(2);}
+}
+//low
+if (severity==1){
+if (next==3){
+return (2);}
+if (next==2){
+return(15);}
+if (next==1){
+return(50);}
+if (next==0){
+return(5);}
+}
+//remission
+if (severity==0){
+if (next==3){
+return (1);}
+if (next==2){
+return(2);}
+if (next==1){
+return(10);}
+if (next==0){
+return(50);}
+}
+return(0);}</declaration>
+		<location id="id70" x="-280" y="0">
+			<urgent/>
+		</location>
+		<location id="id71" x="221" y="-280">
+			<name x="196" y="-314">high</name>
+		</location>
+		<location id="id72" x="221" y="-153">
+			<name x="187" y="-187">Moderate</name>
+		</location>
+		<location id="id73" x="221" y="93">
+			<name x="204" y="102">Low</name>
+		</location>
+		<location id="id74" x="212" y="255">
+			<name x="187" y="263">Remission</name>
+		</location>
+		<location id="id75" x="-25" y="0">
+			<urgent/>
+		</location>
+		<location id="id76" x="-136" y="0">
+			<urgent/>
+		</location>
+		<location id="id77" x="527" y="0">
+			<urgent/>
+		</location>
+		<branchpoint id="id78" x="450" y="0">
+		</branchpoint>
+		<init ref="id70"/>
+		<transition>
+			<source ref="id77"/>
+			<target ref="id78"/>
+		</transition>
+		<transition>
+			<source ref="id76"/>
+			<target ref="id75"/>
+			<label kind="synchronisation" x="-118" y="-17">start!</label>
+		</transition>
+		<transition>
+			<source ref="id75"/>
+			<target ref="id74"/>
+			<label kind="guard" x="51" y="212">Das28&lt;2.600</label>
+		</transition>
+		<transition>
+			<source ref="id75"/>
+			<target ref="id73"/>
+			<label kind="guard" x="8" y="17">Das28&gt;=2.600 &amp;&amp; Das28&lt;=3.200</label>
+			<nail x="119" y="17"/>
+		</transition>
+		<transition>
+			<source ref="id75"/>
+			<target ref="id72"/>
+			<label kind="guard" x="42" y="-59">Das28&gt;3.2 &amp;&amp; Das28&lt;=5.1</label>
+			<nail x="127" y="-34"/>
+		</transition>
+		<transition>
+			<source ref="id75"/>
+			<target ref="id71"/>
+			<label kind="guard" x="42" y="-178">Das28&gt;5.1</label>
+		</transition>
+		<transition>
+			<source ref="id78"/>
+			<target ref="id71"/>
+			<label kind="probability" x="161" y="-221">Statemove(severity, 3)</label>
+			<nail x="221" y="-212"/>
+		</transition>
+		<transition>
+			<source ref="id78"/>
+			<target ref="id72"/>
+			<label kind="probability" x="238" y="-34">Statemove(severity, 2)</label>
+			<nail x="246" y="-25"/>
+		</transition>
+		<transition>
+			<source ref="id78"/>
+			<target ref="id73"/>
+			<label kind="probability" x="237" y="-8">Statemove(severity, 1)</label>
+			<nail x="246" y="8"/>
+		</transition>
+		<transition>
+			<source ref="id78"/>
+			<target ref="id74"/>
+			<label kind="probability" x="178" y="153">Statemove(severity, 0)</label>
+			<nail x="229" y="178"/>
+		</transition>
+		<transition>
+			<source ref="id74"/>
+			<target ref="id77"/>
+			<label kind="synchronisation" x="255" y="238">TimeframePassed?</label>
+			<label kind="assignment" x="272" y="255">severity = 0</label>
+		</transition>
+		<transition>
+			<source ref="id73"/>
+			<target ref="id77"/>
+			<label kind="synchronisation" x="255" y="42">TimeframePassed?</label>
+			<label kind="assignment" x="272" y="68">severity = 1</label>
+		</transition>
+		<transition>
+			<source ref="id72"/>
+			<target ref="id77"/>
+			<label kind="synchronisation" x="246" y="-119">TimeframePassed?</label>
+			<label kind="assignment" x="255" y="-102">severity = 2</label>
+		</transition>
+		<transition>
+			<source ref="id71"/>
+			<target ref="id77"/>
+			<label kind="synchronisation" x="255" y="-272">TimeframePassed?</label>
+			<label kind="assignment" x="289" y="-255">severity = 3</label>
+		</transition>
+		<transition>
+			<source ref="id70"/>
+			<target ref="id76"/>
+			<label kind="synchronisation" x="-221" y="-25">Initialized!</label>
+		</transition>
+	</template>
+	<system>// Place template instantiations here.
+// List one or more processes to be composed into a system.
+system Patient, ClockUpdate, ProtocolMTX, TestMTX, endStateModel;
+    </system>
+	<queries>
+		<query>
+			<formula>simulate [&lt;=70;1] {Das28}</formula>
+			<comment></comment>
+		</query>
+		<query>
+			<formula>simulate [&lt;=70;1] {Das28*10, internalDas28*10, MTX, weekstable, SSZ, adalimumab, etanercept}</formula>
+			<comment></comment>
+		</query>
+		<query>
+			<formula>simulate [&lt;=70;1] {Das28*10, internalDas28*10, VAS,TenderJoints, SwollenJoints, ESR}</formula>
+			<comment></comment>
+		</query>
+		<query>
+			<formula>simulate [&lt;=70;1] { Das28, internalDas28}</formula>
+			<comment></comment>
+		</query>
+		<query>
+			<formula>Pr[&lt;=26] (&lt;&gt; Patient.Remision)</formula>
+			<comment></comment>
+		</query>
+		<query>
+			<formula>Pr[&lt;=52] (&lt;&gt; Patient.Remision)</formula>
+			<comment></comment>
+		</query>
+		<query>
+			<formula>Pr[&lt;=26] (&lt;&gt; internalDas28&lt;=2.6)</formula>
+			<comment></comment>
+		</query>
+		<query>
+			<formula>Vanaf hier nieuwe methodes</formula>
+			<comment></comment>
+		</query>
+		<query>
+			<formula>simulate [&lt;=endTime+1;1] {State, protocol_state}</formula>
+			<comment></comment>
+		</query>
+		<query>
+			<formula>Pr[&lt;=26;10000] (&lt;&gt; Patient.Remision)</formula>
+			<comment>target 48.4</comment>
+		</query>
+		<query>
+			<formula>Pr[&lt;=52;10000] (&lt;&gt; Patient.Remision)</formula>
+			<comment>target 71.9 </comment>
+		</query>
+		<query>
+			<formula>E[&lt;=60; 10000] (max:Patient.reach_mod)</formula>
+			<comment></comment>
+		</query>
+		<query>
+			<formula>E[&lt;=60; 10000] (max:Patient.reach_low)</formula>
+			<comment></comment>
+		</query>
+		<query>
+			<formula>E[&lt;=60; 100] (max:Patient.reach_remission)</formula>
+			<comment>48.4% na 26 weken
+71.9% na 52 weken</comment>
+		</query>
+		<query>
+			<formula>E[&lt;=endTime+1; 1000000] (max:endState)</formula>
+			<comment></comment>
+		</query>
+		<query>
+			<formula>LEES DIT</formula>
+			<comment>expectancy (e waarde) met rond getal (1000, 10000, etc) van alle severity, staaf diagram</comment>
+		</query>
+	</queries>
+</nta>

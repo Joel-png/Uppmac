@@ -44,6 +44,7 @@ public class DefaultParser {
         // indexing starts on 1 because thats how xpath does things
         for (int i = 1; i <= templateList.getLength(); i++) {
             NodeList tempLocationList = (NodeList) xPath.compile("/nta/template[" + String.valueOf(i) + "]/location").evaluate(xmlDocument, XPathConstants.NODESET);
+            NodeList tempBranchList = (NodeList) xPath.compile("/nta/template[" + String.valueOf(i) + "]/branchpoint").evaluate(xmlDocument, XPathConstants.NODESET);
             NodeList tempTransitionList = (NodeList) xPath.compile("/nta/template[" + String.valueOf(i) + "]/transition").evaluate(xmlDocument, XPathConstants.NODESET);
             NodeList tempDeclarationList = (NodeList) xPath.compile("/nta/template[" + String.valueOf(i) + "]/declaration/text()").evaluate(xmlDocument, XPathConstants.NODESET);
             NodeList tempTemplateName = (NodeList) xPath.compile("/nta/template[" + String.valueOf(i) + "]/name/text()").evaluate(xmlDocument, XPathConstants.NODESET);
@@ -52,7 +53,7 @@ public class DefaultParser {
                 declaration = tempDeclarationList.item(0).toString();
             }
 
-            Template tempTemplate = new Template(cleanText(tempTemplateName.item(0).toString()), tempLocationList.getLength(), tempTransitionList.getLength(), declaration);
+            Template tempTemplate = new Template(cleanText(tempTemplateName.item(0).toString()), tempLocationList.getLength() + tempBranchList.getLength(), tempTransitionList.getLength(), declaration);
             //System.out.println(tempDeclarationList.item(0).toString());
 
             NodeList tempInit = (NodeList) xPath.compile("/nta/template[" + String.valueOf(i) + "]/init/@ref").evaluate(xmlDocument, XPathConstants.NODESET);
@@ -61,7 +62,7 @@ public class DefaultParser {
             for (int j = 1; j <= tempLocationList.getLength(); j++) {
                 NodeList tempLocationIDList = (NodeList) xPath.compile("/nta/template[" + String.valueOf(i) + "]/location[" + String.valueOf(j) + "]/@id").evaluate(xmlDocument, XPathConstants.NODESET);
                 NodeList tempLocationNameList = (NodeList) xPath.compile("/nta/template[" + String.valueOf(i) + "]/location[" + String.valueOf(j) + "]/name/text()").evaluate(xmlDocument, XPathConstants.NODESET);
-
+                
                 // incase name isn't included
                 String name = "";
                 if (tempLocationNameList.item(0) != null) {
@@ -70,6 +71,13 @@ public class DefaultParser {
                 Location tempLocation = new Location(cleanID(tempLocationIDList.item(0).toString(), 4), name);
                 tempTemplate.addLocation(tempLocation, j-1);
                 
+            }
+
+            for (int j = 1; j <= tempBranchList.getLength(); j++) {
+                NodeList tempBranchIDList = (NodeList) xPath.compile("/nta/template[" + String.valueOf(i) + "]/branchpoint[" + String.valueOf(j) + "]/@id").evaluate(xmlDocument, XPathConstants.NODESET);
+                String name = "";
+                Location tempLocation = new Location(cleanID(tempBranchIDList.item(0).toString(), 4), name);
+                tempTemplate.addLocation(tempLocation, tempLocationList.getLength() + j-1);
             }
 
             for (int j = 1; j <= tempTransitionList.getLength(); j++) {
