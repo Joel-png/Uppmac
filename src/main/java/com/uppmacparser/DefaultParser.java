@@ -42,6 +42,13 @@ public class DefaultParser {
         // - find transitions
         //
         // indexing starts on 1 because thats how xpath does things
+
+        for (int i = 1; i <= templateList.getLength(); i++) {
+            NodeList tempLocationList = (NodeList) xPath.compile("/nta/template[" + String.valueOf(i) + "]/location").evaluate(xmlDocument, XPathConstants.NODESET);
+            NodeList tempTransitionList = (NodeList) xPath.compile("/nta/template[" + String.valueOf(i) + "]/transition").evaluate(xmlDocument, XPathConstants.NODESET);
+            System.out.println("Locations: " + tempLocationList.getLength() + " | Transitions: " + tempTransitionList.getLength());
+        }
+
         for (int i = 1; i <= templateList.getLength(); i++) {
             NodeList tempLocationList = (NodeList) xPath.compile("/nta/template[" + String.valueOf(i) + "]/location").evaluate(xmlDocument, XPathConstants.NODESET);
             NodeList tempBranchList = (NodeList) xPath.compile("/nta/template[" + String.valueOf(i) + "]/branchpoint").evaluate(xmlDocument, XPathConstants.NODESET);

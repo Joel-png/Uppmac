@@ -1,5 +1,6 @@
 package com.uppmacparser;
 
+import java.io.IOException;
 
 public class Nta {
     Declaration globalDeclaration;
@@ -12,6 +13,8 @@ public class Nta {
     int templateComplexity = 0;
     int templateFunctions = 0;
     int templateVariables = 0;
+    int globalDecLength = 0;
+    int totalTempDecLength = 0;
 
     public Nta(int templateLength, String name, String declaration) {
         this.templates = new Template[templateLength];
@@ -19,7 +22,7 @@ public class Nta {
         this.globalDeclaration = new Declaration(declaration);
         this.functionCount = globalDeclaration.countFunctions();
         this.variableCount = globalDeclaration.countVariables();
-        this.globalComplexity = functionCount + variableCount;
+        this.globalComplexity = this.functionCount + this.variableCount;
     }
 
     public String getData(int i) {
@@ -38,6 +41,10 @@ public class Nta {
                 return String.valueOf(templateVariables);
             case 6:
                 return String.valueOf(templateComplexity);
+            case 7:
+                return String.valueOf(globalDecLength);
+            case 8:
+                return String.valueOf(totalTempDecLength);
             default:
                 return "ERROR";
         }
@@ -53,5 +60,24 @@ public class Nta {
             System.out.print("[" + i + "] ");
             templates[i].printData(indent);
         }
+    }
+
+    public int totalTempDeclarationLength() throws IOException {
+        int counter = 0;
+        for (int i = 0; i < templates.length; i++) {
+            counter += getLengthOfDeclaration(templates[i].declaration);
+        }
+        return counter;
+    }
+
+    public int getLengthOfDeclaration(Declaration declaration) throws IOException {
+        int count = 0;
+        String input = declaration.content;
+        for (int i = 0; i < input.length(); i++) {
+            if (input.charAt(i) == ';') {
+                count++;
+            }
+        }
+        return count;
     }
 }

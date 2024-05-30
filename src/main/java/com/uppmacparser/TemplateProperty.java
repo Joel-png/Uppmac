@@ -12,6 +12,7 @@ public class TemplateProperty {
     int declarationLength = 0;
     int functions = 0;
     int variables = 0;
+    int flowers = 0;
     
     public TemplateProperty(Template template) {
         this.template = template;
@@ -53,6 +54,8 @@ public class TemplateProperty {
                 }
             case 11:
                 return String.valueOf(deadEnds);
+            case 12:
+                return String.valueOf(flowers);
             default:
                 return "ERROR";
         }
@@ -90,7 +93,9 @@ public class TemplateProperty {
             String.valueOf(numOfPoplarLocations), 
             dagString, 
             isSingleLocation, 
-            String.valueOf(deadEnds)};
+            String.valueOf(deadEnds),
+            String.valueOf(flowers)
+        };
 
         return data;
     }

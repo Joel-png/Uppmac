@@ -129,7 +129,20 @@ public class Identifier {
         int variableCount = template.declaration.countVariables();
         tempTemplateProperty.variables = variableCount;
 
+        int flowers = getNumOfFlowers(template.locations);
+        tempTemplateProperty.flowers = flowers;
+
         templateProperties.add(tempTemplateProperty);
+    }
+
+    public int getNumOfFlowers(Location[] locations) {
+        int flowerCounter = 0;
+        for (int i = 0; i < locations.length; i++) {
+            if (countSelfLoops(locations[i]) >= 5) {
+                flowerCounter++;
+            }
+        }
+        return flowerCounter;
     }
 
     public int getNumOfPopularLocations(Location[] locations, Transition[] transitions) {
@@ -221,6 +234,24 @@ public class Identifier {
         }
         return loopCounter;
     }
+
+    public int countSelfLoops(Location location) {
+        int loopCounter = 0;
+        for (int i = 0; i < location.sourceTransitions.size(); i++) {
+            if (isSelfLoop(location.sourceTransitions.get(i))) {
+                loopCounter++;
+            }
+        }
+        return loopCounter;
+    }
+
+    public boolean isSelfLoop(Transition transition) {
+        if (transition.source.equals(transition.target)) {
+            return true;
+        }
+        return false;
+    } 
+
 
     public ArrayList<String> cloneTransitionList(ArrayList<String> transitions) {
         ArrayList<String> clonedList = new ArrayList<String>(transitions.size());

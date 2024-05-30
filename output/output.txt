@@ -1,44 +1,799 @@
 NTA name | Template Name | numPopularLocations | isLinear | hasLonelyInit | isSingleLocation | 
+covid19-ctmc.xml | globalDeclarationLength: 2 | 
+ |          name          | lonelyInit | locations | transitions | declarationLength | functions | variables | popularLocations | dag | single | deadEnds | flowers | 
+ | Move                   | no         | 1         | 1           | 0                 | 0         | 0         | 1                | no  | yes    | 0        | 0       | 
+ | Infect                 | no         | 1         | 1           | 0                 | 0         | 0         | 1                | no  | yes    | 0        | 0       | 
+ | 
+covid19-ode.xml | globalDeclarationLength: 18 | 
+ |          name          | lonelyInit | locations | transitions | declarationLength | functions | variables | popularLocations | dag | single | deadEnds | flowers | 
+ | P                      | no         | 2         | 2           | 1                 | 0         | 0         | 2                | no  | no     | 0        | 0       | 
+ | 
+seihr-ctmc-agent.xml | globalDeclarationLength: 18 | 
+ |          name          | lonelyInit | locations | transitions | declarationLength | functions | variables | popularLocations | dag | single | deadEnds | flowers | 
+ | Pretty                 | yes        | 6         | 6           | 0                 | 0         | 0         | 0                | yes | no     | 1        | 0       | 
+ | Susceptible            | yes        | 6         | 6           | 0                 | 0         | 0         | 0                | yes | no     | 1        | 0       | 
+ | Exposed                | no         | 6         | 6           | 0                 | 0         | 0         | 0                | yes | no     | 1        | 0       | 
+ | Susceptible2           | yes        | 6         | 6           | 0                 | 0         | 0         | 0                | yes | no     | 1        | 0       | 
+ | Exposed2               | no         | 6         | 6           | 0                 | 0         | 0         | 0                | yes | no     | 1        | 0       | 
+ | 
+seihr-ctmc.xml | globalDeclarationLength: 1 | 
+ |          name          | lonelyInit | locations | transitions | declarationLength | functions | variables | popularLocations | dag | single | deadEnds | flowers | 
+ | Move                   | no         | 1         | 1           | 0                 | 0         | 0         | 1                | no  | yes    | 0        | 0       | 
+ | Infect                 | no         | 1         | 1           | 0                 | 0         | 0         | 1                | no  | yes    | 0        | 0       | 
+ | 
+seihr-ode.xml | globalDeclarationLength: 17 | 
+ |          name          | lonelyInit | locations | transitions | declarationLength | functions | variables | popularLocations | dag | single | deadEnds | flowers | 
+ | Simple                 | yes        | 1         | 0           | 0                 | 0         | 0         | 0                | yes | yes    | 1        | 0       | 
+ | P                      | yes        | 1         | 0           | 0                 | 0         | 0         | 0                | yes | yes    | 1        | 0       | 
+ | Quarantine             | yes        | 4         | 3           | 1                 | 0         | 0         | 0                | yes | no     | 1        | 0       | 
+ | 
+dag.xml | globalDeclarationLength: 0 | 
+ |          name          | lonelyInit | locations | transitions | declarationLength | functions | variables | popularLocations | dag | single | deadEnds | flowers | 
+ | Template               | no         | 6         | 6           | 0                 | 0         | 0         | 0                | yes | no     | 3        | 0       | 
+ | 
+linear.xml | globalDeclarationLength: 0 | 
+ |          name          | lonelyInit | locations | transitions | declarationLength | functions | variables | popularLocations | dag | single | deadEnds | flowers | 
+ | Template               | yes        | 4         | 3           | 0                 | 0         | 0         | 0                | yes | no     | 1        | 0       | 
+ | 
+looped.xml | globalDeclarationLength: 0 | 
+ |          name          | lonelyInit | locations | transitions | declarationLength | functions | variables | popularLocations | dag | single | deadEnds | flowers | 
+ | Template               | no         | 3         | 9           | 0                 | 0         | 0         | 1                | no  | no     | 0        | 0       | 
+ | 
+notdag.xml | globalDeclarationLength: 0 | 
+ |          name          | lonelyInit | locations | transitions | declarationLength | functions | variables | popularLocations | dag | single | deadEnds | flowers | 
+ | Template               | no         | 6         | 7           | 0                 | 0         | 0         | 0                | no  | no     | 3        | 0       | 
+ | 
+GiDecember-5Nodes-NoEnergyTransfer.xml | globalDeclarationLength: 70 | 
+ |          name          | lonelyInit | locations | transitions | declarationLength | functions | variables | popularLocations | dag | single | deadEnds | flowers | 
+ | Task                   | yes        | 10        | 13          | 15                | 4         | 1         | 0                | no  | no     | 2        | 0       | 
+ | Policy_FIFO            | no         | 2         | 2           | 0                 | 0         | 0         | 2                | no  | no     | 0        | 0       | 
+ | Policy_FPS             | no         | 2         | 2           | 6                 | 1         | 2         | 2                | no  | no     | 0        | 0       | 
+ | Policy_EDF             | no         | 3         | 4           | 8                 | 2         | 1         | 1                | no  | no     | 0        | 0       | 
+ | Resource               | no         | 5         | 11          | 8                 | 2         | 1         | 0                | no  | no     | 0        | 0       | 
+ | SolarPanel             | no         | 1         | 1           | 6                 | 1         | 2         | 1                | no  | yes    | 0        | 0       | 
+ | BatteryManager         | yes        | 5         | 6           | 0                 | 0         | 0         | 0                | no  | no     | 0        | 0       | 
+ | Controller             | no         | 4         | 6           | 0                 | 0         | 0         | 0                | no  | no     | 0        | 0       | 
+ | 
+GiDecember-5Nodes-WithEnergyTransfer.xml | globalDeclarationLength: 69 | 
+ |          name          | lonelyInit | locations | transitions | declarationLength | functions | variables | popularLocations | dag | single | deadEnds | flowers | 
+ | Task                   | yes        | 10        | 13          | 15                | 4         | 1         | 0                | no  | no     | 2        | 0       | 
+ | Policy_FIFO            | no         | 2         | 2           | 0                 | 0         | 0         | 2                | no  | no     | 0        | 0       | 
+ | Policy_FPS             | no         | 2         | 2           | 6                 | 1         | 2         | 2                | no  | no     | 0        | 0       | 
+ | Policy_EDF             | no         | 3         | 4           | 8                 | 2         | 1         | 1                | no  | no     | 0        | 0       | 
+ | Resource               | no         | 5         | 11          | 8                 | 2         | 1         | 0                | no  | no     | 0        | 0       | 
+ | SolarPanel             | no         | 1         | 1           | 6                 | 1         | 2         | 1                | no  | yes    | 0        | 0       | 
+ | BatteryManager         | yes        | 6         | 11          | 0                 | 0         | 0         | 0                | no  | no     | 0        | 0       | 
+ | Controller             | no         | 7         | 14          | 5                 | 2         | 0         | 0                | no  | no     | 0        | 0       | 
+ | 
+GiJune-5Nodes-NoEnergyTransfer.xml | globalDeclarationLength: 69 | 
+ |          name          | lonelyInit | locations | transitions | declarationLength | functions | variables | popularLocations | dag | single | deadEnds | flowers | 
+ | Task                   | yes        | 10        | 13          | 15                | 4         | 1         | 0                | no  | no     | 2        | 0       | 
+ | Policy_FIFO            | no         | 2         | 2           | 0                 | 0         | 0         | 2                | no  | no     | 0        | 0       | 
+ | Policy_FPS             | no         | 2         | 2           | 6                 | 1         | 2         | 2                | no  | no     | 0        | 0       | 
+ | Policy_EDF             | no         | 3         | 4           | 8                 | 2         | 1         | 1                | no  | no     | 0        | 0       | 
+ | Resource               | no         | 5         | 11          | 8                 | 2         | 1         | 0                | no  | no     | 0        | 0       | 
+ | SolarPanel             | no         | 1         | 1           | 6                 | 1         | 2         | 1                | no  | yes    | 0        | 0       | 
+ | BatteryManager         | yes        | 5         | 6           | 0                 | 0         | 0         | 0                | no  | no     | 0        | 0       | 
+ | Controller             | no         | 4         | 6           | 0                 | 0         | 0         | 0                | no  | no     | 0        | 0       | 
+ | 
+HerschelEvents2.xml | globalDeclarationLength: 81 | 
+ |          name          | lonelyInit | locations | transitions | declarationLength | functions | variables | popularLocations | dag | single | deadEnds | flowers | 
+ | Scheduler              | yes        | 4         | 6           | 0                 | 0         | 0         | 1                | no  | no     | 0        | 0       | 
+ | IdleTask               | no         | 2         | 2           | 0                 | 0         | 0         | 2                | no  | no     | 0        | 0       | 
+ | MainCycleOld           | yes        | 5         | 6           | 1                 | 0         | 0         | 0                | no  | no     | 1        | 0       | 
+ | MainCycleChain         | yes        | 13        | 19          | 4                 | 0         | 1         | 0                | no  | no     | 1        | 0       | 
+ | MainCycle              | yes        | 14        | 23          | 3                 | 0         | 0         | 0                | no  | no     | 1        | 0       | 
+ | ASW                    | no         | 13        | 22          | 4                 | 1         | 2         | 0                | no  | no     | 1        | 0       | 
+ | ASWspor                | yes        | 15        | 26          | 3                 | 0         | 2         | 0                | no  | no     | 1        | 0       | 
+ | BSW                    | no         | 13        | 24          | 3                 | 0         | 2         | 0                | no  | no     | 1        | 0       | 
+ | Global                 | no         | 1         | 3           | 0                 | 0         | 0         | 1                | no  | yes    | 0        | 0       | 
+ | 
+HerschelEvents2spor.xml | globalDeclarationLength: 81 | 
+ |          name          | lonelyInit | locations | transitions | declarationLength | functions | variables | popularLocations | dag | single | deadEnds | flowers | 
+ | Scheduler              | yes        | 4         | 6           | 0                 | 0         | 0         | 1                | no  | no     | 0        | 0       | 
+ | IdleTask               | no         | 2         | 2           | 0                 | 0         | 0         | 2                | no  | no     | 0        | 0       | 
+ | MainCycleOld           | yes        | 5         | 6           | 1                 | 0         | 0         | 0                | no  | no     | 1        | 0       | 
+ | MainCycleChain         | yes        | 13        | 19          | 4                 | 0         | 1         | 0                | no  | no     | 1        | 0       | 
+ | MainCycle              | yes        | 14        | 23          | 3                 | 0         | 0         | 0                | no  | no     | 1        | 0       | 
+ | ASW                    | no         | 13        | 22          | 4                 | 1         | 2         | 0                | no  | no     | 1        | 0       | 
+ | ASWspor                | yes        | 15        | 26          | 3                 | 0         | 2         | 0                | no  | no     | 1        | 0       | 
+ | BSW                    | no         | 13        | 24          | 3                 | 0         | 2         | 0                | no  | no     | 1        | 0       | 
+ | Global                 | no         | 1         | 3           | 0                 | 0         | 0         | 1                | no  | yes    | 0        | 0       | 
+ | 
+HerschelNonDet-10-16.xml | globalDeclarationLength: 72 | 
+ |          name          | lonelyInit | locations | transitions | declarationLength | functions | variables | popularLocations | dag | single | deadEnds | flowers | 
+ | Scheduler              | yes        | 4         | 6           | 12                | 0         | 2         | 1                | no  | no     | 0        | 0       | 
+ | IdleTask               | no         | 2         | 2           | 0                 | 0         | 0         | 2                | no  | no     | 0        | 0       | 
+ | MainCycle              | yes        | 14        | 23          | 3                 | 0         | 0         | 0                | no  | no     | 1        | 0       | 
+ | ASW                    | no         | 13        | 22          | 4                 | 1         | 2         | 0                | no  | no     | 1        | 0       | 
+ | ASWspor                | yes        | 15        | 26          | 3                 | 0         | 2         | 0                | no  | no     | 1        | 0       | 
+ | BSW                    | no         | 13        | 24          | 3                 | 0         | 2         | 0                | no  | no     | 1        | 0       | 
+ | Global                 | no         | 1         | 3           | 1                 | 0         | 0         | 1                | no  | yes    | 0        | 0       | 
+ | 
+HerschelNonDet-10.xml | globalDeclarationLength: 71 | 
+ |          name          | lonelyInit | locations | transitions | declarationLength | functions | variables | popularLocations | dag | single | deadEnds | flowers | 
+ | Scheduler              | yes        | 4         | 6           | 12                | 0         | 2         | 1                | no  | no     | 0        | 0       | 
+ | IdleTask               | no         | 2         | 2           | 0                 | 0         | 0         | 2                | no  | no     | 0        | 0       | 
+ | MainCycle              | yes        | 14        | 23          | 3                 | 0         | 0         | 0                | no  | no     | 1        | 0       | 
+ | ASW                    | no         | 13        | 22          | 4                 | 1         | 2         | 0                | no  | no     | 1        | 0       | 
+ | ASWspor                | yes        | 15        | 26          | 3                 | 0         | 2         | 0                | no  | no     | 1        | 0       | 
+ | BSW                    | no         | 13        | 24          | 3                 | 0         | 2         | 0                | no  | no     | 1        | 0       | 
+ | Global                 | no         | 1         | 3           | 1                 | 0         | 0         | 1                | no  | yes    | 0        | 0       | 
+ | 
+HerschelNonDet-14-16.xml | globalDeclarationLength: 72 | 
+ |          name          | lonelyInit | locations | transitions | declarationLength | functions | variables | popularLocations | dag | single | deadEnds | flowers | 
+ | Scheduler              | yes        | 4         | 6           | 12                | 0         | 2         | 1                | no  | no     | 0        | 0       | 
+ | IdleTask               | no         | 2         | 2           | 0                 | 0         | 0         | 2                | no  | no     | 0        | 0       | 
+ | MainCycle              | yes        | 14        | 23          | 3                 | 0         | 0         | 0                | no  | no     | 1        | 0       | 
+ | ASW                    | no         | 13        | 22          | 4                 | 1         | 2         | 0                | no  | no     | 1        | 0       | 
+ | ASWspor                | yes        | 15        | 26          | 3                 | 0         | 2         | 0                | no  | no     | 1        | 0       | 
+ | BSW                    | no         | 13        | 24          | 3                 | 0         | 2         | 0                | no  | no     | 1        | 0       | 
+ | Global                 | no         | 1         | 3           | 1                 | 0         | 0         | 1                | no  | yes    | 0        | 0       | 
+ | 
+HerschelNonDet-14.xml | globalDeclarationLength: 71 | 
+ |          name          | lonelyInit | locations | transitions | declarationLength | functions | variables | popularLocations | dag | single | deadEnds | flowers | 
+ | Scheduler              | yes        | 4         | 6           | 12                | 0         | 2         | 1                | no  | no     | 0        | 0       | 
+ | IdleTask               | no         | 2         | 2           | 0                 | 0         | 0         | 2                | no  | no     | 0        | 0       | 
+ | MainCycle              | yes        | 14        | 23          | 3                 | 0         | 0         | 0                | no  | no     | 1        | 0       | 
+ | ASW                    | no         | 13        | 22          | 4                 | 1         | 2         | 0                | no  | no     | 1        | 0       | 
+ | ASWspor                | yes        | 15        | 26          | 3                 | 0         | 2         | 0                | no  | no     | 1        | 0       | 
+ | BSW                    | no         | 13        | 24          | 3                 | 0         | 2         | 0                | no  | no     | 1        | 0       | 
+ | Global                 | no         | 1         | 3           | 1                 | 0         | 0         | 1                | no  | yes    | 0        | 0       | 
+ | 
+Herschel-SMC2.xml | globalDeclarationLength: 82 | 
+ |          name          | lonelyInit | locations | transitions | declarationLength | functions | variables | popularLocations | dag | single | deadEnds | flowers | 
+ | Scheduler              | yes        | 4         | 6           | 0                 | 0         | 0         | 1                | no  | no     | 0        | 0       | 
+ | IdleTask               | no         | 2         | 2           | 0                 | 0         | 0         | 2                | no  | no     | 0        | 0       | 
+ | MainCycle              | yes        | 14        | 26          | 3                 | 0         | 0         | 0                | no  | no     | 1        | 0       | 
+ | ASW                    | no         | 13        | 26          | 4                 | 1         | 2         | 0                | no  | no     | 1        | 0       | 
+ | BSW                    | no         | 13        | 28          | 3                 | 0         | 2         | 0                | no  | no     | 1        | 0       | 
+ | GlobalPlain            | yes        | 1         | 0           | 0                 | 0         | 0         | 0                | yes | yes    | 1        | 0       | 
+ | Global                 | no         | 1         | 2           | 4                 | 0         | 3         | 1                | no  | yes    | 0        | 0       | 
+ | 
+schedulability4.xml | globalDeclarationLength: 67 | 
+ |          name          | lonelyInit | locations | transitions | declarationLength | functions | variables | popularLocations | dag | single | deadEnds | flowers | 
+ | CPUScheduler           | no         | 5         | 8           | 1                 | 0         | 0         | 0                | no  | no     | 0        | 0       | 
+ | InheritanceScheduler   | no         | 4         | 6           | 3                 | 0         | 0         | 1                | no  | no     | 0        | 0       | 
+ | CeilingScheduler       | no         | 4         | 6           | 3                 | 0         | 0         | 1                | no  | no     | 0        | 0       | 
+ | Task                   | yes        | 6         | 8           | 4                 | 0         | 3         | 0                | no  | no     | 1        | 0       | 
+ | Global                 | no         | 1         | 1           | 1                 | 0         | 0         | 1                | no  | yes    | 0        | 0       | 
+ | 
+Batman 6 Jan 2016.xml | globalDeclarationLength: 69 | 
+ |          name          | lonelyInit | locations | transitions | declarationLength | functions | variables | popularLocations | dag | single | deadEnds | flowers | 
+ | Node                   | yes        | 2         | 15          | 103               | 18        | 15        | 1                | no  | no     | 0        | 1       | 
+ | 
+Bitcoin Model MARS.xml | globalDeclarationLength: 54 | 
+ |          name          | lonelyInit | locations | transitions | declarationLength | functions | variables | popularLocations | dag | single | deadEnds | flowers | 
+ | Pool                   | yes        | 4         | 13          | 337               | 29        | 46        | 1                | no  | no     | 0        | 1       | 
+ | Peer                   | yes        | 2         | 6           | 158               | 13        | 24        | 1                | no  | no     | 0        | 1       | 
+ | MPeer                  | yes        | 2         | 6           | 197               | 15        | 28        | 1                | no  | no     | 0        | 1       | 
+ | MPool                  | yes        | 4         | 15          | 405               | 34        | 56        | 1                | no  | no     | 0        | 1       | 
+ | 
+Example_Model.xml | globalDeclarationLength: 12 | 
+ |          name          | lonelyInit | locations | transitions | declarationLength | functions | variables | popularLocations | dag | single | deadEnds | flowers | 
+ | Math                   | no         | 33        | 38          | 59                | 0         | 58        | 0                | no  | no     | 0        | 0       | 
+ | Main                   | no         | 46        | 46          | 43                | 0         | 42        | 0                | no  | no     | 0        | 0       | 
+ | Main#main              | yes        | 3         | 3           | 1                 | 0         | 0         | 0                | no  | no     | 0        | 0       | 
+ | 
+IMASched.xml | globalDeclarationLength: 242 | 
+ |          name          | lonelyInit | locations | transitions | declarationLength | functions | variables | popularLocations | dag | single | deadEnds | flowers | 
+ | PartitionSupply        | no         | 3         | 6           | 5                 | 0         | 1         | 0                | no  | no     | 0        | 0       | 
+ | TaskScheduler          | no         | 8         | 15          | 7                 | 3         | 1         | 0                | no  | no     | 0        | 0       | 
+ | PeriodicTask           | yes        | 23        | 42          | 63                | 15        | 5         | 0                | no  | no     | 2        | 0       | 
+ | SporadicTask           | yes        | 19        | 36          | 62                | 15        | 5         | 0                | no  | no     | 2        | 0       | 
+ | PMsgSender             | yes        | 6         | 6           | 7                 | 1         | 0         | 0                | no  | no     | 1        | 0       | 
+ | PMsgReceiver           | no         | 6         | 8           | 8                 | 1         | 0         | 0                | no  | no     | 2        | 0       | 
+ | SMsgSender             | yes        | 6         | 6           | 7                 | 1         | 0         | 0                | no  | no     | 1        | 0       | 
+ | SMsgReceiver           | no         | 5         | 7           | 8                 | 1         | 0         | 0                | no  | no     | 1        | 0       | 
+ | IPTx                   | no         | 5         | 9           | 11                | 3         | 2         | 0                | no  | no     | 1        | 0       | 
+ | IPRx                   | no         | 8         | 12          | 13                | 4         | 5         | 0                | no  | no     | 2        | 0       | 
+ | VLinkTx                | yes        | 8         | 13          | 9                 | 3         | 4         | 0                | no  | no     | 1        | 0       | 
+ | VLinkRx                | yes        | 6         | 8           | 36                | 8         | 11        | 0                | no  | no     | 1        | 0       | 
+ | 
+ospf_adjacency.xml | globalDeclarationLength: 72 | 
+ |          name          | lonelyInit | locations | transitions | declarationLength | functions | variables | popularLocations | dag | single | deadEnds | flowers | 
+ | Node                   | yes        | 16        | 49          | 250               | 16        | 54        | 1                | no  | no     | 0        | 1       | 
+ | 
+ospf_attack_phantom.xml | globalDeclarationLength: 138 | 
+ |          name          | lonelyInit | locations | transitions | declarationLength | functions | variables | popularLocations | dag | single | deadEnds | flowers | 
+ | honest_ospf_composer   | no         | 6         | 16          | 66                | 10        | 7         | 1                | no  | no     | 0        | 0       | 
+ | time_automaton         | yes        | 4         | 5           | 3                 | 2         | 0         | 0                | no  | no     | 0        | 0       | 
+ | non_determ_false_adj   | yes        | 4         | 9           | 14                | 2         | 2         | 1                | no  | no     | 0        | 0       | 
+ | 
+respiratory-motion.xml | globalDeclarationLength: 11 | 
+ |          name          | lonelyInit | locations | transitions | declarationLength | functions | variables | popularLocations | dag | single | deadEnds | flowers | 
+ | TermModifier           | no         | 2         | 3           | 2                 | 0         | 2         | 2                | no  | no     | 0        | 0       | 
+ | Timer                  | no         | 1         | 1           | 1                 | 0         | 0         | 1                | no  | yes    | 0        | 0       | 
+ | CoeffModifier          | no         | 1         | 2           | 1                 | 0         | 1         | 1                | no  | yes    | 0        | 0       | 
+ | Summer                 | no         | 1         | 1           | 0                 | 0         | 0         | 1                | no  | yes    | 0        | 0       | 
+ | FSTerm                 | no         | 1         | 1           | 0                 | 0         | 0         | 1                | no  | yes    | 0        | 0       | 
+ | 
+SCTP model.xml | globalDeclarationLength: 14 | 
+ |          name          | lonelyInit | locations | transitions | declarationLength | functions | variables | popularLocations | dag | single | deadEnds | flowers | 
+ | Server                 | no         | 3         | 9           | 27                | 4         | 7         | 1                | no  | no     | 0        | 0       | 
+ | Legit_Client           | no         | 4         | 12          | 8                 | 1         | 4         | 0                | no  | no     | 0        | 0       | 
+ | Illegit_Client         | no         | 1         | 1           | 1                 | 0         | 0         | 1                | no  | yes    | 0        | 0       | 
+ | 
+TCP model.xml | globalDeclarationLength: 14 | 
+ |          name          | lonelyInit | locations | transitions | declarationLength | functions | variables | popularLocations | dag | single | deadEnds | flowers | 
+ | Server                 | yes        | 3         | 9           | 55                | 8         | 14        | 1                | no  | no     | 0        | 0       | 
+ | Legit_Client           | no         | 3         | 9           | 8                 | 1         | 4         | 1                | no  | no     | 0        | 0       | 
+ | Illegit_Client         | no         | 1         | 1           | 1                 | 0         | 0         | 1                | no  | yes    | 0        | 0       | 
+ | 
+uppaal-3D-needle-steering-model.xml | globalDeclarationLength: 215 | 
+ |          name          | lonelyInit | locations | transitions | declarationLength | functions | variables | popularLocations | dag | single | deadEnds | flowers | 
+ | User_Tmpl              | yes        | 6         | 7           | 3                 | 0         | 2         | 0                | no  | no     | 1        | 0       | 
+ | Needle_Device_Tmpl     | no         | 3         | 4           | 1                 | 0         | 0         | 1                | no  | no     | 0        | 0       | 
+ | Tissue_Tmpl            | no         | 2         | 2           | 0                 | 0         | 0         | 2                | no  | no     | 0        | 0       | 
+ | Checker_Tmpl           | no         | 10        | 11          | 0                 | 0         | 0         | 0                | no  | no     | 4        | 0       | 
+ | 
+csma-50N.xml | globalDeclarationLength: 1 | 
+ |          name          | lonelyInit | locations | transitions | declarationLength | functions | variables | popularLocations | dag | single | deadEnds | flowers | 
+ | P0                     | no         | 52        | 54          | 1                 | 0         | 1         | 0                | no  | no     | 0        | 0       | 
+ | P1                     | no         | 3         | 8           | 1                 | 0         | 1         | 0                | no  | no     | 0        | 0       | 
+ | P2                     | no         | 3         | 8           | 1                 | 0         | 1         | 0                | no  | no     | 0        | 0       | 
+ | P3                     | no         | 3         | 8           | 1                 | 0         | 1         | 0                | no  | no     | 0        | 0       | 
+ | P4                     | no         | 3         | 8           | 1                 | 0         | 1         | 0                | no  | no     | 0        | 0       | 
+ | P5                     | no         | 3         | 8           | 1                 | 0         | 1         | 0                | no  | no     | 0        | 0       | 
+ | P6                     | no         | 3         | 8           | 1                 | 0         | 1         | 0                | no  | no     | 0        | 0       | 
+ | P7                     | no         | 3         | 8           | 1                 | 0         | 1         | 0                | no  | no     | 0        | 0       | 
+ | P8                     | no         | 3         | 8           | 1                 | 0         | 1         | 0                | no  | no     | 0        | 0       | 
+ | P9                     | no         | 3         | 8           | 1                 | 0         | 1         | 0                | no  | no     | 0        | 0       | 
+ | P10                    | no         | 3         | 8           | 1                 | 0         | 1         | 0                | no  | no     | 0        | 0       | 
+ | P11                    | no         | 3         | 8           | 1                 | 0         | 1         | 0                | no  | no     | 0        | 0       | 
+ | P12                    | no         | 3         | 8           | 1                 | 0         | 1         | 0                | no  | no     | 0        | 0       | 
+ | P13                    | no         | 3         | 8           | 1                 | 0         | 1         | 0                | no  | no     | 0        | 0       | 
+ | P14                    | no         | 3         | 8           | 1                 | 0         | 1         | 0                | no  | no     | 0        | 0       | 
+ | P15                    | no         | 3         | 8           | 1                 | 0         | 1         | 0                | no  | no     | 0        | 0       | 
+ | P16                    | no         | 3         | 8           | 1                 | 0         | 1         | 0                | no  | no     | 0        | 0       | 
+ | P17                    | no         | 3         | 8           | 1                 | 0         | 1         | 0                | no  | no     | 0        | 0       | 
+ | P18                    | no         | 3         | 8           | 1                 | 0         | 1         | 0                | no  | no     | 0        | 0       | 
+ | P19                    | no         | 3         | 8           | 1                 | 0         | 1         | 0                | no  | no     | 0        | 0       | 
+ | P20                    | no         | 3         | 8           | 1                 | 0         | 1         | 0                | no  | no     | 0        | 0       | 
+ | P21                    | no         | 3         | 8           | 1                 | 0         | 1         | 0                | no  | no     | 0        | 0       | 
+ | P22                    | no         | 3         | 8           | 1                 | 0         | 1         | 0                | no  | no     | 0        | 0       | 
+ | P23                    | no         | 3         | 8           | 1                 | 0         | 1         | 0                | no  | no     | 0        | 0       | 
+ | P24                    | no         | 3         | 8           | 1                 | 0         | 1         | 0                | no  | no     | 0        | 0       | 
+ | P25                    | no         | 3         | 8           | 1                 | 0         | 1         | 0                | no  | no     | 0        | 0       | 
+ | P26                    | no         | 3         | 8           | 1                 | 0         | 1         | 0                | no  | no     | 0        | 0       | 
+ | P27                    | no         | 3         | 8           | 1                 | 0         | 1         | 0                | no  | no     | 0        | 0       | 
+ | P28                    | no         | 3         | 8           | 1                 | 0         | 1         | 0                | no  | no     | 0        | 0       | 
+ | P29                    | no         | 3         | 8           | 1                 | 0         | 1         | 0                | no  | no     | 0        | 0       | 
+ | P30                    | no         | 3         | 8           | 1                 | 0         | 1         | 0                | no  | no     | 0        | 0       | 
+ | P31                    | no         | 3         | 8           | 1                 | 0         | 1         | 0                | no  | no     | 0        | 0       | 
+ | P32                    | no         | 3         | 8           | 1                 | 0         | 1         | 0                | no  | no     | 0        | 0       | 
+ | P33                    | no         | 3         | 8           | 1                 | 0         | 1         | 0                | no  | no     | 0        | 0       | 
+ | P34                    | no         | 3         | 8           | 1                 | 0         | 1         | 0                | no  | no     | 0        | 0       | 
+ | P35                    | no         | 3         | 8           | 1                 | 0         | 1         | 0                | no  | no     | 0        | 0       | 
+ | P36                    | no         | 3         | 8           | 1                 | 0         | 1         | 0                | no  | no     | 0        | 0       | 
+ | P37                    | no         | 3         | 8           | 1                 | 0         | 1         | 0                | no  | no     | 0        | 0       | 
+ | P38                    | no         | 3         | 8           | 1                 | 0         | 1         | 0                | no  | no     | 0        | 0       | 
+ | P39                    | no         | 3         | 8           | 1                 | 0         | 1         | 0                | no  | no     | 0        | 0       | 
+ | P40                    | no         | 3         | 8           | 1                 | 0         | 1         | 0                | no  | no     | 0        | 0       | 
+ | P41                    | no         | 3         | 8           | 1                 | 0         | 1         | 0                | no  | no     | 0        | 0       | 
+ | P42                    | no         | 3         | 8           | 1                 | 0         | 1         | 0                | no  | no     | 0        | 0       | 
+ | P43                    | no         | 3         | 8           | 1                 | 0         | 1         | 0                | no  | no     | 0        | 0       | 
+ | P44                    | no         | 3         | 8           | 1                 | 0         | 1         | 0                | no  | no     | 0        | 0       | 
+ | P45                    | no         | 3         | 8           | 1                 | 0         | 1         | 0                | no  | no     | 0        | 0       | 
+ | P46                    | no         | 3         | 8           | 1                 | 0         | 1         | 0                | no  | no     | 0        | 0       | 
+ | P47                    | no         | 3         | 8           | 1                 | 0         | 1         | 0                | no  | no     | 0        | 0       | 
+ | P48                    | no         | 3         | 8           | 1                 | 0         | 1         | 0                | no  | no     | 0        | 0       | 
+ | P49                    | no         | 3         | 8           | 1                 | 0         | 1         | 0                | no  | no     | 0        | 0       | 
+ | P50                    | no         | 3         | 8           | 1                 | 0         | 1         | 0                | no  | no     | 0        | 0       | 
+ | 
+fischer-50N.xml | globalDeclarationLength: 2 | 
+ |          name          | lonelyInit | locations | transitions | declarationLength | functions | variables | popularLocations | dag | single | deadEnds | flowers | 
+ | P                      | no         | 4         | 5           | 2                 | 0         | 1         | 0                | no  | no     | 0        | 0       | 
+ | 
+goss-1.xml | globalDeclarationLength: 8 | 
+ |          name          | lonelyInit | locations | transitions | declarationLength | functions | variables | popularLocations | dag | single | deadEnds | flowers | 
+ | Person                 | no         | 7         | 11          | 5                 | 2         | 3         | 0                | no  | no     | 0        | 0       | 
+ | 
+goss-10.xml | globalDeclarationLength: 15 | 
+ |          name          | lonelyInit | locations | transitions | declarationLength | functions | variables | popularLocations | dag | single | deadEnds | flowers | 
+ | GossipGirl             | yes        | 6         | 7           | 29                | 4         | 10        | 0                | no  | no     | 0        | 0       | 
+ | 
+goss-2.xml | globalDeclarationLength: 9 | 
+ |          name          | lonelyInit | locations | transitions | declarationLength | functions | variables | popularLocations | dag | single | deadEnds | flowers | 
+ | Person                 | yes        | 5         | 6           | 21                | 5         | 1         | 0                | no  | no     | 0        | 0       | 
+ | 
+goss-3.xml | globalDeclarationLength: 7 | 
+ |          name          | lonelyInit | locations | transitions | declarationLength | functions | variables | popularLocations | dag | single | deadEnds | flowers | 
+ | Person                 | yes        | 7         | 9           | 19                | 4         | 5         | 0                | no  | no     | 0        | 0       | 
+ | 
+goss-4.xml | globalDeclarationLength: 17 | 
+ |          name          | lonelyInit | locations | transitions | declarationLength | functions | variables | popularLocations | dag | single | deadEnds | flowers | 
+ | GossipGirl             | yes        | 3         | 4           | 6                 | 1         | 2         | 2                | no  | no     | 0        | 0       | 
+ | ConsecutivePhone       | no         | 3         | 3           | 1                 | 0         | 0         | 0                | no  | no     | 0        | 0       | 
+ | ConcurrentPhone        | no         | 3         | 3           | 0                 | 0         | 0         | 0                | no  | no     | 0        | 0       | 
+ | 
+goss-5.xml | globalDeclarationLength: 14 | 
+ |          name          | lonelyInit | locations | transitions | declarationLength | functions | variables | popularLocations | dag | single | deadEnds | flowers | 
+ | GirlScenario2          | yes        | 4         | 7           | 10                | 3         | 3         | 1                | no  | no     | 0        | 0       | 
+ | GirlScenario1          | yes        | 4         | 7           | 10                | 2         | 2         | 1                | no  | no     | 0        | 0       | 
+ | 
+goss-6.xml | globalDeclarationLength: 14 | 
+ |          name          | lonelyInit | locations | transitions | declarationLength | functions | variables | popularLocations | dag | single | deadEnds | flowers | 
+ | Scenario1              | no         | 4         | 5           | 2                 | 0         | 1         | 1                | no  | no     | 1        | 0       | 
+ | Scenario2              | no         | 4         | 5           | 2                 | 0         | 1         | 1                | no  | no     | 1        | 0       | 
+ | Scenario3              | no         | 4         | 5           | 2                 | 0         | 1         | 1                | no  | no     | 1        | 0       | 
+ | Scenario4              | no         | 4         | 5           | 2                 | 0         | 1         | 1                | no  | no     | 1        | 0       | 
+ | 
+goss-7.xml | globalDeclarationLength: 11 | 
+ |          name          | lonelyInit | locations | transitions | declarationLength | functions | variables | popularLocations | dag | single | deadEnds | flowers | 
+ | Girl                   | yes        | 6         | 7           | 16                | 6         | 4         | 0                | no  | no     | 0        | 0       | 
+ | Central                | no         | 1         | 2           | 2                 | 0         | 0         | 1                | no  | yes    | 0        | 0       | 
+ | 
+goss-8.xml | globalDeclarationLength: 5 | 
+ |          name          | lonelyInit | locations | transitions | declarationLength | functions | variables | popularLocations | dag | single | deadEnds | flowers | 
+ | GirlNeighbour          | no         | 6         | 7           | 20                | 4         | 6         | 0                | no  | no     | 0        | 0       | 
+ | GirlTotal              | no         | 6         | 7           | 20                | 4         | 6         | 0                | no  | no     | 0        | 0       | 
+ | GirlNeighbourTime      | no         | 6         | 7           | 20                | 4         | 6         | 0                | no  | no     | 0        | 0       | 
+ | GirlTotalTime          | no         | 6         | 7           | 20                | 4         | 6         | 0                | no  | no     | 0        | 0       | 
+ | 
+goss-9.xml | globalDeclarationLength: 8 | 
+ |          name          | lonelyInit | locations | transitions | declarationLength | functions | variables | popularLocations | dag | single | deadEnds | flowers | 
+ | Girl                   | yes        | 6         | 7           | 16                | 4         | 4         | 0                | no  | no     | 0        | 0       | 
+ | 
+goss-config-1.xml | globalDeclarationLength: 8 | 
+ |          name          | lonelyInit | locations | transitions | declarationLength | functions | variables | popularLocations | dag | single | deadEnds | flowers | 
+ | Person                 | no         | 7         | 11          | 5                 | 2         | 3         | 0                | no  | no     | 0        | 0       | 
+ | 
+goss-config-10.xml | globalDeclarationLength: 15 | 
+ |          name          | lonelyInit | locations | transitions | declarationLength | functions | variables | popularLocations | dag | single | deadEnds | flowers | 
+ | GossipGirl             | yes        | 6         | 7           | 32                | 4         | 11        | 0                | no  | no     | 0        | 0       | 
+ | 
+goss-config-2.xml | globalDeclarationLength: 12 | 
+ |          name          | lonelyInit | locations | transitions | declarationLength | functions | variables | popularLocations | dag | single | deadEnds | flowers | 
+ | Person                 | yes        | 5         | 6           | 21                | 5         | 1         | 0                | no  | no     | 0        | 0       | 
+ | 
+goss-config-3.xml | globalDeclarationLength: 7 | 
+ |          name          | lonelyInit | locations | transitions | declarationLength | functions | variables | popularLocations | dag | single | deadEnds | flowers | 
+ | Person                 | yes        | 7         | 9           | 24                | 4         | 5         | 0                | no  | no     | 0        | 0       | 
+ | 
+goss-config-4.xml | globalDeclarationLength: 20 | 
+ |          name          | lonelyInit | locations | transitions | declarationLength | functions | variables | popularLocations | dag | single | deadEnds | flowers | 
+ | GossipGirl             | yes        | 3         | 4           | 6                 | 1         | 2         | 2                | no  | no     | 0        | 0       | 
+ | ConsecutivePhone       | no         | 3         | 3           | 1                 | 0         | 0         | 0                | no  | no     | 0        | 0       | 
+ | ConcurrentPhone        | no         | 3         | 3           | 0                 | 0         | 0         | 0                | no  | no     | 0        | 0       | 
+ | 
+goss-config-5.xml | globalDeclarationLength: 22 | 
+ |          name          | lonelyInit | locations | transitions | declarationLength | functions | variables | popularLocations | dag | single | deadEnds | flowers | 
+ | GirlScenario2          | yes        | 4         | 7           | 6                 | 3         | 2         | 1                | no  | no     | 0        | 0       | 
+ | GirlScenario1          | yes        | 4         | 7           | 10                | 2         | 2         | 1                | no  | no     | 0        | 0       | 
+ | 
+goss-config-6.xml | globalDeclarationLength: 14 | 
+ |          name          | lonelyInit | locations | transitions | declarationLength | functions | variables | popularLocations | dag | single | deadEnds | flowers | 
+ | Scenario1              | no         | 4         | 5           | 2                 | 0         | 1         | 1                | no  | no     | 1        | 0       | 
+ | Scenario2              | no         | 4         | 5           | 2                 | 0         | 1         | 1                | no  | no     | 1        | 0       | 
+ | Scenario3              | no         | 4         | 5           | 2                 | 0         | 1         | 1                | no  | no     | 1        | 0       | 
+ | Scenario4              | no         | 4         | 5           | 2                 | 0         | 1         | 1                | no  | no     | 1        | 0       | 
+ | 
+goss-config-7.xml | globalDeclarationLength: 11 | 
+ |          name          | lonelyInit | locations | transitions | declarationLength | functions | variables | popularLocations | dag | single | deadEnds | flowers | 
+ | Girl                   | yes        | 6         | 7           | 16                | 6         | 4         | 0                | no  | no     | 0        | 0       | 
+ | Central                | no         | 1         | 2           | 2                 | 0         | 0         | 1                | no  | yes    | 0        | 0       | 
+ | 
+goss-config-8.xml | globalDeclarationLength: 5 | 
+ |          name          | lonelyInit | locations | transitions | declarationLength | functions | variables | popularLocations | dag | single | deadEnds | flowers | 
+ | GirlNeighbour          | no         | 6         | 7           | 20                | 4         | 6         | 0                | no  | no     | 0        | 0       | 
+ | GirlTotal              | no         | 6         | 7           | 20                | 4         | 6         | 0                | no  | no     | 0        | 0       | 
+ | GirlNeighbourTime      | no         | 6         | 7           | 20                | 4         | 6         | 0                | no  | no     | 0        | 0       | 
+ | GirlTotalTime          | no         | 6         | 7           | 25                | 4         | 8         | 0                | no  | no     | 0        | 0       | 
+ | 
+goss-config-9.xml | globalDeclarationLength: 8 | 
+ |          name          | lonelyInit | locations | transitions | declarationLength | functions | variables | popularLocations | dag | single | deadEnds | flowers | 
+ | Girl                   | yes        | 6         | 7           | 23                | 6         | 5         | 0                | no  | no     | 0        | 0       | 
+ | 
+Herschel-f81.xml | globalDeclarationLength: 82 | 
+ |          name          | lonelyInit | locations | transitions | declarationLength | functions | variables | popularLocations | dag | single | deadEnds | flowers | 
+ | Scheduler              | yes        | 4         | 6           | 0                 | 0         | 0         | 1                | no  | no     | 0        | 0       | 
+ | IdleTask               | no         | 2         | 2           | 0                 | 0         | 0         | 2                | no  | no     | 0        | 0       | 
+ | MainCycle              | yes        | 14        | 26          | 3                 | 0         | 0         | 0                | no  | no     | 1        | 0       | 
+ | ASW                    | no         | 13        | 26          | 4                 | 1         | 2         | 0                | no  | no     | 1        | 0       | 
+ | BSW                    | no         | 13        | 28          | 3                 | 0         | 2         | 0                | no  | no     | 1        | 0       | 
+ | GlobalPlain            | yes        | 1         | 0           | 0                 | 0         | 0         | 0                | yes | yes    | 1        | 0       | 
+ | Global                 | no         | 1         | 2           | 4                 | 0         | 3         | 1                | no  | yes    | 0        | 0       | 
+ | 
+9.xml | globalDeclarationLength: 76 | 
+ |          name          | lonelyInit | locations | transitions | declarationLength | functions | variables | popularLocations | dag | single | deadEnds | flowers | 
+ | PartitionScheduler     | no         | 3         | 6           | 5                 | 0         | 1         | 0                | no  | no     | 0        | 0       | 
+ | TaskScheduler          | no         | 9         | 17          | 7                 | 3         | 1         | 0                | no  | no     | 0        | 0       | 
+ | Task                   | yes        | 8         | 12          | 8                 | 0         | 0         | 0                | no  | no     | 0        | 0       | 
+ | 
+LE-Hops-5N.xml | globalDeclarationLength: 23 | 
+ |          name          | lonelyInit | locations | transitions | declarationLength | functions | variables | popularLocations | dag | single | deadEnds | flowers | 
+ | Message                | no         | 2         | 2           | 6                 | 1         | 2         | 2                | no  | no     | 0        | 0       | 
+ | Node                   | no         | 4         | 8           | 12                | 2         | 5         | 0                | no  | no     | 0        | 0       | 
+ | 
+Milner-N1000-d4-v2.xml | globalDeclarationLength: 7 | 
+ |          name          | lonelyInit | locations | transitions | declarationLength | functions | variables | popularLocations | dag | single | deadEnds | flowers | 
+ | NodeAlt                | no         | 4         | 8           | 1                 | 0         | 1         | 0                | no  | no     | 0        | 0       | 
+ | Node                   | no         | 4         | 8           | 1                 | 0         | 1         | 0                | no  | no     | 0        | 0       | 
+ | Spec                   | no         | 1         | 3           | 1                 | 0         | 0         | 1                | no  | yes    | 0        | 0       | 
+ | SpecComplement         | no         | 2         | 4           | 1                 | 0         | 0         | 1                | no  | no     | 1        | 0       | 
+ | 
+Milner-N1000-d4-v6.xml | globalDeclarationLength: 7 | 
+ |          name          | lonelyInit | locations | transitions | declarationLength | functions | variables | popularLocations | dag | single | deadEnds | flowers | 
+ | NodeAlt                | no         | 4         | 8           | 1                 | 0         | 1         | 0                | no  | no     | 0        | 0       | 
+ | Node                   | no         | 4         | 8           | 1                 | 0         | 1         | 0                | no  | no     | 0        | 0       | 
+ | Spec                   | no         | 1         | 3           | 1                 | 0         | 0         | 1                | no  | yes    | 0        | 0       | 
+ | SpecComplement         | no         | 2         | 4           | 1                 | 0         | 0         | 1                | no  | no     | 1        | 0       | 
+ | 
+Herschel-SMC-f72.xml | globalDeclarationLength: 82 | 
+ |          name          | lonelyInit | locations | transitions | declarationLength | functions | variables | popularLocations | dag | single | deadEnds | flowers | 
+ | Scheduler              | yes        | 4         | 6           | 0                 | 0         | 0         | 1                | no  | no     | 0        | 0       | 
+ | IdleTask               | no         | 2         | 2           | 0                 | 0         | 0         | 2                | no  | no     | 0        | 0       | 
+ | MainCycle              | yes        | 14        | 26          | 3                 | 0         | 0         | 0                | no  | no     | 1        | 0       | 
+ | ASW                    | no         | 13        | 26          | 4                 | 1         | 2         | 0                | no  | no     | 1        | 0       | 
+ | BSW                    | no         | 13        | 28          | 3                 | 0         | 2         | 0                | no  | no     | 1        | 0       | 
+ | GlobalPlain            | yes        | 1         | 0           | 0                 | 0         | 0         | 0                | yes | yes    | 1        | 0       | 
+ | Global                 | no         | 1         | 2           | 4                 | 0         | 3         | 1                | no  | yes    | 0        | 0       | 
+ | 
+Herschel-SMC-f72.xml | globalDeclarationLength: 82 | 
+ |          name          | lonelyInit | locations | transitions | declarationLength | functions | variables | popularLocations | dag | single | deadEnds | flowers | 
+ | Scheduler              | yes        | 4         | 6           | 0                 | 0         | 0         | 1                | no  | no     | 0        | 0       | 
+ | IdleTask               | no         | 2         | 2           | 0                 | 0         | 0         | 2                | no  | no     | 0        | 0       | 
+ | MainCycle              | yes        | 14        | 26          | 3                 | 0         | 0         | 0                | no  | no     | 1        | 0       | 
+ | ASW                    | no         | 13        | 26          | 4                 | 1         | 2         | 0                | no  | no     | 1        | 0       | 
+ | BSW                    | no         | 13        | 28          | 3                 | 0         | 2         | 0                | no  | no     | 1        | 0       | 
+ | GlobalPlain            | yes        | 1         | 0           | 0                 | 0         | 0         | 0                | yes | yes    | 1        | 0       | 
+ | Global                 | no         | 1         | 2           | 4                 | 0         | 3         | 1                | no  | yes    | 0        | 0       | 
+ | 
+Herschel-SMC-f72.xml | globalDeclarationLength: 82 | 
+ |          name          | lonelyInit | locations | transitions | declarationLength | functions | variables | popularLocations | dag | single | deadEnds | flowers | 
+ | Scheduler              | yes        | 4         | 6           | 0                 | 0         | 0         | 1                | no  | no     | 0        | 0       | 
+ | IdleTask               | no         | 2         | 2           | 0                 | 0         | 0         | 2                | no  | no     | 0        | 0       | 
+ | MainCycle              | yes        | 14        | 26          | 3                 | 0         | 0         | 0                | no  | no     | 1        | 0       | 
+ | ASW                    | no         | 13        | 26          | 4                 | 1         | 2         | 0                | no  | no     | 1        | 0       | 
+ | BSW                    | no         | 13        | 28          | 3                 | 0         | 2         | 0                | no  | no     | 1        | 0       | 
+ | GlobalPlain            | yes        | 1         | 0           | 0                 | 0         | 0         | 0                | yes | yes    | 1        | 0       | 
+ | Global                 | no         | 1         | 2           | 4                 | 0         | 3         | 1                | no  | yes    | 0        | 0       | 
+ | 
+2.xml | globalDeclarationLength: 76 | 
+ |          name          | lonelyInit | locations | transitions | declarationLength | functions | variables | popularLocations | dag | single | deadEnds | flowers | 
+ | PartitionScheduler     | no         | 3         | 6           | 5                 | 0         | 1         | 0                | no  | no     | 0        | 0       | 
+ | TaskScheduler          | no         | 9         | 17          | 7                 | 3         | 1         | 0                | no  | no     | 0        | 0       | 
+ | Task                   | yes        | 8         | 12          | 8                 | 0         | 0         | 0                | no  | no     | 0        | 0       | 
+ | 
+md5-hvmimp.xml | globalDeclarationLength: 52 | 
+ |          name          | lonelyInit | locations | transitions | declarationLength | functions | variables | popularLocations | dag | single | deadEnds | flowers | 
+ | FPS_scheduler          | yes        | 4         | 6           | 17                | 2         | 5         | 1                | no  | no     | 0        | 0       | 
+ | PeriodicThread         | yes        | 7         | 7           | 1                 | 0         | 1         | 0                | no  | no     | 1        | 0       | 
+ | Template_0001          | no         | 8         | 8           | 2                 | 0         | 2         | 0                | no  | no     | 0        | 0       | 
+ | Template_0002          | no         | 15        | 17          | 2                 | 0         | 2         | 0                | no  | no     | 0        | 0       | 
+ | Template_0003          | no         | 8         | 8           | 2                 | 0         | 2         | 0                | no  | no     | 0        | 0       | 
+ | Template_0004          | no         | 8         | 8           | 2                 | 0         | 2         | 0                | no  | no     | 0        | 0       | 
+ | Template_0005          | no         | 4         | 4           | 3                 | 0         | 2         | 0                | no  | no     | 0        | 0       | 
+ | Template_0006          | no         | 4         | 4           | 2                 | 0         | 2         | 0                | no  | no     | 0        | 0       | 
+ | Template_0007          | no         | 52        | 59          | 6                 | 0         | 5         | 0                | no  | no     | 0        | 0       | 
+ | Template_0008          | no         | 12        | 12          | 3                 | 0         | 2         | 0                | no  | no     | 0        | 0       | 
+ | 
+md5-jop.xml | globalDeclarationLength: 52 | 
+ |          name          | lonelyInit | locations | transitions | declarationLength | functions | variables | popularLocations | dag | single | deadEnds | flowers | 
+ | FPS_scheduler          | yes        | 4         | 6           | 17                | 2         | 5         | 1                | no  | no     | 0        | 0       | 
+ | PeriodicThread         | yes        | 7         | 7           | 1                 | 0         | 1         | 0                | no  | no     | 1        | 0       | 
+ | Template_0001          | no         | 8         | 8           | 2                 | 0         | 2         | 0                | no  | no     | 0        | 0       | 
+ | Template_0002          | no         | 15        | 17          | 2                 | 0         | 2         | 0                | no  | no     | 0        | 0       | 
+ | Template_0003          | no         | 8         | 8           | 2                 | 0         | 2         | 0                | no  | no     | 0        | 0       | 
+ | Template_0004          | no         | 8         | 8           | 2                 | 0         | 2         | 0                | no  | no     | 0        | 0       | 
+ | Template_0005          | no         | 4         | 4           | 3                 | 0         | 2         | 0                | no  | no     | 0        | 0       | 
+ | Template_0006          | no         | 4         | 4           | 2                 | 0         | 2         | 0                | no  | no     | 0        | 0       | 
+ | Template_0007          | no         | 52        | 59          | 6                 | 0         | 5         | 0                | no  | no     | 0        | 0       | 
+ | Template_0008          | no         | 12        | 12          | 3                 | 0         | 2         | 0                | no  | no     | 0        | 0       | 
+ | 
+minepump-hvmimp.xml | globalDeclarationLength: 54 | 
+ |          name          | lonelyInit | locations | transitions | declarationLength | functions | variables | popularLocations | dag | single | deadEnds | flowers | 
+ | FPS_scheduler          | yes        | 4         | 6           | 17                | 2         | 5         | 1                | no  | no     | 0        | 0       | 
+ | PeriodicThread         | yes        | 7         | 7           | 1                 | 0         | 1         | 0                | no  | no     | 1        | 0       | 
+ | Template_0001          | no         | 4         | 4           | 1                 | 0         | 1         | 0                | no  | no     | 0        | 0       | 
+ | Template_0002          | no         | 4         | 4           | 1                 | 0         | 1         | 0                | no  | no     | 0        | 0       | 
+ | Template_0003          | no         | 46        | 51          | 1                 | 0         | 1         | 0                | no  | no     | 0        | 0       | 
+ | Template_0004          | no         | 4         | 4           | 1                 | 0         | 1         | 0                | no  | no     | 0        | 0       | 
+ | Template_0005          | no         | 10        | 12          | 1                 | 0         | 1         | 0                | no  | no     | 0        | 0       | 
+ | Template_0006          | no         | 7         | 8           | 1                 | 0         | 1         | 0                | no  | no     | 0        | 0       | 
+ | Template_0007          | no         | 10        | 12          | 1                 | 0         | 1         | 0                | no  | no     | 0        | 0       | 
+ | Template_0008          | no         | 14        | 16          | 2                 | 0         | 2         | 0                | no  | no     | 0        | 0       | 
+ | Template_0009          | no         | 4         | 4           | 1                 | 0         | 1         | 0                | no  | no     | 0        | 0       | 
+ | Template_0010          | no         | 31        | 36          | 1                 | 0         | 1         | 0                | no  | no     | 0        | 0       | 
+ | Template_0011          | no         | 4         | 4           | 1                 | 0         | 1         | 0                | no  | no     | 0        | 0       | 
+ | Template_0012          | no         | 16        | 18          | 1                 | 0         | 1         | 0                | no  | no     | 0        | 0       | 
+ | Template_0013          | no         | 20        | 21          | 1                 | 0         | 1         | 0                | no  | no     | 0        | 0       | 
+ | Template_0014          | no         | 25        | 27          | 1                 | 0         | 1         | 0                | no  | no     | 0        | 0       | 
+ | 
+minepump-jop.xml | globalDeclarationLength: 54 | 
+ |          name          | lonelyInit | locations | transitions | declarationLength | functions | variables | popularLocations | dag | single | deadEnds | flowers | 
+ | FPS_scheduler          | yes        | 4         | 6           | 17                | 2         | 5         | 1                | no  | no     | 0        | 0       | 
+ | PeriodicThread         | yes        | 7         | 7           | 1                 | 0         | 1         | 0                | no  | no     | 1        | 0       | 
+ | Template_0001          | no         | 4         | 4           | 2                 | 0         | 2         | 0                | no  | no     | 0        | 0       | 
+ | Template_0002          | no         | 4         | 4           | 2                 | 0         | 2         | 0                | no  | no     | 0        | 0       | 
+ | Template_0003          | no         | 46        | 51          | 2                 | 0         | 2         | 0                | no  | no     | 0        | 0       | 
+ | Template_0004          | no         | 4         | 4           | 2                 | 0         | 2         | 0                | no  | no     | 0        | 0       | 
+ | Template_0005          | no         | 10        | 12          | 2                 | 0         | 2         | 0                | no  | no     | 0        | 0       | 
+ | Template_0006          | no         | 7         | 8           | 2                 | 0         | 2         | 0                | no  | no     | 0        | 0       | 
+ | Template_0007          | no         | 10        | 12          | 2                 | 0         | 2         | 0                | no  | no     | 0        | 0       | 
+ | Template_0008          | no         | 14        | 16          | 3                 | 0         | 3         | 0                | no  | no     | 0        | 0       | 
+ | Template_0009          | no         | 4         | 4           | 2                 | 0         | 2         | 0                | no  | no     | 0        | 0       | 
+ | Template_0010          | no         | 31        | 36          | 2                 | 0         | 2         | 0                | no  | no     | 0        | 0       | 
+ | Template_0011          | no         | 4         | 4           | 2                 | 0         | 2         | 0                | no  | no     | 0        | 0       | 
+ | Template_0012          | no         | 16        | 18          | 2                 | 0         | 2         | 0                | no  | no     | 0        | 0       | 
+ | Template_0013          | no         | 20        | 21          | 2                 | 0         | 2         | 0                | no  | no     | 0        | 0       | 
+ | Template_0014          | no         | 25        | 27          | 2                 | 0         | 2         | 0                | no  | no     | 0        | 0       | 
+ | 
+simplerts-opt.xml | globalDeclarationLength: 192 | 
+ |          name          | lonelyInit | locations | transitions | declarationLength | functions | variables | popularLocations | dag | single | deadEnds | flowers | 
+ | FPS_scheduler          | yes        | 4         | 6           | 17                | 2         | 5         | 1                | no  | no     | 0        | 0       | 
+ | PeriodicThread         | yes        | 7         | 7           | 1                 | 0         | 1         | 0                | no  | no     | 1        | 0       | 
+ | Template_0001          | no         | 5         | 5           | 0                 | 0         | 0         | 0                | no  | no     | 0        | 0       | 
+ | staticjvm              | no         | 289       | 292         | 0                 | 0         | 0         | 0                | no  | no     | 0        | 0       | 
+ | hwinterface            | no         | 2         | 2           | 0                 | 0         | 0         | 2                | no  | no     | 0        | 0       | 
+ | ExecuteStage           | no         | 2         | 2           | 347               | 2         | 116       | 2                | no  | no     | 0        | 0       | 
+ | FetchStage             | yes        | 4         | 4           | 12                | 2         | 3         | 1                | no  | no     | 0        | 0       | 
+ | 
+train-2000N.xml | globalDeclarationLength: 4 | 
+ |          name          | lonelyInit | locations | transitions | declarationLength | functions | variables | popularLocations | dag | single | deadEnds | flowers | 
+ | Train                  | no         | 5         | 6           | 1                 | 0         | 0         | 0                | no  | no     | 0        | 0       | 
+ | Gate                   | no         | 3         | 5           | 10                | 2         | 2         | 1                | no  | no     | 0        | 0       | 
+ | 
+BAwCC.xml | globalDeclarationLength: 64 | 
+ |          name          | lonelyInit | locations | transitions | declarationLength | functions | variables | popularLocations | dag | single | deadEnds | flowers | 
+ | Coordinator            | yes        | 3         | 48          | 145               | 88        | 3         | 1                | no  | no     | 1        | 1       | 
+ | par                    | yes        | 3         | 56          | 167               | 106       | 3         | 1                | no  | no     | 1        | 1       | 
+ | 
+enhancedBAwCC.xml | globalDeclarationLength: 70 | 
+ |          name          | lonelyInit | locations | transitions | declarationLength | functions | variables | popularLocations | dag | single | deadEnds | flowers | 
+ | Coordinator            | yes        | 3         | 51          | 166               | 94        | 3         | 1                | no  | no     | 1        | 1       | 
+ | par                    | yes        | 3         | 60          | 193               | 114       | 3         | 1                | no  | no     | 1        | 1       | 
+ | 
+simpleHandshakeSystem.xml | globalDeclarationLength: 2 | 
+ |          name          | lonelyInit | locations | transitions | declarationLength | functions | variables | popularLocations | dag | single | deadEnds | flowers | 
+ | Template               | yes        | 2         | 1           | 0                 | 0         | 0         | 2                | yes | no     | 1        | 0       | 
+ | Template0              | yes        | 2         | 1           | 0                 | 0         | 0         | 2                | yes | no     | 1        | 0       | 
+ | 
+simpleSystem.xml | globalDeclarationLength: 1 | 
+ |          name          | lonelyInit | locations | transitions | declarationLength | functions | variables | popularLocations | dag | single | deadEnds | flowers | 
+ | Template               | no         | 3         | 3           | 0                 | 0         | 0         | 0                | no  | no     | 0        | 0       | 
+ | 
+dag.xml | globalDeclarationLength: 0 | 
+ |          name          | lonelyInit | locations | transitions | declarationLength | functions | variables | popularLocations | dag | single | deadEnds | flowers | 
+ | Template               | no         | 6         | 6           | 0                 | 0         | 0         | 0                | yes | no     | 3        | 0       | 
+ | 
+linear.xml | globalDeclarationLength: 0 | 
+ |          name          | lonelyInit | locations | transitions | declarationLength | functions | variables | popularLocations | dag | single | deadEnds | flowers | 
+ | Template               | yes        | 4         | 3           | 0                 | 0         | 0         | 0                | yes | no     | 1        | 0       | 
+ | 
+looped.xml | globalDeclarationLength: 0 | 
+ |          name          | lonelyInit | locations | transitions | declarationLength | functions | variables | popularLocations | dag | single | deadEnds | flowers | 
+ | Template               | no         | 3         | 9           | 0                 | 0         | 0         | 1                | no  | no     | 0        | 0       | 
+ | 
+notdag.xml | globalDeclarationLength: 0 | 
+ |          name          | lonelyInit | locations | transitions | declarationLength | functions | variables | popularLocations | dag | single | deadEnds | flowers | 
+ | Template               | no         | 6         | 7           | 0                 | 0         | 0         | 0                | no  | no     | 3        | 0       | 
+ | 
+ospf_adjacency.xml | globalDeclarationLength: 72 | 
+ |          name          | lonelyInit | locations | transitions | declarationLength | functions | variables | popularLocations | dag | single | deadEnds | flowers | 
+ | Node                   | yes        | 16        | 49          | 250               | 16        | 54        | 1                | no  | no     | 0        | 1       | 
+ | 
+testxml01.xml | globalDeclarationLength: 0 | 
+ |          name          | lonelyInit | locations | transitions | declarationLength | functions | variables | popularLocations | dag | single | deadEnds | flowers | 
+ | 
+2doors.xml | globalDeclarationLength: 0 | 
+ |          name          | lonelyInit | locations | transitions | declarationLength | functions | variables | popularLocations | dag | single | deadEnds | flowers | 
+ | Door                   | no         | 6         | 9           | 1                 | 0         | 0         | 0                | no  | no     | 0        | 0       | 
+ | User                   | no         | 2         | 2           | 1                 | 0         | 0         | 2                | no  | no     | 0        | 0       | 
+ | 
+bridge.xml | globalDeclarationLength: 3 | 
+ |          name          | lonelyInit | locations | transitions | declarationLength | functions | variables | popularLocations | dag | single | deadEnds | flowers | 
+ | Soldier                | no         | 4         | 4           | 1                 | 0         | 0         | 0                | no  | no     | 0        | 0       | 
+ | Torch                  | no         | 4         | 5           | 0                 | 0         | 0         | 0                | no  | no     | 0        | 0       | 
+ | 
+fischer.xml | globalDeclarationLength: 2 | 
+ |          name          | lonelyInit | locations | transitions | declarationLength | functions | variables | popularLocations | dag | single | deadEnds | flowers | 
+ | P                      | no         | 4         | 5           | 2                 | 0         | 1         | 0                | no  | no     | 0        | 0       | 
+ | 
+fischer_symmetry.xml | globalDeclarationLength: 4 | 
+ |          name          | lonelyInit | locations | transitions | declarationLength | functions | variables | popularLocations | dag | single | deadEnds | flowers | 
+ | P                      | no         | 4         | 5           | 2                 | 0         | 1         | 0                | no  | no     | 0        | 0       | 
+ | 
+interrupt.xml | globalDeclarationLength: 7 | 
+ |          name          | lonelyInit | locations | transitions | declarationLength | functions | variables | popularLocations | dag | single | deadEnds | flowers | 
+ | INT                    | yes        | 3         | 2           | 0                 | 0         | 0         | 1                | yes | no     | 1        | 0       | 
+ | C                      | no         | 2         | 3           | 2                 | 2         | 0         | 1                | no  | no     | 1        | 0       | 
+ | env                    | no         | 3         | 5           | 0                 | 0         | 0         | 0                | no  | no     | 1        | 0       | 
+ | 
+lsc_example.xml | globalDeclarationLength: 2 | 
+ |          name          | lonelyInit | locations | transitions | declarationLength | functions | variables | popularLocations | dag | single | deadEnds | flowers | 
+ | A                      | no         | 1         | 2           | 0                 | 0         | 0         | 1                | no  | yes    | 0        | 0       | 
+ | B                      | no         | 2         | 2           | 0                 | 0         | 0         | 2                | no  | no     | 0        | 0       | 
+ | C                      | no         | 3         | 3           | 0                 | 0         | 0         | 0                | no  | no     | 0        | 0       | 
+ | D                      | no         | 2         | 3           | 0                 | 0         | 0         | 1                | no  | no     | 0        | 0       | 
+ | 
+lsc_train-gate_parameters.xml | globalDeclarationLength: 4 | 
+ |          name          | lonelyInit | locations | transitions | declarationLength | functions | variables | popularLocations | dag | single | deadEnds | flowers | 
+ | Train                  | no         | 5         | 6           | 1                 | 0         | 0         | 0                | no  | no     | 0        | 0       | 
+ | Gate                   | no         | 3         | 5           | 10                | 2         | 2         | 1                | no  | no     | 0        | 0       | 
+ | 
+scheduling3.xml | globalDeclarationLength: 32 | 
+ |          name          | lonelyInit | locations | transitions | declarationLength | functions | variables | popularLocations | dag | single | deadEnds | flowers | 
+ | Task                   | no         | 5         | 8           | 1                 | 0         | 0         | 0                | no  | no     | 1        | 0       | 
+ | Scheduler              | yes        | 6         | 8           | 0                 | 0         | 0         | 0                | no  | no     | 0        | 0       | 
+ | 
+scheduling4.xml | globalDeclarationLength: 48 | 
+ |          name          | lonelyInit | locations | transitions | declarationLength | functions | variables | popularLocations | dag | single | deadEnds | flowers | 
+ | Task                   | no         | 6         | 10          | 24                | 2         | 3         | 0                | no  | no     | 1        | 0       | 
+ | Scheduler              | yes        | 6         | 8           | 0                 | 0         | 0         | 0                | no  | no     | 0        | 0       | 
+ | 
+SchedulingFramework.xml | globalDeclarationLength: 49 | 
+ |          name          | lonelyInit | locations | transitions | declarationLength | functions | variables | popularLocations | dag | single | deadEnds | flowers | 
+ | Resource               | no         | 5         | 8           | 8                 | 2         | 1         | 0                | no  | no     | 0        | 0       | 
+ | Task                   | yes        | 9         | 9           | 18                | 3         | 1         | 0                | no  | no     | 2        | 0       | 
+ | Policy_FIFO            | no         | 2         | 2           | 0                 | 0         | 0         | 2                | no  | no     | 0        | 0       | 
+ | Policy_FPS             | no         | 2         | 2           | 6                 | 1         | 2         | 2                | no  | no     | 0        | 0       | 
+ | Policy_EDF             | no         | 3         | 4           | 8                 | 2         | 1         | 1                | no  | no     | 0        | 0       | 
+ | 
+ball.xml | globalDeclarationLength: 5 | 
+ |          name          | lonelyInit | locations | transitions | declarationLength | functions | variables | popularLocations | dag | single | deadEnds | flowers | 
+ | Ball1                  | no         | 1         | 3           | 0                 | 0         | 0         | 1                | no  | yes    | 0        | 0       | 
+ | Piston                 | no         | 1         | 1           | 0                 | 0         | 0         | 1                | no  | yes    | 0        | 0       | 
+ | Ball2                  | no         | 1         | 4           | 0                 | 0         | 0         | 1                | no  | yes    | 0        | 0       | 
+ | Ball3x                 | yes        | 2         | 2           | 1                 | 0         | 0         | 1                | no  | no     | 0        | 0       | 
+ | Ball3y                 | yes        | 2         | 4           | 0                 | 0         | 0         | 1                | no  | no     | 0        | 0       | 
+ | 
+bluetooth.cav.xml | globalDeclarationLength: 33 | 
+ |          name          | lonelyInit | locations | transitions | declarationLength | functions | variables | popularLocations | dag | single | deadEnds | flowers | 
+ | Sender                 | no         | 5         | 11          | 8                 | 4         | 1         | 0                | no  | no     | 0        | 0       | 
+ | Receiver               | no         | 13        | 17          | 7                 | 1         | 5         | 0                | no  | no     | 0        | 0       | 
+ | Frequency              | no         | 2         | 5           | 2                 | 0         | 1         | 1                | no  | no     | 0        | 0       | 
+ | 
+ClientServer.xml | globalDeclarationLength: 18 | 
+ |          name          | lonelyInit | locations | transitions | declarationLength | functions | variables | popularLocations | dag | single | deadEnds | flowers | 
+ | Server                 | yes        | 2         | 2           | 0                 | 0         | 0         | 1                | no  | no     | 0        | 0       | 
+ | ServerChild            | yes        | 4         | 3           | 0                 | 0         | 0         | 0                | yes | no     | 1        | 0       | 
+ | Traffic                | no         | 1         | 1           | 0                 | 0         | 0         | 1                | no  | yes    | 0        | 0       | 
+ | Client                 | no         | 6         | 6           | 3                 | 0         | 2         | 0                | no  | no     | 2        | 0       | 
+ | 
+csma-ca.xml | globalDeclarationLength: 36 | 
+ |          name          | lonelyInit | locations | transitions | declarationLength | functions | variables | popularLocations | dag | single | deadEnds | flowers | 
+ | Process                | no         | 23        | 33          | 22                | 4         | 11        | 0                | no  | no     | 2        | 0       | 
+ | 
+dice.xml | globalDeclarationLength: 1 | 
+ |          name          | lonelyInit | locations | transitions | declarationLength | functions | variables | popularLocations | dag | single | deadEnds | flowers | 
+ | Coin                   | no         | 5         | 6           | 0                 | 0         | 0         | 0                | no  | no     | 0        | 0       | 
+ | Dice                   | yes        | 20        | 21          | 0                 | 0         | 0         | 0                | no  | no     | 6        | 0       | 
+ | DiceSimulator          | yes        | 20        | 21          | 0                 | 0         | 0         | 0                | no  | no     | 6        | 0       | 
+ | Norm                   | yes        | 2         | 1           | 1                 | 0         | 0         | 2                | yes | no     | 1        | 0       | 
+ | 
+ex-proba1.xml | globalDeclarationLength: 0 | 
+ |          name          | lonelyInit | locations | transitions | declarationLength | functions | variables | popularLocations | dag | single | deadEnds | flowers | 
+ | Foo                    | yes        | 8         | 7           | 1                 | 0         | 1         | 0                | yes | no     | 4        | 0       | 
+ | 
+ex-proba2.xml | globalDeclarationLength: 0 | 
+ |          name          | lonelyInit | locations | transitions | declarationLength | functions | variables | popularLocations | dag | single | deadEnds | flowers | 
+ | Foo                    | yes        | 10        | 9           | 1                 | 0         | 1         | 0                | yes | no     | 4        | 0       | 
+ | 
+firewire.cav.xml | globalDeclarationLength: 29 | 
+ |          name          | lonelyInit | locations | transitions | declarationLength | functions | variables | popularLocations | dag | single | deadEnds | flowers | 
+ | Node                   | no         | 11        | 24          | 2                 | 1         | 1         | 0                | no  | no     | 0        | 0       | 
+ | Wire                   | no         | 10        | 26          | 1                 | 0         | 0         | 0                | no  | no     | 0        | 0       | 
+ | 
+fischer-stat.xml | globalDeclarationLength: 2 | 
+ |          name          | lonelyInit | locations | transitions | declarationLength | functions | variables | popularLocations | dag | single | deadEnds | flowers | 
+ | P                      | no         | 4         | 5           | 2                 | 0         | 1         | 0                | no  | no     | 0        | 0       | 
+ | 
+genosc-hybrid.xml | globalDeclarationLength: 24 | 
+ |          name          | lonelyInit | locations | transitions | declarationLength | functions | variables | popularLocations | dag | single | deadEnds | flowers | 
+ | P                      | yes        | 1         | 0           | 0                 | 0         | 0         | 0                | yes | yes    | 1        | 0       | 
+ | 
+genosc.xml | globalDeclarationLength: 1 | 
+ |          name          | lonelyInit | locations | transitions | declarationLength | functions | variables | popularLocations | dag | single | deadEnds | flowers | 
+ | r1                     | no         | 1         | 1           | 0                 | 0         | 0         | 1                | no  | yes    | 0        | 0       | 
+ | r2                     | no         | 1         | 1           | 0                 | 0         | 0         | 1                | no  | yes    | 0        | 0       | 
+ | r3                     | no         | 1         | 1           | 0                 | 0         | 0         | 1                | no  | yes    | 0        | 0       | 
+ | r4                     | no         | 1         | 1           | 0                 | 0         | 0         | 1                | no  | yes    | 0        | 0       | 
+ | r5                     | no         | 1         | 1           | 0                 | 0         | 0         | 1                | no  | yes    | 0        | 0       | 
+ | r6                     | no         | 1         | 1           | 0                 | 0         | 0         | 1                | no  | yes    | 0        | 0       | 
+ | r7                     | no         | 1         | 1           | 0                 | 0         | 0         | 1                | no  | yes    | 0        | 0       | 
+ | r8                     | no         | 1         | 1           | 0                 | 0         | 0         | 1                | no  | yes    | 0        | 0       | 
+ | r9                     | no         | 1         | 1           | 0                 | 0         | 0         | 1                | no  | yes    | 0        | 0       | 
+ | r10                    | no         | 1         | 1           | 0                 | 0         | 0         | 1                | no  | yes    | 0        | 0       | 
+ | r11                    | no         | 1         | 1           | 0                 | 0         | 0         | 1                | no  | yes    | 0        | 0       | 
+ | r12                    | no         | 1         | 1           | 0                 | 0         | 0         | 1                | no  | yes    | 0        | 0       | 
+ | r13                    | no         | 1         | 1           | 0                 | 0         | 0         | 1                | no  | yes    | 0        | 0       | 
+ | r14                    | no         | 1         | 1           | 0                 | 0         | 0         | 1                | no  | yes    | 0        | 0       | 
+ | r15                    | no         | 1         | 1           | 0                 | 0         | 0         | 1                | no  | yes    | 0        | 0       | 
+ | r16                    | no         | 1         | 1           | 0                 | 0         | 0         | 1                | no  | yes    | 0        | 0       | 
+ | 
+leader-election.xml | globalDeclarationLength: 26 | 
+ |          name          | lonelyInit | locations | transitions | declarationLength | functions | variables | popularLocations | dag | single | deadEnds | flowers | 
+ | Message                | no         | 19        | 24          | 7                 | 1         | 3         | 0                | no  | no     | 0        | 0       | 
+ | Node                   | no         | 4         | 8           | 12                | 2         | 5         | 0                | no  | no     | 0        | 0       | 
+ | 
+lmac6.xml | globalDeclarationLength: 28 | 
+ |          name          | lonelyInit | locations | transitions | declarationLength | functions | variables | popularLocations | dag | single | deadEnds | flowers | 
+ | Node                   | no         | 18        | 29          | 8                 | 1         | 3         | 0                | no  | no     | 0        | 0       | 
+ | 
+oscillate.xml | globalDeclarationLength: 1 | 
+ |          name          | lonelyInit | locations | transitions | declarationLength | functions | variables | popularLocations | dag | single | deadEnds | flowers | 
+ | P                      | no         | 1         | 1           | 0                 | 0         | 0         | 1                | no  | yes    | 0        | 0       | 
+ | 
+samplesmc.xml | globalDeclarationLength: 6 | 
+ |          name          | lonelyInit | locations | transitions | declarationLength | functions | variables | popularLocations | dag | single | deadEnds | flowers | 
+ | Runner                 | no         | 6         | 9           | 1                 | 0         | 1         | 0                | no  | no     | 0        | 0       | 
+ | Global                 | yes        | 1         | 0           | 0                 | 0         | 0         | 0                | yes | yes    | 1        | 0       | 
+ | dum                    | no         | 2         | 3           | 0                 | 0         | 0         | 2                | no  | no     | 0        | 0       | 
+ | Master                 | no         | 3         | 4           | 1                 | 0         | 0         | 1                | no  | no     | 2        | 0       | 
+ | 
+train-gate-stat.xml | globalDeclarationLength: 4 | 
+ |          name          | lonelyInit | locations | transitions | declarationLength | functions | variables | popularLocations | dag | single | deadEnds | flowers | 
+ | Train                  | no         | 5         | 6           | 1                 | 0         | 0         | 0                | no  | no     | 0        | 0       | 
+ | Gate                   | no         | 4         | 6           | 10                | 2         | 2         | 1                | no  | no     | 0        | 0       | 
+ | 
+trig.xml | globalDeclarationLength: 0 | 
+ |          name          | lonelyInit | locations | transitions | declarationLength | functions | variables | popularLocations | dag | single | deadEnds | flowers | 
+ | Trig1                  | no         | 1         | 1           | 2                 | 0         | 2         | 1                | no  | yes    | 0        | 0       | 
+ | Trig2                  | yes        | 1         | 0           | 1                 | 0         | 1         | 0                | yes | yes    | 1        | 0       | 
+ | 
+onoff.xml | globalDeclarationLength: 4 | 
+ |          name          | lonelyInit | locations | transitions | declarationLength | functions | variables | popularLocations | dag | single | deadEnds | flowers | 
+ | System                 | no         | 2         | 2           | 0                 | 0         | 0         | 2                | no  | no     | 0        | 0       | 
+ | User                   | no         | 1         | 2           | 0                 | 0         | 0         | 1                | no  | yes    | 0        | 0       | 
+ | 
+updown.xml | globalDeclarationLength: 5 | 
+ |          name          | lonelyInit | locations | transitions | declarationLength | functions | variables | popularLocations | dag | single | deadEnds | flowers | 
+ | System                 | no         | 3         | 6           | 1                 | 0         | 1         | 1                | no  | no     | 0        | 0       | 
+ | User                   | no         | 1         | 2           | 0                 | 0         | 0         | 1                | no  | yes    | 0        | 0       | 
+ | 
+train-gate-orig.xml | globalDeclarationLength: 4 | 
+ |          name          | lonelyInit | locations | transitions | declarationLength | functions | variables | popularLocations | dag | single | deadEnds | flowers | 
+ | Train                  | no         | 5         | 6           | 1                 | 0         | 0         | 0                | no  | no     | 0        | 0       | 
+ | Gate                   | no         | 9         | 11          | 0                 | 0         | 0         | 0                | no  | no     | 0        | 0       | 
+ | IntQueue               | no         | 2         | 7           | 1                 | 0         | 0         | 1                | no  | no     | 0        | 0       | 
+ | 
+train-gate.xml | globalDeclarationLength: 4 | 
+ |          name          | lonelyInit | locations | transitions | declarationLength | functions | variables | popularLocations | dag | single | deadEnds | flowers | 
+ | Train                  | no         | 5         | 6           | 1                 | 0         | 0         | 0                | no  | no     | 0        | 0       | 
+ | Gate                   | no         | 3         | 5           | 10                | 2         | 2         | 1                | no  | no     | 0        | 0       | 
+ | 
 23-10-10-MTX.xml | globalDeclarationLength: 30 | 
- |          name          | lonelyInit | locations | transitions | declarationLength | functions | variables | flowers | dag | single | deadEnds | 
- | Patient                | yes        | 14        | 23          | 93                | 1         | 2         | 0       | no  | no     | 0        | 
- | ClockUpdate            | no         | 2         | 2           | 0                 | 0         | 0         | 2       | no  | no     | 0        | 
- | Protocol1_5_5          | yes        | 10        | 12          | 0                 | 0         | 0         | 0       | yes | no     | 1        | 
- | ProtocolMTX            | yes        | 7         | 10          | 50                | 2         | 0         | 0       | no  | no     | 0        | 
- | TestMTX                | yes        | 8         | 7           | 0                 | 0         | 0         | 0       | yes | no     | 1        | 
- | endStateModel          | yes        | 2         | 1           | 0                 | 0         | 0         | 2       | yes | no     | 1        | 
- | Das28Test              | no         | 2         | 2           | 1                 | 1         | 0         | 2       | no  | no     | 0        | 
- | Patient1               | yes        | 18        | 29          | 57                | 3         | 4         | 0       | no  | no     | 0        | 
- | ProtocolMTX_prototype  | yes        | 7         | 10          | 44                | 2         | 0         | 0       | no  | no     | 0        | 
- | Patient_prototype      | yes        | 9         | 15          | 17                | 1         | 0         | 0       | no  | no     | 0        | 
+ |          name          | lonelyInit | locations | transitions | declarationLength | functions | variables | popularLocations | dag | single | deadEnds | flowers | 
+ | Patient                | yes        | 14        | 23          | 93                | 1         | 2         | 0                | no  | no     | 0        | 0       | 
+ | ClockUpdate            | no         | 2         | 2           | 0                 | 0         | 0         | 2                | no  | no     | 0        | 0       | 
+ | Protocol1_5_5          | yes        | 10        | 12          | 0                 | 0         | 0         | 0                | yes | no     | 1        | 0       | 
+ | ProtocolMTX            | yes        | 7         | 10          | 50                | 2         | 0         | 0                | no  | no     | 0        | 0       | 
+ | TestMTX                | yes        | 8         | 7           | 0                 | 0         | 0         | 0                | yes | no     | 1        | 0       | 
+ | endStateModel          | yes        | 2         | 1           | 0                 | 0         | 0         | 2                | yes | no     | 1        | 0       | 
+ | Das28Test              | no         | 2         | 2           | 1                 | 1         | 0         | 2                | no  | no     | 0        | 0       | 
+ | Patient1               | yes        | 18        | 29          | 57                | 3         | 4         | 0                | no  | no     | 0        | 0       | 
+ | ProtocolMTX_prototype  | yes        | 7         | 10          | 44                | 2         | 0         | 0                | no  | no     | 0        | 0       | 
+ | Patient_prototype      | yes        | 9         | 15          | 17                | 1         | 0         | 0                | no  | no     | 0        | 0       | 
  | 
 asthma2023june22.xml | globalDeclarationLength: 7 | 
- |          name          | lonelyInit | locations | transitions | declarationLength | functions | variables | flowers | dag | single | deadEnds | 
- | Env                    | no         | 1         | 1           | 1                 | 0         | 0         | 1       | no  | yes    | 0        | 
- | Flare                  | no         | 5         | 7           | 3                 | 2         | 1         | 0       | no  | no     | 0        | 
- | Treatment              | no         | 4         | 10          | 1                 | 0         | 0         | 0       | no  | no     | 0        | 
- | PeriodicCheck          | no         | 5         | 7           | 1                 | 0         | 0         | 0       | no  | no     | 0        | 
- | Patient                | yes        | 11        | 23          | 3                 | 2         | 1         | 0       | no  | no     | 0        | 
+ |          name          | lonelyInit | locations | transitions | declarationLength | functions | variables | popularLocations | dag | single | deadEnds | flowers | 
+ | Env                    | no         | 1         | 1           | 1                 | 0         | 0         | 1                | no  | yes    | 0        | 0       | 
+ | Flare                  | no         | 5         | 7           | 3                 | 2         | 1         | 0                | no  | no     | 0        | 0       | 
+ | Treatment              | no         | 4         | 10          | 1                 | 0         | 0         | 0                | no  | no     | 0        | 0       | 
+ | PeriodicCheck          | no         | 5         | 7           | 1                 | 0         | 0         | 0                | no  | no     | 0        | 0       | 
+ | Patient                | yes        | 11        | 23          | 3                 | 2         | 1         | 0                | no  | no     | 0        | 0       | 
  | 
 curr_model_cleanup.xml | globalDeclarationLength: 46 | 
- |          name          | lonelyInit | locations | transitions | declarationLength | functions | variables | flowers | dag | single | deadEnds | 
- | Pharma                 | yes        | 2         | 2           | 3                 | 1         | 1         | 1       | no  | no     | 0        | 
- | Country                | no         | 3         | 6           | 2                 | 1         | 0         | 0       | no  | no     | 0        | 
- | Drug_lifecycle         | no         | 9         | 13          | 59                | 12        | 17        | 0       | no  | no     | 0        | 
- | Negotiation            | no         | 7         | 9           | 44                | 8         | 27        | 0       | no  | no     | 0        | 
+ |          name          | lonelyInit | locations | transitions | declarationLength | functions | variables | popularLocations | dag | single | deadEnds | flowers | 
+ | Pharma                 | yes        | 2         | 2           | 3                 | 1         | 1         | 1                | no  | no     | 0        | 0       | 
+ | Country                | no         | 3         | 6           | 2                 | 1         | 0         | 0                | no  | no     | 0        | 0       | 
+ | Drug_lifecycle         | no         | 9         | 13          | 59                | 12        | 17        | 0                | no  | no     | 0        | 0       | 
+ | Negotiation            | no         | 7         | 9           | 44                | 8         | 27        | 0                | no  | no     | 0        | 0       | 
  | 
 Side29okt.xml | globalDeclarationLength: 54 | 
- |          name          | lonelyInit | locations | transitions | declarationLength | functions | variables | flowers | dag | single | deadEnds | 
- | Protocol               | yes        | 11        | 19          | 8                 | 5         | 2         | 0       | no  | no     | 1        | 
- | Patient                | yes        | 14        | 24          | 5                 | 4         | 0         | 0       | no  | no     | 5        | 
- | Toxic                  | no         | 19        | 31          | 1                 | 0         | 0         | 0       | no  | no     | 1        | 
- | Test                   | no         | 8         | 10          | 0                 | 0         | 0         | 0       | no  | no     | 0        | 
- | Monitor                | no         | 4         | 5           | 2                 | 0         | 0         | 1       | no  | no     | 1        | 
- | ProgCheck              | yes        | 6         | 8           | 0                 | 0         | 0         | 0       | no  | no     | 1        | 
+ |          name          | lonelyInit | locations | transitions | declarationLength | functions | variables | popularLocations | dag | single | deadEnds | flowers | 
+ | Protocol               | yes        | 11        | 19          | 8                 | 5         | 2         | 0                | no  | no     | 1        | 0       | 
+ | Patient                | yes        | 14        | 24          | 5                 | 4         | 0         | 0                | no  | no     | 5        | 0       | 
+ | Toxic                  | no         | 19        | 31          | 1                 | 0         | 0         | 0                | no  | no     | 1        | 0       | 
+ | Test                   | no         | 8         | 10          | 0                 | 0         | 0         | 0                | no  | no     | 0        | 0       | 
+ | Monitor                | no         | 4         | 5           | 2                 | 0         | 0         | 1                | no  | no     | 1        | 0       | 
+ | ProgCheck              | yes        | 6         | 8           | 0                 | 0         | 0         | 0                | no  | no     | 1        | 0       | 
  | 
 TWES model.xml | globalDeclarationLength: 9 | 
- |          name          | lonelyInit | locations | transitions | declarationLength | functions | variables | flowers | dag | single | deadEnds | 
- | Patient                | yes        | 10        | 16          | 14                | 0         | 13        | 0       | no  | no     | 0        | 
- | Twes                   | yes        | 10        | 20          | 10                | 0         | 9         | 0       | no  | no     | 0        | 
- | End                    | yes        | 2         | 1           | 0                 | 0         | 0         | 2       | yes | no     | 1        | 
+ |          name          | lonelyInit | locations | transitions | declarationLength | functions | variables | popularLocations | dag | single | deadEnds | flowers | 
+ | Patient                | yes        | 10        | 16          | 14                | 0         | 13        | 0                | no  | no     | 0        | 0       | 
+ | Twes                   | yes        | 10        | 20          | 10                | 0         | 9         | 0                | no  | no     | 0        | 0       | 
+ | End                    | yes        | 2         | 1           | 0                 | 0         | 0         | 2                | yes | no     | 1        | 0       | 
  | 

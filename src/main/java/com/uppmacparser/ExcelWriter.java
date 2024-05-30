@@ -7,8 +7,8 @@ import java.io.BufferedWriter;
 import java.io.File;
 
 public class ExcelWriter {
-    String[] titles = {"", "name", "lonelyInit", "locations", "transitions", "declarationLength", "functions", "variables", "flowers", "dag", "single", "deadEnds"};
-    String[] ntaTitles = {"nameName", "globalFunctions", "globalVariables", "globalComplexity", "templateFunctions", "templateVariables", "templateComplexity"};
+    String[] titles = {"", "name", "lonelyInit", "locations", "transitions", "declarationLength", "functions", "variables", "popularLocations", "dag", "single", "deadEnds", "flowers"};
+    String[] ntaTitles = {"nameName", "globalFunctions", "globalVariables", "globalComplexity", "templateFunctions", "templateVariables", "templateComplexity", "globalDecLength", "totalTempDecLength"};
     String[] fixedTitles;
     ArrayList<String[]> ntaData;
 
@@ -57,8 +57,6 @@ public class ExcelWriter {
             String data = "";
             for (int j = 0; j < stringArr.length; j++) { 
                 String str = stringArr[j];
-                //Cell cell = row.createCell(cellid++); 
-                //cell.setCellValue((String)obj); 
                 if (stringArr.length == titles.length) {
                     str = formatLength(str, fixedTitles[j].length());
                 }
@@ -87,7 +85,7 @@ public class ExcelWriter {
 
             if (isOutlier(currentTemplateProperty)) {
                 for (int j = 1; j < data.length; j++) { 
-                    // "", "         name         ", "lonelyInit", "locations", "transitions", "declarationLength", "functions", "variables", "flowers", "dag", "single", "deadEnds"
+                    // "", "         name         ", "lonelyInit", "locations", "transitions", "declarationLength", "functions", "variables", "flowers", "dag", "single", "deadEnds", "flowers"
                     data[j] += currentTemplateProperty.getData(j) + " ";
                 }
             }
@@ -114,6 +112,9 @@ public class ExcelWriter {
             for (int j = 0; j < data.length; j++) { 
                 data[j] += currentNta.getData(j) + " ";
             }
+            if (i == 29) {
+                printData(data);
+            }
         }
 
         for (int i = 0; i < data.length; i++) {
@@ -125,13 +126,19 @@ public class ExcelWriter {
         }
     }
 
+    public void printData(String[] string) {
+        for (int i = 0; i < string.length; i++) {
+            System.out.println(string[i]);
+        }
+    }
+
     public boolean isOutlier(TemplateProperty tempProp) {
-        if (tempProp.numLocations > 200) {
-            return false;
-        }
-        if (tempProp.variables > 100) {
-            return false;
-        }
+        // if (tempProp.numLocations > 200) {
+        //     return false;
+        // }
+        // if (tempProp.variables > 100) {
+        //     return false;
+        // }
         return true;
     }
 

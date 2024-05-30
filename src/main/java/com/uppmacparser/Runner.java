@@ -159,6 +159,59 @@ public class Runner {
                 writer.close();
             }
         }
+
+        if (args.length == 4) {
+            if (args[0].equals(new String("-find"))) {
+                
+                StringBuilder content = new StringBuilder();
+                String x;
+                String line;
+                try (BufferedReader br = new BufferedReader(new FileReader(args[1]))) {
+                    line = br.readLine();
+                    while ((line = br.readLine()) != null) {
+                        content.append(line).append("\n");
+                    }
+                    x = content.toString();
+                }
+                int output = findInString(x, args[2], args[3]);
+                System.out.println("Found in index: " + output);
+            }
+        }
+
+        if (args.length == 3) {
+            if (args[0].equals(new String("-fetch"))) {
+                
+                StringBuilder content = new StringBuilder();
+                String x;
+                String line;
+                try (BufferedReader br = new BufferedReader(new FileReader(args[1]))) {
+                    line = br.readLine();
+                    while ((line = br.readLine()) != null) {
+                        content.append(line).append("\n");
+                    }
+                    x = content.toString();
+                }
+                String output = fetchInString(x, Integer.valueOf(args[2]), " ");
+                System.out.println("Found result: " + output);
+            }
+
+            if (args[0].equals(new String("-fetchname"))) {
+                
+                StringBuilder content = new StringBuilder();
+                String x;
+                String line;
+                try (BufferedReader br = new BufferedReader(new FileReader(args[1]))) {
+                    line = br.readLine();
+                    while ((line = br.readLine()) != null) {
+                        content.append(line).append("\n");
+                    }
+                    x = content.toString();
+                }
+                String output = fetchInString(x, Integer.valueOf(args[2]), ".xml");
+                System.out.println("Found result: " + output);
+            }
+        }
+
         return navigator;
     }
 
@@ -173,6 +226,23 @@ public class Runner {
         }
 
         return result.toString();
+    }
+
+    public int findInString(String string, String find0, String find1) {
+        
+        String[] strings = string.split(" ");
+        for (int i = 0; i+1 < strings.length; i+=2) {
+            if (strings[i].equals(find0) && strings[i+1].equals(find1)) {
+                return i/2;
+            }
+        }
+
+        return -1;
+    }
+
+    public String fetchInString(String string, int i, String seperator) {
+        String[] strings = string.split(seperator);
+        return strings[i];
     }
 
     public void traverseFolder(String absolutePath, String name) throws Exception {
@@ -214,6 +284,8 @@ public class Runner {
                         currentNta.templateFunctions = decComplexityData[0];
                         currentNta.templateVariables = decComplexityData[1];
                         currentNta.templateComplexity = decComplexityData[2];
+                        currentNta.globalDecLength = currentNta.getLengthOfDeclaration(currentNta.globalDeclaration);
+                        currentNta.totalTempDecLength = currentNta.totalTempDeclarationLength();
                         ntas.add(currentNta);
                     } else {
                         System.out.println("Specified file is of type '" + extension + "', please use a file with type 'xml'");
