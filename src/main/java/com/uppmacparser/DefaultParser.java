@@ -1,6 +1,8 @@
 package com.uppmacparser;
+import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileWriter;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -61,7 +63,13 @@ public class DefaultParser {
             }
 
             Template tempTemplate = new Template(cleanText(tempTemplateName.item(0).toString()), tempLocationList.getLength() + tempBranchList.getLength(), tempTransitionList.getLength(), declaration);
-            //System.out.println(tempDeclarationList.item(0).toString());
+            if (cleanText(tempTemplateName.item(0).toString()).equals("GossipGirl")) {
+                String filename = "output/missingName" + ".txt";
+                File outputFile = new File(new String(filename));
+                BufferedWriter writer = new BufferedWriter(new FileWriter(outputFile));
+                writer.write(NTAName);
+                writer.close();
+            }
 
             NodeList tempInit = (NodeList) xPath.compile("/nta/template[" + String.valueOf(i) + "]/init/@ref").evaluate(xmlDocument, XPathConstants.NODESET);
             tempTemplate.init = cleanID(tempInit.item(0).toString(), 5);

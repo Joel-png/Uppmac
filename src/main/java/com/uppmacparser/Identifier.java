@@ -132,6 +132,9 @@ public class Identifier {
         int flowers = getNumOfFlowers(template.locations);
         tempTemplateProperty.flowers = flowers;
 
+        int totalComplexity = template.locations.length + template.transitions.length;
+        tempTemplateProperty.totalComplexity = totalComplexity;
+
         templateProperties.add(tempTemplateProperty);
     }
 
@@ -148,7 +151,7 @@ public class Identifier {
     public int getNumOfPopularLocations(Location[] locations, Transition[] transitions) {
         int counter = 0;
         for (int i = 0; i < locations.length; i++) {
-            if (checkDegreePresence(locations[i], transitions) >= 0.75) {
+            if (checkDegreePresence(locations[i], transitions) >= 0.50) {
                 counter++;
             }
         }

@@ -7,7 +7,7 @@ import java.io.BufferedWriter;
 import java.io.File;
 
 public class ExcelWriter {
-    String[] titles = {"", "name", "lonelyInit", "locations", "transitions", "declarationLength", "functions", "variables", "popularLocations", "dag", "single", "deadEnds", "flowers"};
+    String[] titles = {"", "name", "lonelyInit", "locations", "transitions", "declarationLength", "functions", "variables", "popularLocations", "dag", "single", "deadEnds", "flowers", "automataComplexity"};
     String[] ntaTitles = {"nameName", "globalFunctions", "globalVariables", "globalComplexity", "templateFunctions", "templateVariables", "templateComplexity", "globalDecLength", "totalTempDecLength"};
     String[] fixedTitles;
     ArrayList<String[]> ntaData;
@@ -75,6 +75,13 @@ public class ExcelWriter {
     }
 
     public void writeIndividualData(ArrayList<TemplateProperty> templateProperties) throws IOException {
+
+        int flowers = 0;
+        int totalModels = 0;
+        int popularNodes = 0;
+        int deadends = 0;
+        int lonelyinit = 0;
+
         String[] data = new String[titles.length];
         for (int i = 0; i < data.length; i++) {
             data[i] = "" + titles[i] + System.getProperty("line.separator");
@@ -82,7 +89,19 @@ public class ExcelWriter {
 
         for (int i = 0; i < templateProperties.size(); i++) {
             TemplateProperty currentTemplateProperty = templateProperties.get(i);
-
+            if (currentTemplateProperty.flowers > 0) {
+                flowers++;
+            }
+            if (currentTemplateProperty.numOfPoplarLocations > 0) {
+                popularNodes++;
+            }
+            if (currentTemplateProperty.deadEnds > 0) {
+                deadends++;
+            }
+            if (currentTemplateProperty.lonelyInit == true) {
+                lonelyinit++;
+            }
+            totalModels++;
             if (isOutlier(currentTemplateProperty)) {
                 for (int j = 1; j < data.length; j++) { 
                     // "", "         name         ", "lonelyInit", "locations", "transitions", "declarationLength", "functions", "variables", "flowers", "dag", "single", "deadEnds", "flowers"
@@ -98,6 +117,8 @@ public class ExcelWriter {
             writer.write(data[i]);
             writer.close();
         }
+
+        System.out.println("TotalTemplates: " + totalModels + " TempWithFlowers: " + flowers + " TempWithPopularLocations: " + popularNodes + " TempWithDeadEnds: " + deadends + " TempWithLonelyInit: " + lonelyinit);
     }
 
     public void writeNtaData(ArrayList<Nta> ntas) throws IOException {
